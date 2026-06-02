@@ -1,0 +1,21 @@
+{
+  "name": "fikir",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @fikir/backend --filter @fikir/frontend dev",
+    "dev:backend": "pnpm --filter @fikir/backend dev",
+    "dev:frontend": "pnpm --filter @fikir/frontend dev",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.30",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  }
+}

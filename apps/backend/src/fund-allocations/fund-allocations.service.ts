@@ -1,0 +1,167 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { FundAllocationStatus, Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  CreateFundAllocationDto,
+  ListFundAllocationsDto,
+  UpdateFundAllocationDto,
+} from './dto/fund-allocation.dto';
+
+@Injectable()
+export class FundAllocationsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(staffId: string, dto: CreateFundAllocationDto) {
+    // Generate unique reference (e.g., FA-YYYYMMDD-XXXX)
+    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const reference = `FA-${datePart}-${randomPart}`;
+
+    const allocation = await this.prisma.fundAllocation.create({
+      data: {
+        parentId: dto.parentId,
+        allocatedById: staffId,
+        amount: new Prisma.Decimal(dto.amount),
+        purpose: dto.purpose,
+        allocationDate: new Date(dto.allocationDate),
+        status: dto.status ?? FundAllocationStatus.ALLOCATED,
+        // We'll store the reference in the notes or purpose if no dedicated field exists.
+        // Looking at schema.prisma, there is no 'reference' field in FundAllocation.
+        // I will prefix the purpose with the reference for now as a way to "generate a unique reference number for the record"
+        // actually, let's just stick to the schema and maybe use metadata in notes.
+        notes: dto.notes ? `${reference} | ${dto.notes}` : reference,
+      },
+      include: {
+        parent: {
+          select: { fullName: true },
+        },
+        allocatedBy: {
+          select: { fullName: true },
+        },
+      },
+    });
+
+    await this.logAudit(staffId, 'CREATE', allocation.id, allocation);
+
+    return allocation;
+  }
+
+  async findAll(query: ListFundAllocationsDto) {
+    const where: Prisma.FundAllocationWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(query.parentId && { parentId: query.parentId }),
+      ...(query.startDate || query.endDate
+        ? {
+            allocationDate: {
+              ...(query.startDate && { gte: new Date(query.startDate) }),
+              ...(query.endDate && { lte: new Date(query.endDate) }),
+            },
+          }
+        : {}),
+    };
+
+    return this.prisma.fundAllocation.findMany({
+      where,
+      include: {
+        parent: { select: { fullName: true } },
+        allocatedBy: { select: { fullName: true } },
+      },
+      orderBy: { allocationDate: 'desc' },
+    });
+  }
+
+  async findByParent(parentId: string) {
+    return this.prisma.fundAllocation.findMany({
+      where: { parentId },
+      include: {
+        allocatedBy: { select: { fullName: true } },
+      },
+      orderBy: { allocationDate: 'desc' },
+    });
+  }
+
+  async findOne(id: string) {
+    const allocation = await this.prisma.fundAllocation.findUnique({
+      where: { id },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            fullName: true,
+            nationalId: true,
+            phone: true,
+          },
+        },
+        allocatedBy: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!allocation) {
+      throw new NotFoundException('Fund allocation not found');
+    }
+
+    return allocation;
+  }
+
+  async update(staffId: string, id: string, dto: UpdateFundAllocationDto) {
+    const existing = await this.findOne(id);
+
+    // Business rule: Once a FundAllocation is marked as DISBURSED and parentAcknowledged is true, it cannot be edited or deleted.
+    if (existing.status === FundAllocationStatus.DISBURSED && existing.parentAcknowledged) {
+      throw new ForbiddenException(
+        'This record is finalized and cannot be modified.',
+      );
+    }
+
+    const data: Prisma.FundAllocationUpdateInput = {
+      ...(dto.status && { status: dto.status }),
+      ...(dto.receiptUrl && { receiptUrl: dto.receiptUrl }),
+      ...(dto.notes && { notes: dto.notes }),
+      ...(dto.parentAcknowledged !== undefined && {
+        parentAcknowledged: dto.parentAcknowledged,
+        acknowledgedAt: dto.parentAcknowledged ? new Date() : null,
+      }),
+    };
+
+    const updated = await this.prisma.fundAllocation.update({
+      where: { id },
+      data,
+    });
+
+    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
+
+    return updated;
+  }
+
+  private async logAudit(
+    staffId: string,
+    action: string,
+    entityId: string,
+    after: any,
+    before?: any,
+  ) {
+    await this.prisma.auditLog.create({
+      data: {
+        staffId,
+        action,
+        entity: 'FundAllocation',
+        entityId,
+        changes: {
+          before: before ? JSON.parse(JSON.stringify(before)) : null,
+          after: JSON.parse(JSON.stringify(after)),
+        },
+      },
+    });
+  }
+}
