@@ -9,7 +9,9 @@ export function middleware(request: NextRequest) {
   if (userCookie) {
     try {
       user = JSON.parse(decodeURIComponent(userCookie));
-    } catch (e) {}
+    } catch (e) {
+      // Ignore parse errors
+    }
   }
 
   const { pathname } = request.nextUrl;

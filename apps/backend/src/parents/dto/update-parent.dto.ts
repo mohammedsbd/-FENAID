@@ -92,7 +92,6 @@ export class UpdateParentDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(1)
   referralSource?: string;
 
   @IsOptional()

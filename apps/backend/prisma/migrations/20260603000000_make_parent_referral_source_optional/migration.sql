@@ -1,0 +1,1 @@
+ALTER TABLE "Parent" ALTER COLUMN "referralSource" DROP NOT NULL;

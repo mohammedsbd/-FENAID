@@ -57,8 +57,8 @@ export class AppointmentsService {
       where,
       include: {
         staff: { select: { fullName: true } },
-        child: { select: { fullName: true } },
-        parent: { select: { fullName: true } },
+        child: { select: { fullName: true, photoUrl: true } },
+        parent: { select: { fullName: true, photoUrl: true } },
       },
       orderBy: { scheduledAt: 'asc' },
     });
@@ -83,8 +83,8 @@ export class AppointmentsService {
       },
       include: {
         staff: { select: { fullName: true } },
-        child: { select: { fullName: true } },
-        parent: { select: { fullName: true } },
+        child: { select: { fullName: true, photoUrl: true } },
+        parent: { select: { fullName: true, photoUrl: true } },
       },
       orderBy: { scheduledAt: 'asc' },
     });
@@ -103,8 +103,8 @@ export class AppointmentsService {
       where: { id },
       include: {
         staff: { select: { fullName: true, id: true } },
-        child: { select: { fullName: true, id: true } },
-        parent: { select: { fullName: true, id: true } },
+        child: { select: { fullName: true, id: true, photoUrl: true } },
+        parent: { select: { fullName: true, id: true, photoUrl: true } },
         attendanceRecords: {
           include: {
             parent: { select: { fullName: true } },

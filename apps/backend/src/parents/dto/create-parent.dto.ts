@@ -76,9 +76,9 @@ export class CreateParentDto {
   @Min(0)
   numberOfDependents!: number;
 
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  referralSource!: string;
+  referralSource?: string;
 
   @IsOptional()
   @IsEnum(ParentStatus)

@@ -11,7 +11,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (userCookie) {
     try {
       user = JSON.parse(userCookie);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore parse errors
+    }
   }
 
   return (

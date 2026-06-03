@@ -190,7 +190,7 @@ model Parent {
   financialBracket   FinancialBracket
   educationLevel     String
   numberOfDependents Int
-  referralSource     String
+  referralSource     String?
   status             ParentStatus
   internalNotes      String?          @db.Text
   assignedStaffId    String
@@ -207,6 +207,7 @@ model Parent {
 
   @@index([assignedStaffId])
   @@index([status])
+  @@index([fullName])
 }
 
 model Child {

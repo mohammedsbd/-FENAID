@@ -30,15 +30,11 @@ export class FundAllocationsService {
         purpose: dto.purpose,
         allocationDate: new Date(dto.allocationDate),
         status: dto.status ?? FundAllocationStatus.ALLOCATED,
-        // We'll store the reference in the notes or purpose if no dedicated field exists.
-        // Looking at schema.prisma, there is no 'reference' field in FundAllocation.
-        // I will prefix the purpose with the reference for now as a way to "generate a unique reference number for the record"
-        // actually, let's just stick to the schema and maybe use metadata in notes.
         notes: dto.notes ? `${reference} | ${dto.notes}` : reference,
       },
       include: {
         parent: {
-          select: { fullName: true },
+          select: { fullName: true, photoUrl: true },
         },
         allocatedBy: {
           select: { fullName: true },
@@ -68,7 +64,7 @@ export class FundAllocationsService {
     return this.prisma.fundAllocation.findMany({
       where,
       include: {
-        parent: { select: { fullName: true } },
+        parent: { select: { fullName: true, photoUrl: true } },
         allocatedBy: { select: { fullName: true } },
       },
       orderBy: { allocationDate: 'desc' },
@@ -93,6 +89,7 @@ export class FundAllocationsService {
           select: {
             id: true,
             fullName: true,
+            photoUrl: true,
             nationalId: true,
             phone: true,
           },

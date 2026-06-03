@@ -41,6 +41,7 @@ export class ChildrenService {
           select: {
             id: true,
             fullName: true,
+            photoUrl: true,
             nationalId: true,
             phone: true,
             financialBracket: true,
@@ -126,6 +127,7 @@ export class ChildrenService {
             select: {
               id: true,
               fullName: true,
+              photoUrl: true,
               nationalId: true,
               phone: true,
             },
@@ -291,6 +293,7 @@ export class ChildrenService {
           select: {
             id: true,
             fullName: true,
+            photoUrl: true,
             nationalId: true,
             phone: true,
           },

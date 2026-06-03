@@ -107,6 +107,7 @@ export class ParentsService {
         select: {
           id: true,
           fullName: true,
+          photoUrl: true,
           nationalId: true,
           phone: true,
           email: true,
@@ -219,6 +220,19 @@ export class ParentsService {
 
     if (dto.assignedStaffId) {
       await this.ensureAssignedStaffExists(dto.assignedStaffId);
+    }
+
+    if (dto.nationalId && dto.nationalId !== existing.nationalId) {
+      const duplicate = await this.prisma.parent.findUnique({
+        where: { nationalId: dto.nationalId },
+        select: { id: true },
+      });
+
+      if (duplicate) {
+        throw new BadRequestException(
+          `A parent with national ID "${dto.nationalId}" already exists.`,
+        );
+      }
     }
 
     const data = this.compactUndefined({

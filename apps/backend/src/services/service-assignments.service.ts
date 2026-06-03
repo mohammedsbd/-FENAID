@@ -55,8 +55,8 @@ export class ServiceAssignmentsService {
       },
       include: {
         service: true,
-        parent: { select: { fullName: true } },
-        child: { select: { fullName: true } },
+        parent: { select: { fullName: true, photoUrl: true } },
+        child: { select: { fullName: true, photoUrl: true } },
         assignedStaff: { select: { fullName: true } },
       },
     });
@@ -78,8 +78,8 @@ export class ServiceAssignmentsService {
       where,
       include: {
         service: true,
-        parent: { select: { fullName: true } },
-        child: { select: { fullName: true } },
+        parent: { select: { fullName: true, photoUrl: true } },
+        child: { select: { fullName: true, photoUrl: true } },
         assignedStaff: { select: { fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -113,8 +113,8 @@ export class ServiceAssignmentsService {
       where: { id },
       include: {
         service: true,
-        parent: { select: { fullName: true, id: true } },
-        child: { select: { fullName: true, id: true } },
+        parent: { select: { fullName: true, id: true, photoUrl: true } },
+        child: { select: { fullName: true, id: true, photoUrl: true } },
         assignedStaff: { select: { fullName: true, id: true } },
       },
     });

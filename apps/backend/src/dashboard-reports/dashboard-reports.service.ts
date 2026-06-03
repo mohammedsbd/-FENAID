@@ -68,31 +68,30 @@ export class DashboardReportsService {
       this.prisma.appointment.findMany({
         where: { scheduledAt: { gte: startOfWeek, lte: endOfWeek } },
         include: {
-          child: { select: { fullName: true } },
-          parent: { select: { fullName: true } },
+          child: { select: { fullName: true, photoUrl: true } },
+          parent: { select: { fullName: true, photoUrl: true } },
         },
         orderBy: { scheduledAt: 'asc' },
       }),
       this.prisma.parent.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, fullName: true, createdAt: true },
+        select: { id: true, fullName: true, photoUrl: true, createdAt: true },
       }),
       this.prisma.child.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, fullName: true, createdAt: true },
+        select: { id: true, fullName: true, photoUrl: true, createdAt: true },
       }),
       this.prisma.fundAllocation.findMany({
         where: { status: FundAllocationStatus.ALLOCATED },
-        include: { parent: { select: { fullName: true } } },
+        include: { parent: { select: { fullName: true, photoUrl: true } } },
         orderBy: { allocationDate: 'desc' },
       }),
       this.getDonationStats(),
     ]);
 
     // Overdue progress notes: children with no note in 30 days
-    // This is more complex: find children where NO note exists with createdAt > thirtyDaysAgo
     const overdueNotes = await this.prisma.child.findMany({
       where: {
         status: ChildStatus.ACTIVE,
@@ -105,6 +104,7 @@ export class DashboardReportsService {
       select: {
         id: true,
         fullName: true,
+        photoUrl: true,
         assignedStaff: { select: { fullName: true } },
       },
     });
@@ -163,8 +163,8 @@ export class DashboardReportsService {
             scheduledAt: { gte: now, lte: nextWeek },
           },
           include: {
-            child: { select: { fullName: true } },
-            parent: { select: { fullName: true } },
+            child: { select: { fullName: true, photoUrl: true } },
+            parent: { select: { fullName: true, photoUrl: true } },
           },
           orderBy: { scheduledAt: 'asc' },
         }),
@@ -175,8 +175,8 @@ export class DashboardReportsService {
           },
           include: {
             service: { select: { name: true } },
-            parent: { select: { fullName: true } },
-            child: { select: { fullName: true } },
+            parent: { select: { fullName: true, photoUrl: true } },
+            child: { select: { fullName: true, photoUrl: true } },
           },
         }),
       ]);
@@ -191,7 +191,7 @@ export class DashboardReportsService {
           },
         },
       },
-      select: { id: true, fullName: true },
+      select: { id: true, fullName: true, photoUrl: true },
     });
 
     return {
@@ -213,10 +213,10 @@ export class DashboardReportsService {
       case ReportType.MEMBER_DIRECTORY:
         return {
           parents: await this.prisma.parent.findMany({
-            include: { children: { select: { fullName: true } } },
+            include: { children: { select: { fullName: true, photoUrl: true } } },
           }),
           children: await this.prisma.child.findMany({
-            include: { parent: { select: { fullName: true } } },
+            include: { parent: { select: { fullName: true, photoUrl: true } } },
           }),
         };
 
@@ -242,7 +242,7 @@ export class DashboardReportsService {
       case ReportType.FUND_ALLOCATION_LOG:
         return this.prisma.fundAllocation.findMany({
           where: { allocationDate: dateFilter },
-          include: { parent: { select: { fullName: true, nationalId: true } } },
+          include: { parent: { select: { fullName: true, nationalId: true, photoUrl: true } } },
           orderBy: { allocationDate: 'desc' },
         });
 
