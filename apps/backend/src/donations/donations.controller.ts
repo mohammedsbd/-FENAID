@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { DonationsService } from './donations.service';
 import {
@@ -19,6 +20,7 @@ import {
 } from './dto/donation.dto';
 
 @Controller('donations')
+@ModuleAccess('DONATIONS' as any)
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
 

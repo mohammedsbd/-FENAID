@@ -1,8 +1,10 @@
 import { Controller, Get, Patch, Param, Req } from '@nestjs/common';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
+@ModuleAccess('MY_ACCOUNT' as any)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

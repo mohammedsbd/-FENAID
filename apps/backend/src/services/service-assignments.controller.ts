@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import {
   CreateServiceAssignmentDto,
@@ -19,6 +20,7 @@ import {
 import { ServiceAssignmentsService } from './service-assignments.service';
 
 @Controller('service-assignments')
+@ModuleAccess('SERVICES' as any)
 export class ServiceAssignmentsController {
   constructor(
     private readonly serviceAssignmentsService: ServiceAssignmentsService,

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { AppointmentsService } from './appointments.service';
 import {
@@ -21,6 +22,7 @@ import {
 } from './dto/appointment.dto';
 
 @Controller('appointments')
+@ModuleAccess('APPOINTMENTS' as any)
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 

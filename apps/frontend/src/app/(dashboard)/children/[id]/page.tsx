@@ -1,21 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { format, isBefore } from 'date-fns';
+import { format } from 'date-fns';
 import {
-  Baby,
   CalendarDays,
   CheckCircle2,
   ExternalLink,
   FileUp,
   Files,
-  MapPin,
   UserRound,
   Stethoscope,
-  School,
   Accessibility,
   Brain,
   History,
@@ -25,6 +21,9 @@ import {
   Wallet,
   Clock,
   Plus,
+  Pencil,
+  UserMinus,
+  UserPlus,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,10 +40,24 @@ import {
 } from '@/components/ui/table';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { ExportButton } from '@/components/dashboard/export-button';
+import { ChildDrawer } from '@/components/dashboard/child-drawer';
+import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
+import {
+  exportToCSV,
+  exportToPDF,
+  exportToWordHTML,
+  exportProfileToExcel,
+  formatEnum,
+  escapeHTML,
+} from '@/lib/export';
+import { useToast } from '@/hooks/use-toast';
+import { ChildRow, StaffOption } from '@/types/children';
 
 // Types
 type ChildProfile = {
   id: string;
+  idTag?: string | null;
   fullName: string;
   photoUrl?: string | null;
   dateOfBirth: string;
@@ -93,27 +106,153 @@ type Tab = (typeof tabs)[number];
 
 export default function ChildProfilePage() {
   const params = useParams<{ id: string }>();
+  const { toast } = useToast();
   const [child, setChild] = useState<ChildProfile | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [staff, setStaff] = useState<StaffOption[]>([]);
+
+  const fetchChild = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get(`/children/${params.id}`);
+      setChild(res.data);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to load child profile.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id]);
+
+  const fetchStaff = useCallback(async () => {
+    try {
+      const res = await api.get('/dashboard/admin');
+      const options = (res.data.caseWorkerWorkload || []).map(
+        (worker: { staffId: string; staffName: string }) => ({
+          id: worker.staffId,
+          fullName: worker.staffName,
+        }),
+      );
+      setStaff(options);
+    } catch {
+      // Ignore
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchChild = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get(`/children/${params.id}`);
-        setChild(res.data);
-      } catch (err: unknown) {
-        setError(getErrorMessage(err, 'Failed to load child profile.'));
-      } finally {
-        setLoading(false);
-      }
-    };
+    void fetchChild();
+    void fetchStaff();
+  }, [fetchChild, fetchStaff]);
 
-    fetchChild();
-  }, [params.id]);
+  const handleToggleStatus = async () => {
+    if (!child) return;
+    try {
+      await api.delete(`/children/${child.id}`);
+      const isActivating = child.status === 'INACTIVE';
+      toast({
+        title: isActivating ? 'Profile Activated' : 'Profile Deactivated',
+        description: `${child.fullName} has been successfully ${isActivating ? 'activated' : 'deactivated'}.`,
+      });
+      setShowDeactivateModal(false);
+      await fetchChild();
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: getErrorMessage(err, 'Failed to update child status.'),
+      });
+    }
+  };
+
+  const handleExport = (formatType: 'pdf' | 'csv' | 'excel' | 'docx') => {
+    if (!child) return;
+    setExporting(true);
+
+    const filename = `child-${child.fullName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
+    const title = `Child Profile: ${child.fullName}`;
+
+    const profileSections = [
+      {
+        title: 'Personal Information',
+        fields: [
+          ['Full Name', child.fullName],
+          ['Gender', child.gender],
+          ['Date of Birth', formatDate(child.dateOfBirth)],
+          ['Age', `${calculateAge(child.dateOfBirth)} years`],
+          ['Communication', formatEnum(child.communicationAbility)],
+          ['Status', formatEnum(child.status)],
+        ] as [string, string][],
+      },
+      {
+        title: 'Disability & Education',
+        fields: [
+          ['Type', formatEnum(child.disabilityType)],
+          ['Category', child.disabilityCategory],
+          ['Severity', formatEnum(child.severityLevel)],
+          ['School Status', formatEnum(child.schoolEnrollmentStatus)],
+        ] as [string, string][],
+      },
+      {
+        title: 'Medical & Assignment',
+        fields: [
+          ['Parent', child.parent.fullName],
+          ['Case Worker', child.assignedStaff?.fullName || 'Unassigned'],
+          ['Registered Date', formatDate(child.createdAt)],
+        ] as [string, string][],
+      },
+    ];
+
+    if (formatType === 'csv') {
+      const headers = ['Field', 'Value'];
+      const rows = profileSections.flatMap((s) => [[s.title, ''], ...s.fields]);
+      exportToCSV(headers, rows, `${filename}.csv`);
+    } else if (formatType === 'excel') {
+      exportProfileToExcel(title, profileSections, `${filename}.xls`);
+    } else if (formatType === 'docx') {
+      let contentHTML = '';
+      profileSections.forEach((section) => {
+        contentHTML += `<h2>${escapeHTML(section.title)}</h2>`;
+        contentHTML += `<table><tbody>`;
+        section.fields.forEach(([label, value]) => {
+          contentHTML += `<tr><td class="label">${escapeHTML(label)}</td><td>${escapeHTML(value)}</td></tr>`;
+        });
+        contentHTML += `</tbody></table>`;
+      });
+      if (child.medicalHistory || child.medications) {
+        contentHTML += `<h2>Medical Background</h2>`;
+        if (child.medicalHistory) contentHTML += `<p><b>History:</b> ${escapeHTML(child.medicalHistory)}</p>`;
+        if (child.medications) contentHTML += `<p><b>Medications:</b> ${escapeHTML(child.medications)}</p>`;
+      }
+      exportToWordHTML(title, contentHTML, `${filename}.doc`);
+    } else if (formatType === 'pdf') {
+      let htmlBody = `<div class="grid">`;
+      profileSections.forEach((section) => {
+        htmlBody += `<div class="field" style="grid-column: span 2; background: #f1f5f9; font-weight: bold; margin-top: 10px;">${escapeHTML(section.title)}</div>`;
+        section.fields.forEach(([label, value]) => {
+          htmlBody += `
+            <div class="field">
+              <div class="label">${escapeHTML(label)}</div>
+              <div class="value">${escapeHTML(value)}</div>
+            </div>
+          `;
+        });
+      });
+      htmlBody += `</div>`;
+      if (child.medicalHistory || child.medications) {
+        htmlBody += `<h2>Medical Background</h2>`;
+        if (child.medicalHistory) htmlBody += `<div class="field"><strong>History:</strong><br/>${escapeHTML(child.medicalHistory)}</div>`;
+        if (child.medications) htmlBody += `<div class="field"><strong>Medications:</strong><br/>${escapeHTML(child.medications)}</div>`;
+      }
+      exportToPDF(title, htmlBody);
+    }
+
+    setExporting(false);
+  };
 
   if (loading) {
     return (
@@ -147,7 +286,10 @@ export default function ChildProfilePage() {
             </Avatar>
             <div className="flex-1 space-y-3">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">{child.fullName}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight">{child.fullName}</h1>
+                  <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{child.idTag || '---'}</span>
+                </div>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -170,13 +312,28 @@ export default function ChildProfilePage() {
               </div>
             </div>
             <div className="flex flex-col gap-2">
+              <ExportButton onExport={handleExport} loading={exporting} />
               <Button size="sm">
                 <Plus className="h-4 w-4" />
                 Add Progress Note
               </Button>
-              <Button variant="outline" size="sm">
-                <Pencil className="h-4 w-4" />
-                Edit Profile
+              <Button variant="outline" size="sm" onClick={() => setDrawerOpen(true)}>
+                  <Pencil className="h-4 w-4" />
+                  Edit Profile
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  'gap-2',
+                  child.status === 'INACTIVE'
+                    ? 'text-emerald-600 hover:text-emerald-700'
+                    : 'text-red-600 hover:text-red-700',
+                )}
+                onClick={() => setShowDeactivateModal(true)}
+              >
+                {child.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
+                {child.status === 'INACTIVE' ? 'Activate' : 'Deactivate'}
               </Button>
             </div>
           </div>
@@ -211,6 +368,37 @@ export default function ChildProfilePage() {
         {activeTab === 'Fund & Finance' && <FinanceTab child={child} />}
         {activeTab === 'Documents' && <DocumentsTab child={child} />}
       </div>
+
+      <ChildDrawer
+        open={drawerOpen}
+        childId={child.id}
+        fallbackChild={profileToChildRow(child)}
+        staffOptions={staff}
+        onClose={() => setDrawerOpen(false)}
+        onSaved={async () => {
+          setDrawerOpen(false);
+          await fetchChild();
+          toast({
+            title: 'Profile Updated',
+            description: 'The child profile has been saved successfully.',
+          });
+        }}
+      />
+
+      {showDeactivateModal && (
+        <DeactivateConfirmationModal
+          name={child.fullName}
+          title={child.status === 'INACTIVE' ? 'Activate Profile?' : 'Deactivate Profile?'}
+          description={
+            child.status === 'INACTIVE'
+              ? `Are you sure you want to activate ${child.fullName}? This will restore their access in the system.`
+              : undefined
+          }
+          confirmLabel={child.status === 'INACTIVE' ? 'Activate Now' : 'Deactivate Now'}
+          onConfirm={handleToggleStatus}
+          onCancel={() => setShowDeactivateModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -587,6 +775,34 @@ function EmptyState({ message }: { message: string }) {
   return <div className="flex min-h-[100px] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{message}</div>;
 }
 
+function profileToChildRow(child: ChildProfile): ChildRow {
+  return {
+    id: child.id,
+    idTag: child.idTag,
+    fullName: child.fullName,
+    photoUrl: child.photoUrl,
+    dateOfBirth: child.dateOfBirth,
+    disabilityType: child.disabilityType as ChildRow['disabilityType'],
+    disabilityCategory: child.disabilityCategory,
+    severityLevel: child.severityLevel as ChildRow['severityLevel'],
+    status: child.status as ChildRow['status'],
+    parentId: child.parent.id,
+    assignedStaffId: child.assignedStaff?.id || '',
+    createdAt: child.createdAt,
+    parent: {
+      id: child.parent.id,
+      fullName: child.parent.fullName,
+    },
+    assignedStaff: child.assignedStaff
+      ? {
+          id: child.assignedStaff.id,
+          fullName: child.assignedStaff.fullName,
+          role: child.assignedStaff.role,
+        }
+      : null,
+  };
+}
+
 function calculateAge(dob: string) {
   const birth = new Date(dob);
   const now = new Date();
@@ -597,6 +813,5 @@ function calculateAge(dob: string) {
 }
 
 function formatDate(value: string) { return format(new Date(value), 'MMM dd, yyyy'); }
-function formatEnum(val: string) { return val.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
 function initials(name: string) { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); }
 function getErrorMessage(err: any, fallback: string) { return err.response?.data?.message || fallback; }

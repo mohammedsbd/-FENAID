@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import {
   CreateFundAllocationDto,
@@ -19,6 +20,7 @@ import {
 import { FundAllocationsService } from './fund-allocations.service';
 
 @Controller('fund-allocations')
+@ModuleAccess('FINANCE' as any)
 export class FundAllocationsController {
   constructor(private readonly fundAllocationsService: FundAllocationsService) {}
 

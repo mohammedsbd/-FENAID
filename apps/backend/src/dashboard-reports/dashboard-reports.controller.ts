@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
@@ -6,6 +7,7 @@ import { DashboardReportsService } from './dashboard-reports.service';
 import { ReportQueryDto, ReportType } from './dto/report-query.dto';
 
 @Controller()
+@ModuleAccess('DASHBOARD' as any)
 export class DashboardReportsController {
   constructor(private readonly dashboardService: DashboardReportsService) {}
 
@@ -21,6 +23,7 @@ export class DashboardReportsController {
   }
 
   @Get('reports/:type')
+  @ModuleAccess('REPORTS' as any)
   getReport(
     @Param('type') type: ReportType,
     @Query() query: ReportQueryDto,

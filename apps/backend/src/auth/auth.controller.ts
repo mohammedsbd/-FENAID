@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -11,8 +12,13 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Req() request: Request) {
+    return this.authService.login(loginDto, {
+      ipAddress: request.ip,
+      userAgent: Array.isArray(request.headers['user-agent'])
+        ? request.headers['user-agent'][0]
+        : request.headers['user-agent'],
+    });
   }
 
   @Post('change-password')

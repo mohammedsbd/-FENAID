@@ -13,6 +13,29 @@ enum StaffRole {
   VIEWER
 }
 
+enum AccessLevel {
+  FULL
+  READ_ONLY
+  NO_ACCESS
+}
+
+enum PermissionModule {
+  ACCOUNTS
+  MY_ACCOUNT
+  AUDIT_LOGS
+  SESSIONS
+  PERMISSIONS
+  PARENTS
+  CHILDREN
+  SERVICES
+  FINANCE
+  APPOINTMENTS
+  DOCUMENTS
+  DASHBOARD
+  REPORTS
+  DONATIONS
+}
+
 enum MaritalStatus {
   SINGLE
   MARRIED
@@ -153,9 +176,15 @@ model Staff {
   fullName           String
   email              String    @unique
   passwordHash       String
+  phone              String?
+  photoUrl           String?
   role               StaffRole
   isActive           Boolean   @default(true)
   mustChangePassword Boolean   @default(true)
+  deletedAt          DateTime?
+  lastLoginAt        DateTime?
+  passwordUpdatedAt  DateTime?
+  notificationPreferences Json?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -170,10 +199,13 @@ model Staff {
   uploadedDocuments        Document[]          @relation("DocumentUploadedBy")
   notifications            Notification[]
   auditLogs                AuditLog[]
+  sessions                 Session[]
+  passwordHistories        PasswordHistory[]
 }
 
 model Parent {
   id                 String           @id @default(cuid())
+  idTag              String?          @unique
   fullName           String
   photoUrl           String?
   dateOfBirth        DateTime
@@ -212,6 +244,7 @@ model Parent {
 
 model Child {
   id                     String                 @id @default(cuid())
+  idTag                  String?                @unique
   fullName               String
   photoUrl               String?
   dateOfBirth            DateTime
@@ -483,6 +516,8 @@ model AuditLog {
   entity    String
   entityId  String
   changes   Json
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
 
   staff Staff? @relation(fields: [staffId], references: [id])
@@ -490,4 +525,47 @@ model AuditLog {
   @@index([staffId])
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  staffId    String
+  tokenId    String   @unique
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime?
+  createdAt  DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
+  @@index([tokenId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  staffId      String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId, createdAt])
+}
+
+model RolePermission {
+  id          String         @id @default(cuid())
+  role        StaffRole
+  module      PermissionModule
+  accessLevel AccessLevel    @default(READ_ONLY)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([role, module])
+  @@index([role])
+  @@index([module])
 }

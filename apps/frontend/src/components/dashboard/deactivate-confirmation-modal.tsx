@@ -1,0 +1,44 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+
+interface DeactivateConfirmationModalProps {
+  name: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+}
+
+export function DeactivateConfirmationModal({
+  name,
+  onConfirm,
+  onCancel,
+  title = "Deactivate Profile?",
+  description,
+  confirmLabel = "Deactivate Now",
+}: DeactivateConfirmationModalProps) {
+  const defaultDescription = `Are you sure you want to deactivate ${name}? This will restrict their access and mark the profile as inactive in the system.`;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-xl animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            {description || defaultDescription}
+          </p>
+        </div>
+        <div className="flex justify-end gap-3 border-t bg-slate-50/50 px-6 py-4 rounded-b-lg">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

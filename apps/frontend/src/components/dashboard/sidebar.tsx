@@ -12,6 +12,7 @@ import {
   CalendarDays,
   BarChart3,
   Settings,
+  ShieldCheck,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import { logout } from '@/lib/auth';
+import { t } from '@/lib/i18n';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -32,7 +34,8 @@ const navItems = [
   { icon: BadgeDollarSign, label: 'Fund & Donations', href: '/dashboard/finance' },
   { icon: CalendarDays, label: 'Appointments', href: '/dashboard/appointments' },
   { icon: BarChart3, label: 'Reports', href: '/dashboard/reports' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+  { icon: ShieldCheck, label: 'Accounts', href: '/accounts', superAdminOnly: true },
+  { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
 export function Sidebar({ user }: { user: any }) {
@@ -66,7 +69,10 @@ export function Sidebar({ user }: { user: any }) {
       <ScrollArea className="flex-1 px-3">
         <nav className="flex flex-col gap-1 py-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            if (item.superAdminOnly && user?.role !== 'SUPER_ADMIN') return null;
+            const isActive = item.href === '/dashboard' 
+              ? pathname === '/dashboard' 
+              : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -80,7 +86,7 @@ export function Sidebar({ user }: { user: any }) {
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && <span>{t(item.label, item.label)}</span>}
               </Link>
             );
           })}

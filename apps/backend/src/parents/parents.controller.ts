@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { CreateParentDto } from './dto/create-parent.dto';
 import { ListParentsDto } from './dto/list-parents.dto';
@@ -8,6 +9,7 @@ import { UpdateParentDto } from './dto/update-parent.dto';
 import { ParentsService } from './parents.service';
 
 @Controller('parents')
+@ModuleAccess('PARENTS' as any)
 export class ParentsController {
   constructor(private readonly parentsService: ParentsService) {}
 

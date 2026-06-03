@@ -30,9 +30,23 @@ export class ChildrenService {
     await this.ensureParentExists(dto.parentId);
     await this.ensureAssignedStaffExists(dto.assignedStaffId);
 
+    const latest = await this.prisma.child.findFirst({
+      where: { idTag: { startsWith: 'FKC-' } },
+      orderBy: { idTag: 'desc' },
+    });
+    let nextNum = 1;
+    if (latest && latest.idTag) {
+      const match = latest.idTag.match(/FKC-(\d+)/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    const idTag = `FKC-${String(nextNum).padStart(4, '0')}`;
+
     const child = await this.prisma.child.create({
       data: {
         ...dto,
+        idTag,
         dateOfBirth: new Date(dto.dateOfBirth),
         status: dto.status ?? ChildStatus.ACTIVE,
       },
@@ -80,16 +94,26 @@ export class ChildrenService {
 
   async findAll(query: ListChildrenDto) {
     const page = query.page ?? 1;
-    const limit = Math.min(query.limit ?? 20, 100);
+    const limit = Math.min(query.limit ?? 20, 100000);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ChildWhereInput = {
       ...(query.search
         ? {
-            fullName: {
-              contains: query.search,
-              mode: Prisma.QueryMode.insensitive,
-            },
+            OR: [
+              {
+                fullName: {
+                  contains: query.search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                idTag: {
+                  contains: query.search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
           }
         : {}),
       ...(query.disabilityType ? { disabilityType: query.disabilityType } : {}),
@@ -109,6 +133,7 @@ export class ChildrenService {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          idTag: true,
           fullName: true,
           photoUrl: true,
           dateOfBirth: true,
@@ -322,10 +347,12 @@ export class ChildrenService {
   async remove(staffId: string, id: string) {
     const existing = await this.findChildForAudit(id);
 
+    const newStatus = existing.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+
     const child = await this.prisma.child.update({
       where: { id },
       data: {
-        status: ChildStatus.INACTIVE,
+        status: newStatus as ChildStatus,
       },
     });
 

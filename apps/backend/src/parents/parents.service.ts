@@ -29,9 +29,23 @@ export class ParentsService {
   async create(staffId: string, dto: CreateParentDto) {
     await this.ensureAssignedStaffExists(dto.assignedStaffId);
 
+    const latest = await this.prisma.parent.findFirst({
+      where: { idTag: { startsWith: 'FKP-' } },
+      orderBy: { idTag: 'desc' },
+    });
+    let nextNum = 1;
+    if (latest && latest.idTag) {
+      const match = latest.idTag.match(/FKP-(\d+)/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    const idTag = `FKP-${String(nextNum).padStart(4, '0')}`;
+
     const parent = await this.prisma.parent.create({
       data: {
         ...dto,
+        idTag,
         dateOfBirth: new Date(dto.dateOfBirth),
         status: dto.status ?? ParentStatus.ACTIVE,
       },
@@ -67,7 +81,7 @@ export class ParentsService {
 
   async findAll(query: ListParentsDto) {
     const page = query.page ?? 1;
-    const limit = Math.min(query.limit ?? 20, 100);
+    const limit = Math.min(query.limit ?? 20, 100000);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ParentWhereInput = {
@@ -82,6 +96,18 @@ export class ParentsService {
               },
               {
                 nationalId: {
+                  contains: query.search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                phone: {
+                  contains: query.search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                idTag: {
                   contains: query.search,
                   mode: Prisma.QueryMode.insensitive,
                 },
@@ -106,6 +132,7 @@ export class ParentsService {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          idTag: true,
           fullName: true,
           photoUrl: true,
           nationalId: true,
@@ -268,10 +295,12 @@ export class ParentsService {
   async remove(staffId: string, id: string) {
     const existing = await this.findParentForAudit(id);
 
+    const newStatus = existing.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+
     const parent = await this.prisma.parent.update({
       where: { id },
       data: {
-        status: ParentStatus.INACTIVE,
+        status: newStatus as ParentStatus,
       },
     });
 

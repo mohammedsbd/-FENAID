@@ -19,24 +19,50 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<JwtPayload> {
-    const staff = await this.prisma.staff.findUnique({
-      where: { id: payload.staffId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isActive: true,
-      },
-    });
+    if (!payload.sessionId) {
+      throw new UnauthorizedException('Invalid token: missing session ID');
+    }
 
-    if (!staff?.isActive) {
+    const [staff, session] = await Promise.all([
+      this.prisma.staff.findUnique({
+        where: { id: payload.staffId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isActive: true,
+          deletedAt: true,
+        },
+      }),
+      this.prisma.session.findUnique({
+        where: { tokenId: payload.sessionId },
+        select: {
+          id: true,
+          revokedAt: true,
+          expiresAt: true,
+          staffId: true,
+        },
+      }),
+    ]);
+
+    if (!staff?.isActive || staff.deletedAt) {
       throw new UnauthorizedException('Staff account is inactive');
     }
+
+    if (!session || session.staffId !== staff.id || session.revokedAt || session.expiresAt <= new Date()) {
+      throw new UnauthorizedException('Session is no longer active');
+    }
+
+    await this.prisma.session.update({
+      where: { tokenId: payload.sessionId },
+      data: { lastSeenAt: new Date() },
+    });
 
     return {
       staffId: staff.id,
       email: staff.email,
       role: staff.role,
+      sessionId: payload.sessionId,
     };
   }
 }

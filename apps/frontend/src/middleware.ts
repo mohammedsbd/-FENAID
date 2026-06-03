@@ -25,6 +25,13 @@ export function middleware(request: NextRequest) {
     if (user?.mustChangePassword && pathname !== '/change-password') {
       return NextResponse.redirect(new URL('/change-password', request.url));
     }
+
+    if (
+      (pathname.startsWith('/accounts') || pathname.startsWith('/audit-log')) &&
+      user?.role !== 'SUPER_ADMIN'
+    ) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   // Redirect from auth pages if already logged in

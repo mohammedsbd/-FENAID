@@ -15,6 +15,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { DashboardReportsModule } from './dashboard-reports/dashboard-reports.module';
 import { DocumentsModule } from './documents/documents.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AccountsModule } from './accounts/accounts.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     DashboardReportsModule,
     DocumentsModule,
     NotificationsModule,
+    AccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
