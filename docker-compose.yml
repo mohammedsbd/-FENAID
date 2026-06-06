@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: fikir_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fikir
+      POSTGRES_USER: fikir
+      POSTGRES_PASSWORD: fikir_dev_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - fikir_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fikir -d fikir"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  fikir_postgres_data:

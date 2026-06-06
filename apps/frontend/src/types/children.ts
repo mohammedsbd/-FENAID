@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { toIsoDateInputValue } from '@/lib/calendar';
 
 export type ChildStatus = 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED' | 'INACTIVE' | 'DECEASED';
 export type DisabilityType = 'PHYSICAL' | 'INTELLECTUAL' | 'MULTIPLE';
@@ -79,7 +79,7 @@ export function childToForm(child: any): ChildFormData {
   return {
     fullName: child.fullName || '',
     photoUrl: child.photoUrl || '',
-    dateOfBirth: child.dateOfBirth ? format(new Date(child.dateOfBirth), 'yyyy-MM-dd') : '',
+    dateOfBirth: toIsoDateInputValue(child.dateOfBirth),
     gender: child.gender || '',
     disabilityType: child.disabilityType || 'PHYSICAL',
     disabilityCategory: child.disabilityCategory || '',

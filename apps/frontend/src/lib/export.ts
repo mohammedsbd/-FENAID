@@ -1,6 +1,7 @@
 /**
  * Utility functions for exporting data in various formats (PDF, CSV, Excel, DOCX).
  */
+import { formatCalendarDate } from './calendar';
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -185,7 +186,7 @@ export function exportToPDF(title: string, htmlBody: string) {
   }
 
   const now = new Date();
-  const dateStr = now.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStr = formatCalendarDate(now);
   const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
   printWindow.document.write(`
@@ -280,9 +281,7 @@ export function formatEnum(val?: string | null): string {
 export function formatDate(dateStr?: string | null): string {
   if (!dateStr) return '';
   try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    return formatCalendarDate(dateStr);
   } catch {
     return '';
   }

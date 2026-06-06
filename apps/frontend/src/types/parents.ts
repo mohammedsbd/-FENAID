@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { toIsoDateInputValue } from '@/lib/calendar';
 
 export type ParentStatus = 'ACTIVE' | 'INACTIVE' | 'UNDER_REVIEW';
 export type FinancialBracket = 'LOW' | 'MEDIUM' | 'HIGH';
@@ -116,7 +116,7 @@ export function parentToForm(parent: ParentDetailResponse): ParentFormData {
   return {
     fullName: parent.fullName,
     photoUrl: parent.photoUrl || '',
-    dateOfBirth: parent.dateOfBirth ? format(new Date(parent.dateOfBirth), 'yyyy-MM-dd') : '',
+    dateOfBirth: toIsoDateInputValue(parent.dateOfBirth),
     gender: parent.gender || '',
     nationalId: parent.nationalId,
     phone: parent.phone,

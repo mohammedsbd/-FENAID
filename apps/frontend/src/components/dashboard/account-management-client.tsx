@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -503,8 +504,8 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="grid gap-3 md:grid-cols-4">
               <Input placeholder={t('accounts.staffId', 'Staff ID')} value={auditFilters.staffId} onChange={(e) => setAuditFilters((c) => ({ ...c, staffId: e.target.value }))} />
               <Input placeholder={t('accounts.action', 'Action')} value={auditFilters.action} onChange={(e) => setAuditFilters((c) => ({ ...c, action: e.target.value }))} />
-              <Input type="date" value={auditFilters.from} onChange={(e) => setAuditFilters((c) => ({ ...c, from: e.target.value }))} />
-              <Input type="date" value={auditFilters.to} onChange={(e) => setAuditFilters((c) => ({ ...c, to: e.target.value }))} />
+              <CalendarDatePicker value={auditFilters.from} onChange={(value) => setAuditFilters((c) => ({ ...c, from: value }))} placeholder={t('accounts.fromDate', 'From date')} />
+              <CalendarDatePicker value={auditFilters.to} onChange={(value) => setAuditFilters((c) => ({ ...c, to: value }))} placeholder={t('accounts.toDate', 'To date')} />
             </div>
             <div className="flex gap-2">
               <Button onClick={loadLogs}><RefreshCcw className="h-4 w-4" />{t('accounts.searchLogs', 'Search Logs')}</Button>

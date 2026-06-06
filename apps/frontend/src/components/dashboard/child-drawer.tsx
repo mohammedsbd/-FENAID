@@ -5,13 +5,14 @@ import type { ChangeEvent, ReactNode } from 'react';
 import { Upload, X, ChevronRight, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { formatEnum } from '@/lib/export';
-import { format } from 'date-fns';
+import { toIsoDateInputValue } from '@/lib/calendar';
 import { 
   ChildStatus, 
   DisabilityType, 
@@ -91,7 +92,7 @@ export function ChildDrawer({
               ...emptyChildForm,
               fullName: fallbackChild.fullName,
               photoUrl: fallbackChild.photoUrl || '',
-              dateOfBirth: format(new Date(fallbackChild.dateOfBirth), 'yyyy-MM-dd'),
+              dateOfBirth: toIsoDateInputValue(fallbackChild.dateOfBirth),
               disabilityType: fallbackChild.disabilityType,
               disabilityCategory: fallbackChild.disabilityCategory,
               severityLevel: fallbackChild.severityLevel,
@@ -243,7 +244,12 @@ export function ChildDrawer({
                     </div>
                   </FormField>
                   <FormField label="Date of Birth" error={errors.dateOfBirth}>
-                    <Input type="date" value={form.dateOfBirth} onChange={(event) => updateField('dateOfBirth', event.target.value)} />
+                    <CalendarDatePicker
+                      value={form.dateOfBirth}
+                      onChange={(value) => updateField('dateOfBirth', value)}
+                      minYear={1900}
+                      maxYear={new Date().getUTCFullYear()}
+                    />
                   </FormField>
                   <FormField label="Gender" error={errors.gender}>
                     <select className={selectClassName} value={form.gender} onChange={(event) => updateField('gender', event.target.value)}>

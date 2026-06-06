@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/document.dto';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateDocumentDto) {
     const document = await this.prisma.document.create({
@@ -17,9 +22,29 @@ export class DocumentsService {
         parentId: dto.parentId,
         childId: dto.childId,
       },
+      include: {
+        parent: { select: { fullName: true, assignedStaffId: true } },
+        child: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'CREATE', document.id, document);
+
+    const ownerName =
+      document.child?.fullName ??
+      document.parent?.fullName ??
+      'a beneficiary record';
+
+    await this.notifications.notifyStaffAndAdmins(
+      [document.child?.assignedStaffId ?? document.parent?.assignedStaffId],
+      {
+        message: `Document uploaded: ${document.name} for ${ownerName}.`,
+        type: NotificationType.GENERAL,
+        entityType: 'Document',
+        entityId: document.id,
+      },
+    );
+
     return document;
   }
 

@@ -6,10 +6,12 @@ import {
 import {
   FinancialBracket,
   MaritalStatus,
+  NotificationType,
   Parent,
   ParentStatus,
   Prisma,
 } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateParentDto } from './dto/create-parent.dto';
 import { ListParentsDto } from './dto/list-parents.dto';
@@ -24,7 +26,10 @@ type AuditScalar = string | number | boolean | null;
 
 @Injectable()
 export class ParentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateParentDto) {
     await this.ensureAssignedStaffExists(dto.assignedStaffId);
@@ -66,6 +71,13 @@ export class ParentsService {
       action: 'CREATE',
       entityId: parent.id,
       changes: this.diffParent(null, parent),
+    });
+
+    await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
+      message: `New parent registered: ${parent.fullName} (${parent.idTag}) is assigned to ${parent.assignedStaff.fullName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Parent',
+      entityId: parent.id,
     });
 
     const suggestedServices = await this.getSuggestedServices(
@@ -289,6 +301,13 @@ export class ParentsService {
       changes: this.diffParent(existing, parent),
     });
 
+    await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
+      message: this.parentUpdateMessage(existing, parent),
+      type: NotificationType.GENERAL,
+      entityType: 'Parent',
+      entityId: parent.id,
+    });
+
     return parent;
   }
 
@@ -311,7 +330,26 @@ export class ParentsService {
       changes: this.diffParent(existing, parent),
     });
 
+    await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
+      message: `Parent status changed: ${existing.fullName} is now ${newStatus}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Parent',
+      entityId: parent.id,
+    });
+
     return parent;
+  }
+
+  private parentUpdateMessage(existing: ParentAuditSnapshot, parent: Parent) {
+    if (existing.assignedStaffId !== parent.assignedStaffId) {
+      return `Parent reassigned: ${parent.fullName} (${parent.idTag}) has a new assigned staff member.`;
+    }
+
+    if (existing.status !== parent.status) {
+      return `Parent status changed: ${parent.fullName} (${parent.idTag}) is now ${parent.status}.`;
+    }
+
+    return `Parent profile updated: ${parent.fullName} (${parent.idTag}).`;
   }
 
   private async ensureAssignedStaffExists(assignedStaffId: string) {

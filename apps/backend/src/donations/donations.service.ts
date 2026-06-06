@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateDonationDto,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class DonationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateDonationDto) {
     if (dto.isRestricted) {
@@ -44,9 +48,33 @@ export class DonationsService {
         receiptNumber,
         notes: dto.notes,
       },
+      include: {
+        restrictedToChild: {
+          select: { id: true, fullName: true, assignedStaffId: true },
+        },
+        restrictedToService: {
+          select: { id: true, name: true },
+        },
+      },
     });
 
     await this.logAudit(staffId, 'CREATE', donation.id, donation);
+
+    const restrictedTarget = donation.restrictedToChild
+      ? ` for ${donation.restrictedToChild.fullName}`
+      : donation.restrictedToService
+        ? ` for ${donation.restrictedToService.name}`
+        : '';
+
+    await this.notifications.notifyStaffAndAdmins(
+      [donation.restrictedToChild?.assignedStaffId],
+      {
+        message: `Donation received: ${donation.amount} ETB from ${donation.donorName}${restrictedTarget}.`,
+        type: NotificationType.GENERAL,
+        entityType: 'Donation',
+        entityId: donation.id,
+      },
+    );
 
     return donation;
   }

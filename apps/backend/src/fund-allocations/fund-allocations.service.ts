@@ -4,7 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FundAllocationStatus, Prisma } from '@prisma/client';
+import { FundAllocationStatus, NotificationType, Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateFundAllocationDto,
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class FundAllocationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateFundAllocationDto) {
     // Generate unique reference (e.g., FA-YYYYMMDD-XXXX)
@@ -34,7 +38,7 @@ export class FundAllocationsService {
       },
       include: {
         parent: {
-          select: { fullName: true, photoUrl: true },
+          select: { fullName: true, photoUrl: true, assignedStaffId: true },
         },
         allocatedBy: {
           select: { fullName: true },
@@ -43,6 +47,13 @@ export class FundAllocationsService {
     });
 
     await this.logAudit(staffId, 'CREATE', allocation.id, allocation);
+
+    await this.notifications.notifyStaffAndAdmins([allocation.parent.assignedStaffId], {
+      message: `Fund allocated: ${allocation.amount} ETB for ${allocation.parent.fullName} (${allocation.purpose}).`,
+      type: NotificationType.FUND_REMINDER,
+      entityType: 'FundAllocation',
+      entityId: allocation.id,
+    });
 
     return allocation;
   }
@@ -92,6 +103,7 @@ export class FundAllocationsService {
             photoUrl: true,
             nationalId: true,
             phone: true,
+            assignedStaffId: true,
           },
         },
         allocatedBy: {
@@ -134,9 +146,28 @@ export class FundAllocationsService {
     const updated = await this.prisma.fundAllocation.update({
       where: { id },
       data,
+      include: {
+        parent: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'UPDATE', id, updated, existing);
+
+    if (
+      dto.status ||
+      dto.parentAcknowledged !== undefined ||
+      dto.receiptUrl
+    ) {
+      await this.notifications.notifyStaffAndAdmins(
+        [updated.parent.assignedStaffId],
+        {
+          message: `Fund status updated: ${updated.parent.fullName}'s ${updated.amount} ETB allocation is now ${updated.status}${updated.parentAcknowledged ? ' and acknowledged' : ''}.`,
+          type: NotificationType.FUND_REMINDER,
+          entityType: 'FundAllocation',
+          entityId: updated.id,
+        },
+      );
+    }
 
     return updated;
   }

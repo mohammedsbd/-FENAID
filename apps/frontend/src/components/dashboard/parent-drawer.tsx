@@ -5,6 +5,7 @@ import type { ChangeEvent, ReactNode } from 'react';
 import { Upload, X, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
@@ -222,10 +223,11 @@ export function ParentDrawer({
                     </div>
                   </FormField>
                   <FormField label="Date of Birth" error={errors.dateOfBirth}>
-                    <Input
-                      type="date"
+                    <CalendarDatePicker
                       value={form.dateOfBirth}
-                      onChange={(event) => updateField('dateOfBirth', event.target.value)}
+                      onChange={(value) => updateField('dateOfBirth', value)}
+                      minYear={1900}
+                      maxYear={new Date().getUTCFullYear()}
                     />
                   </FormField>
                   <FormField label="Gender" error={errors.gender}>

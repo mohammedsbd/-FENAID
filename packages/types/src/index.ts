@@ -1,4 +1,4 @@
 export interface HealthCheckResponse {
-  status: 'ok';
+  status: 'ok' | 'error';
   service: string;
 }

@@ -12,6 +12,8 @@ function date(value: string) {
 async function main() {
   const passwordHash = await bcrypt.hash(seedPassword, 12);
 
+  await prisma.session.deleteMany();
+  await prisma.passwordHistory.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.document.deleteMany();

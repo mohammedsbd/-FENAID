@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GoalType, MilestoneStatus, Prisma } from '@prisma/client';
+import { GoalType, MilestoneStatus, NotificationType, Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateGoalDto,
@@ -13,11 +14,14 @@ import {
 
 @Injectable()
 export class ProgressTrackingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // Progress Notes
   async createProgressNote(staffId: string, dto: CreateProgressNoteDto) {
-    return this.prisma.progressNote.create({
+    const note = await this.prisma.progressNote.create({
       data: {
         childId: dto.childId,
         staffId: staffId,
@@ -25,8 +29,20 @@ export class ProgressTrackingService {
       },
       include: {
         staff: { select: { fullName: true } },
+        child: { select: { fullName: true, assignedStaffId: true } },
       },
     });
+
+    await this.logAudit(staffId, 'CREATE', 'ProgressNote', note.id, note);
+
+    await this.notifications.notifyStaffAndAdmins([note.child.assignedStaffId], {
+      message: `Progress note added: ${note.child.fullName} has a new note from ${note.staff.fullName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: note.childId,
+    });
+
+    return note;
   }
 
   async findProgressNotesByChild(childId: string, query: ListProgressNotesDto) {
@@ -67,9 +83,20 @@ export class ProgressTrackingService {
         description: dto.description,
         status: dto.status ?? MilestoneStatus.NOT_STARTED,
       },
+      include: {
+        child: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'CREATE', 'Milestone', milestone.id, milestone);
+
+    await this.notifications.notifyStaffAndAdmins([milestone.child.assignedStaffId], {
+      message: `Milestone added: ${milestone.title} for ${milestone.child.fullName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: milestone.childId,
+    });
+
     return milestone;
   }
 
@@ -98,9 +125,20 @@ export class ProgressTrackingService {
         status: dto.status,
         description: dto.description,
       },
+      include: {
+        child: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'UPDATE', 'Milestone', id, updated, existing);
+
+    await this.notifications.notifyStaffAndAdmins([updated.child.assignedStaffId], {
+      message: `Milestone updated: ${updated.title} for ${updated.child.fullName} is now ${updated.status}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: updated.childId,
+    });
+
     return updated;
   }
 
@@ -114,9 +152,20 @@ export class ProgressTrackingService {
         description: dto.description,
         type: dto.type,
       },
+      include: {
+        child: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'CREATE', 'Goal', goal.id, goal);
+
+    await this.notifications.notifyStaffAndAdmins([goal.child.assignedStaffId], {
+      message: `Goal added: ${goal.title} for ${goal.child.fullName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: goal.childId,
+    });
+
     return goal;
   }
 
@@ -143,9 +192,20 @@ export class ProgressTrackingService {
         ...(dto.isAchieved && { achievedAt: new Date() }),
         ...(dto.isAchieved === false && { achievedAt: null }),
       },
+      include: {
+        child: { select: { fullName: true, assignedStaffId: true } },
+      },
     });
 
     await this.logAudit(staffId, 'UPDATE', 'Goal', id, updated, existing);
+
+    await this.notifications.notifyStaffAndAdmins([updated.child.assignedStaffId], {
+      message: `Goal updated: ${updated.title} for ${updated.child.fullName}${updated.achievedAt ? ' has been achieved' : ''}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: updated.childId,
+    });
+
     return updated;
   }
 

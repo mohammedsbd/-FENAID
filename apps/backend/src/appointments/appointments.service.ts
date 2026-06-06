@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppointmentStatus, Prisma } from '@prisma/client';
+import { AppointmentStatus, NotificationType, Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateAppointmentDto,
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateAppointmentDto) {
     const appointment = await this.prisma.appointment.create({
@@ -30,9 +34,27 @@ export class AppointmentsService {
         recurrenceRule: dto.recurrenceRule,
         status: dto.status ?? AppointmentStatus.SCHEDULED,
       },
+      include: {
+        child: { select: { fullName: true } },
+        parent: { select: { fullName: true } },
+      },
     });
 
     await this.logAudit(staffId, 'CREATE', 'Appointment', appointment.id, appointment);
+
+    const targetName =
+      appointment.child?.fullName ??
+      appointment.parent?.fullName ??
+      'beneficiary';
+
+    await this.notifications.createNotification({
+      staffId: appointment.staffId,
+      message: `Appointment scheduled: ${appointment.title} for ${targetName} on ${appointment.scheduledAt.toLocaleString()}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Appointment',
+      entityId: appointment.id,
+    });
+
     return appointment;
   }
 
@@ -135,9 +157,22 @@ export class AppointmentsService {
         durationMinutes: dto.durationMinutes,
         status: dto.status,
       },
+      include: {
+        child: { select: { fullName: true } },
+        parent: { select: { fullName: true } },
+      },
     });
 
     await this.logAudit(staffId, 'UPDATE', 'Appointment', id, updated, existing);
+
+    await this.notifications.createNotification({
+      staffId: updated.staffId,
+      message: `Appointment updated: ${updated.title} is now ${updated.status} and scheduled for ${updated.scheduledAt.toLocaleString()}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Appointment',
+      entityId: updated.id,
+    });
+
     return updated;
   }
 
@@ -150,7 +185,7 @@ export class AppointmentsService {
 
   // Attendance
   async logAttendance(staffId: string, appointmentId: string, dto: LogAttendanceDto) {
-    await this.findOne(appointmentId); // Ensure appointment exists
+    const appointment = await this.findOne(appointmentId);
 
     const records = await Promise.all(
       dto.records.map((record) =>
@@ -169,6 +204,14 @@ export class AppointmentsService {
     await this.logAudit(staffId, 'LOG_ATTENDANCE', 'Appointment', appointmentId, {
       count: records.length,
       recordIds: records.map((r) => r.id),
+    });
+
+    await this.notifications.createNotification({
+      staffId: appointment.staff.id,
+      message: `Attendance logged: ${records.length} attendance record${records.length === 1 ? '' : 's'} for ${appointment.title}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Appointment',
+      entityId: appointmentId,
     });
 
     return records;

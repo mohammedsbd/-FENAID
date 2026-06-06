@@ -7,9 +7,11 @@ import {
   Child,
   ChildStatus,
   DisabilityType,
+  NotificationType,
   Prisma,
   SeverityLevel,
 } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChildDto } from './dto/create-child.dto';
 import { ListChildrenDto } from './dto/list-children.dto';
@@ -24,7 +26,10 @@ type AuditScalar = string | number | boolean | null;
 
 @Injectable()
 export class ChildrenService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateChildDto) {
     await this.ensureParentExists(dto.parentId);
@@ -78,6 +83,13 @@ export class ChildrenService {
       action: 'CREATE',
       entityId: child.id,
       changes: this.diffChild(null, child),
+    });
+
+    await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
+      message: `New child registered: ${child.fullName} (${child.idTag}) is assigned to ${child.assignedStaff.fullName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: child.id,
     });
 
     const eligibility = await this.getSuggestedServices(
@@ -341,6 +353,13 @@ export class ChildrenService {
       changes: this.diffChild(existing, child),
     });
 
+    await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
+      message: this.childUpdateMessage(existing, child),
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: child.id,
+    });
+
     return child;
   }
 
@@ -363,7 +382,30 @@ export class ChildrenService {
       changes: this.diffChild(existing, child),
     });
 
+    await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
+      message: `Child status changed: ${existing.fullName} is now ${newStatus}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'Child',
+      entityId: child.id,
+    });
+
     return child;
+  }
+
+  private childUpdateMessage(existing: ChildAuditSnapshot, child: Child) {
+    if (existing.assignedStaffId !== child.assignedStaffId) {
+      return `Child reassigned: ${child.fullName} (${child.idTag}) has a new assigned staff member.`;
+    }
+
+    if (existing.status !== child.status) {
+      return `Child status changed: ${child.fullName} (${child.idTag}) is now ${child.status}.`;
+    }
+
+    if (existing.severityLevel !== child.severityLevel) {
+      return `Child severity updated: ${child.fullName} (${child.idTag}) is now ${child.severityLevel}.`;
+    }
+
+    return `Child profile updated: ${child.fullName} (${child.idTag}).`;
   }
 
   private async ensureParentExists(parentId: string) {

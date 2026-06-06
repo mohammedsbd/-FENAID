@@ -1,0 +1,343 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  addEthiopianMonths,
+  addGregorianMonths,
+  CalendarSystem,
+  daysInEthiopianMonth,
+  daysInGregorianMonth,
+  ethiopianMonths,
+  ethiopianToGregorian,
+  formatCalendarDate,
+  gregorianMonths,
+  gregorianToEthiopian,
+  parseIsoDate,
+  toIsoDateInputValue,
+} from '@/lib/calendar';
+import { cn } from '@/lib/utils';
+import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+
+type CalendarDatePickerProps = {
+  value: string;
+  onChange: (value: string) => void;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  minYear?: number;
+  maxYear?: number;
+  className?: string;
+};
+
+export function CalendarDatePicker({
+  value,
+  onChange,
+  label,
+  placeholder = 'Select date',
+  disabled,
+  minYear = 1900,
+  maxYear = 2100,
+  className,
+}: CalendarDatePickerProps) {
+  const { calendarSystem } = useCalendarSettings();
+  const [open, setOpen] = useState(false);
+  const [viewIso, setViewIso] = useState(value || todayIso());
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  const displayValue = value
+    ? formatCalendarDate(value, calendarSystem)
+    : placeholder;
+
+  const grid = useMemo(
+    () => buildMonthGrid(viewIso, calendarSystem),
+    [calendarSystem, viewIso],
+  );
+
+  const selectedIso = value ? toIsoDateInputValue(value) : '';
+
+  useEffect(() => {
+    if (value) {
+      setViewIso(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} className={cn('relative', className)}>
+      {label && <span className="mb-2 block text-sm font-medium">{label}</span>}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          !value && 'text-muted-foreground',
+        )}
+      >
+        <span className="truncate">{displayValue}</span>
+        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-12 z-[70] w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white p-3 shadow-lg">
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                setViewIso(
+                  calendarSystem === 'ETHIOPIAN'
+                    ? addEthiopianMonths(viewIso, -1)
+                    : addGregorianMonths(viewIso, -1),
+                )
+              }
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0 text-center">
+              <p className="text-sm font-semibold">{grid.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {calendarSystem === 'ETHIOPIAN' ? 'Ethiopian calendar' : 'Gregorian calendar'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                setViewIso(
+                  calendarSystem === 'ETHIOPIAN'
+                    ? addEthiopianMonths(viewIso, 1)
+                    : addGregorianMonths(viewIso, 1),
+                )
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Input
+              inputMode="numeric"
+              value={grid.year}
+              onChange={(event) => {
+                const nextYear = clampYear(Number(event.target.value), minYear, maxYear);
+                setViewIso(setCalendarYearMonth(viewIso, calendarSystem, nextYear, grid.month));
+              }}
+              className="h-9"
+            />
+            <select
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={grid.month}
+              onChange={(event) =>
+                setViewIso(
+                  setCalendarYearMonth(
+                    viewIso,
+                    calendarSystem,
+                    grid.year,
+                    Number(event.target.value),
+                  ),
+                )
+              }
+            >
+              {grid.months.map((monthName, index) => (
+                <option key={monthName} value={index + 1}>
+                  {monthName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+              <div key={`${day}-${index}`} className="h-6 leading-6">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {grid.days.map((day, index) =>
+              day ? (
+                <button
+                  type="button"
+                  key={day.iso}
+                  onClick={() => {
+                    onChange(day.iso);
+                    setViewIso(day.iso);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    'h-8 rounded-md text-sm transition hover:bg-muted',
+                    day.iso === selectedIso && 'bg-primary text-primary-foreground hover:bg-primary',
+                    day.iso === todayIso() && day.iso !== selectedIso && 'border border-primary text-primary',
+                  )}
+                >
+                  {day.label}
+                </button>
+              ) : (
+                <span key={`empty-${index}`} className="h-8" />
+              ),
+            )}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t pt-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                onChange('');
+                setOpen(false);
+              }}
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                const today = todayIso();
+                onChange(today);
+                setViewIso(today);
+                setOpen(false);
+              }}
+            >
+              Today
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function buildMonthGrid(viewIso: string, calendarSystem: CalendarSystem) {
+  if (calendarSystem === 'ETHIOPIAN') {
+    const ethiopian = gregorianToEthiopian(parseIsoDate(viewIso));
+    const daysInMonth = daysInEthiopianMonth(ethiopian.year, ethiopian.month);
+    const firstIso = toIsoDateInputValue(
+      ethiopianToGregorian({
+        year: ethiopian.year,
+        month: ethiopian.month,
+        day: 1,
+      }),
+    );
+    const firstWeekday = parseIsoDate(firstIso).getUTCDay();
+    const days = [
+      ...Array<null>(firstWeekday).fill(null),
+      ...Array.from({ length: daysInMonth }, (_, index) => {
+        const day = index + 1;
+        return {
+          label: String(day),
+          iso: toIsoDateInputValue(
+            ethiopianToGregorian({
+              year: ethiopian.year,
+              month: ethiopian.month,
+              day,
+            }),
+          ),
+        };
+      }),
+    ];
+
+    return {
+      year: ethiopian.year,
+      month: ethiopian.month,
+      months: ethiopianMonths,
+      title: `${ethiopianMonths[ethiopian.month - 1]} ${ethiopian.year} E.C.`,
+      days,
+    };
+  }
+
+  const viewDate = parseIsoDate(viewIso);
+  const year = viewDate.getUTCFullYear();
+  const month = viewDate.getUTCMonth() + 1;
+  const daysInMonth = daysInGregorianMonth(year, month);
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const days = [
+    ...Array<null>(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, index) => {
+      const day = index + 1;
+      return {
+        label: String(day),
+        iso: toIsoDateInputValue(new Date(Date.UTC(year, month - 1, day))),
+      };
+    }),
+  ];
+
+  return {
+    year,
+    month,
+    months: gregorianMonths,
+    title: `${gregorianMonths[month - 1]} ${year}`,
+    days,
+  };
+}
+
+function setCalendarYearMonth(
+  currentIso: string,
+  calendarSystem: CalendarSystem,
+  year: number,
+  month: number,
+) {
+  if (calendarSystem === 'ETHIOPIAN') {
+    const current = gregorianToEthiopian(parseIsoDate(currentIso));
+    return toIsoDateInputValue(
+      ethiopianToGregorian({
+        year,
+        month,
+        day: Math.min(current.day, daysInEthiopianMonth(year, month)),
+      }),
+    );
+  }
+
+  const current = parseIsoDate(currentIso);
+  const day = Math.min(current.getUTCDate(), daysInGregorianMonth(year, month));
+  return toIsoDateInputValue(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function todayIso() {
+  return toIsoDateInputValue(new Date());
+}
+
+function clampYear(year: number, minYear: number, maxYear: number) {
+  if (!Number.isFinite(year)) return minYear;
+  return Math.min(maxYear, Math.max(minYear, year));
+}

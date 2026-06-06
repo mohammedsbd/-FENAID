@@ -16,11 +16,14 @@ import { DashboardReportsModule } from './dashboard-reports/dashboard-reports.mo
 import { DocumentsModule } from './documents/documents.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AccountsModule } from './accounts/accounts.module';
+import { SearchModule } from './search/search.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -36,6 +39,8 @@ import { AccountsModule } from './accounts/accounts.module';
     DocumentsModule,
     NotificationsModule,
     AccountsModule,
+    SearchModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -53,6 +53,16 @@ import {
 } from '@/lib/export';
 import { useToast } from '@/hooks/use-toast';
 import { ChildRow, StaffOption } from '@/types/children';
+import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+import {
+  CalendarSystem,
+  ethiopianMonths,
+  formatCalendarDate,
+  gregorianMonths,
+  gregorianToEthiopian,
+  parseIsoDate,
+  toIsoDateInputValue,
+} from '@/lib/calendar';
 
 // Types
 type ChildProfile = {
@@ -107,6 +117,7 @@ type Tab = (typeof tabs)[number];
 export default function ChildProfilePage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { calendarSystem } = useCalendarSettings();
   const [child, setChild] = useState<ChildProfile | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [loading, setLoading] = useState(true);
@@ -182,7 +193,7 @@ export default function ChildProfilePage() {
         fields: [
           ['Full Name', child.fullName],
           ['Gender', child.gender],
-          ['Date of Birth', formatDate(child.dateOfBirth)],
+          ['Date of Birth', formatDate(child.dateOfBirth, calendarSystem)],
           ['Age', `${calculateAge(child.dateOfBirth)} years`],
           ['Communication', formatEnum(child.communicationAbility)],
           ['Status', formatEnum(child.status)],
@@ -202,7 +213,7 @@ export default function ChildProfilePage() {
         fields: [
           ['Parent', child.parent.fullName],
           ['Case Worker', child.assignedStaff?.fullName || 'Unassigned'],
-          ['Registered Date', formatDate(child.createdAt)],
+          ['Registered Date', formatDate(child.createdAt, calendarSystem)],
         ] as [string, string][],
       },
     ];
@@ -361,12 +372,12 @@ export default function ChildProfilePage() {
 
       {/* Tab Contents */}
       <div className="mt-6">
-        {activeTab === 'Profile' && <ProfileTab child={child} />}
-        {activeTab === 'Progress' && <ProgressTab child={child} />}
-        {activeTab === 'Services' && <ServicesTab child={child} />}
-        {activeTab === 'Appointments' && <AppointmentsTab child={child} />}
-        {activeTab === 'Fund & Finance' && <FinanceTab child={child} />}
-        {activeTab === 'Documents' && <DocumentsTab child={child} />}
+        {activeTab === 'Profile' && <ProfileTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Progress' && <ProgressTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Services' && <ServicesTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Appointments' && <AppointmentsTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Fund & Finance' && <FinanceTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Documents' && <DocumentsTab child={child} calendarSystem={calendarSystem} />}
       </div>
 
       <ChildDrawer
@@ -404,7 +415,13 @@ export default function ChildProfilePage() {
 }
 
 // Sub-components for Tabs
-function ProfileTab({ child }: { child: ChildProfile }) {
+function ProfileTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   const groups = [
     {
       title: 'Personal Information',
@@ -412,7 +429,7 @@ function ProfileTab({ child }: { child: ChildProfile }) {
       fields: [
         ['Full Name', child.fullName],
         ['Gender', child.gender],
-        ['Date of Birth', formatDate(child.dateOfBirth)],
+        ['Date of Birth', formatDate(child.dateOfBirth, calendarSystem)],
         ['Age', `${calculateAge(child.dateOfBirth)} years`],
         ['Communication', formatEnum(child.communicationAbility)],
         ['Status', formatEnum(child.status)],
@@ -474,7 +491,13 @@ function ProfileTab({ child }: { child: ChildProfile }) {
   );
 }
 
-function ProgressTab({ child }: { child: ChildProfile }) {
+function ProgressTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Timeline of Notes */}
@@ -498,7 +521,7 @@ function ProgressTab({ child }: { child: ChildProfile }) {
                     <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-white" />
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-500 uppercase">{formatDate(note.createdAt)}</span>
+                        <span className="text-xs font-bold text-slate-500 uppercase">{formatDate(note.createdAt, calendarSystem)}</span>
                         <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 rounded text-slate-600">{note.staff?.fullName}</span>
                       </div>
                       <p className="text-sm leading-relaxed bg-slate-50/50 p-3 rounded-md border">{note.note}</p>
@@ -565,7 +588,7 @@ function ProgressTab({ child }: { child: ChildProfile }) {
                      <Badge className={goal.type === 'SHORT_TERM' ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}>
                        {formatEnum(goal.type)}
                      </Badge>
-                     <span className="text-[10px] text-muted-foreground">{formatDate(goal.createdAt)}</span>
+                     <span className="text-[10px] text-muted-foreground">{formatDate(goal.createdAt, calendarSystem)}</span>
                    </div>
                    <h4 className="text-sm font-bold">{goal.title}</h4>
                    <p className="text-xs text-muted-foreground line-clamp-2">{goal.description}</p>
@@ -581,7 +604,13 @@ function ProgressTab({ child }: { child: ChildProfile }) {
   );
 }
 
-function ServicesTab({ child }: { child: ChildProfile }) {
+function ServicesTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -603,8 +632,8 @@ function ServicesTab({ child }: { child: ChildProfile }) {
                   <TableCell className="font-semibold">{sa.service.name}</TableCell>
                   <TableCell>{sa.assignedStaff?.fullName || 'N/A'}</TableCell>
                   <TableCell>{formatEnum(sa.frequency)}</TableCell>
-                  <TableCell>{formatDate(sa.startDate)}</TableCell>
-                  <TableCell>{sa.endDate ? formatDate(sa.endDate) : 'Ongoing'}</TableCell>
+                  <TableCell>{formatDate(sa.startDate, calendarSystem)}</TableCell>
+                  <TableCell>{sa.endDate ? formatDate(sa.endDate, calendarSystem) : 'Ongoing'}</TableCell>
                   <TableCell><GenericStatusBadge status={sa.status} /></TableCell>
                 </TableRow>
               ))
@@ -618,7 +647,13 @@ function ServicesTab({ child }: { child: ChildProfile }) {
   );
 }
 
-function AppointmentsTab({ child }: { child: ChildProfile }) {
+function AppointmentsTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -631,21 +666,27 @@ function AppointmentsTab({ child }: { child: ChildProfile }) {
       <CardContent>
         <div className="space-y-4">
           {child.appointments.length ? (
-            child.appointments.map((apt) => (
+            child.appointments.map((apt) => {
+              const dateChip = appointmentDateChip(apt.scheduledAt, calendarSystem);
+
+              return (
               <div key={apt.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 flex flex-col items-center justify-center bg-white border rounded text-center">
-                    <span className="text-[10px] font-bold text-primary uppercase">{format(new Date(apt.scheduledAt), 'MMM')}</span>
-                    <span className="text-lg font-bold leading-none">{format(new Date(apt.scheduledAt), 'dd')}</span>
+                    <span className="text-[10px] font-bold text-primary uppercase">{dateChip.month}</span>
+                    <span className="text-lg font-bold leading-none">{dateChip.day}</span>
                   </div>
                   <div>
                     <h4 className="text-sm font-bold">{apt.title}</h4>
-                    <p className="text-xs text-muted-foreground">{format(new Date(apt.scheduledAt), 'hh:mm a')} / {apt.staff?.fullName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(apt.scheduledAt, calendarSystem)} at {format(new Date(apt.scheduledAt), 'hh:mm a')} / {apt.staff?.fullName}
+                    </p>
                   </div>
                 </div>
                 <GenericStatusBadge status={apt.status} />
               </div>
-            ))
+              );
+            })
           ) : (
             <EmptyState message="No upcoming appointments." />
           )}
@@ -655,7 +696,13 @@ function AppointmentsTab({ child }: { child: ChildProfile }) {
   );
 }
 
-function FinanceTab({ child }: { child: ChildProfile }) {
+function FinanceTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   const allocations = child.parent.fundAllocations || [];
 
   return (
@@ -685,7 +732,7 @@ function FinanceTab({ child }: { child: ChildProfile }) {
                     )}
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">Allocated on {formatDate(fund.allocationDate)}</p>
+                <p className="mt-3 text-xs text-muted-foreground">Allocated on {formatDate(fund.allocationDate, calendarSystem)}</p>
               </div>
             ))}
           </div>
@@ -697,7 +744,13 @@ function FinanceTab({ child }: { child: ChildProfile }) {
   );
 }
 
-function DocumentsTab({ child }: { child: ChildProfile }) {
+function DocumentsTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -718,7 +771,7 @@ function DocumentsTab({ child }: { child: ChildProfile }) {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold truncate">{doc.name}</h4>
-                  <p className="text-xs text-muted-foreground">Added {formatDate(doc.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground">Added {formatDate(doc.createdAt, calendarSystem)}</p>
                 </div>
                 <Button size="sm" variant="outline" className="w-full" asChild>
                   <Link href={doc.fileUrl} target="_blank">Open Document <ExternalLink className="h-3 w-3 ml-2" /></Link>
@@ -781,7 +834,7 @@ function profileToChildRow(child: ChildProfile): ChildRow {
     idTag: child.idTag,
     fullName: child.fullName,
     photoUrl: child.photoUrl,
-    dateOfBirth: child.dateOfBirth,
+    dateOfBirth: toIsoDateInputValue(child.dateOfBirth),
     disabilityType: child.disabilityType as ChildRow['disabilityType'],
     disabilityCategory: child.disabilityCategory,
     severityLevel: child.severityLevel as ChildRow['severityLevel'],
@@ -812,6 +865,30 @@ function calculateAge(dob: string) {
   return age;
 }
 
-function formatDate(value: string) { return format(new Date(value), 'MMM dd, yyyy'); }
+function formatDate(value: string, calendarSystem: CalendarSystem) {
+  return formatCalendarDate(value, calendarSystem) || 'N/A';
+}
+
+function appointmentDateChip(value: string, calendarSystem: CalendarSystem) {
+  if (calendarSystem === 'ETHIOPIAN') {
+    const iso = toIsoDateInputValue(value);
+    if (!iso) return { month: '--', day: '--' };
+
+    const date = gregorianToEthiopian(parseIsoDate(iso));
+    return {
+      month: ethiopianMonths[date.month - 1].slice(0, 3),
+      day: String(date.day).padStart(2, '0'),
+    };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { month: '--', day: '--' };
+
+  return {
+    month: gregorianMonths[date.getUTCMonth()].slice(0, 3),
+    day: String(date.getUTCDate()).padStart(2, '0'),
+  };
+}
+
 function initials(name: string) { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); }
 function getErrorMessage(err: any, fallback: string) { return err.response?.data?.message || fallback; }

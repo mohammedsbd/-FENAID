@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ServiceTargetType } from '@prisma/client';
+import { NotificationType, Prisma, ServiceTargetType } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateServiceAssignmentDto,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class ServiceAssignmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(staffId: string, dto: CreateServiceAssignmentDto) {
     // Validate targetType consistency
@@ -62,6 +66,19 @@ export class ServiceAssignmentsService {
     });
 
     await this.logAudit(staffId, 'CREATE', assignment.id, assignment);
+
+    const targetName =
+      assignment.child?.fullName ??
+      assignment.parent?.fullName ??
+      assignment.targetType.toLowerCase();
+
+    await this.notifications.notifyStaffAndAdmins([assignment.assignedStaffId], {
+      message: `Service assigned: ${assignment.service.name} for ${targetName}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'ServiceAssignment',
+      entityId: assignment.id,
+    });
+
     return assignment;
   }
 
@@ -138,6 +155,14 @@ export class ServiceAssignmentsService {
     });
 
     await this.logAudit(staffId, 'UPDATE', id, updated, existing);
+
+    await this.notifications.notifyStaffAndAdmins([existing.assignedStaff.id], {
+      message: `Service assignment updated: ${existing.service.name} is now ${updated.status}.`,
+      type: NotificationType.GENERAL,
+      entityType: 'ServiceAssignment',
+      entityId: updated.id,
+    });
+
     return updated;
   }
 
