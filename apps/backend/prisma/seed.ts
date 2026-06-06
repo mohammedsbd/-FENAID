@@ -13,6 +13,8 @@ async function main() {
   const passwordHash = await bcrypt.hash(seedPassword, 12);
 
   console.log('Clearing existing data...');
+  await prisma.dataExportLog.deleteMany();
+  await prisma.savedQuery.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.document.deleteMany();
@@ -84,13 +86,15 @@ async function main() {
     data: [
       {
         name: 'Financial Aid',
-        description: 'Direct support for essential household and disability-related costs.',
+        description:
+          'Direct support for essential household and disability-related costs.',
         category: 'Economic Support',
         targetType: 'PARENT',
       },
       {
         name: 'Awareness Workshop',
-        description: 'Group education sessions for caregivers and community members.',
+        description:
+          'Group education sessions for caregivers and community members.',
         category: 'Training',
         targetType: 'PARENT',
       },
@@ -108,7 +112,8 @@ async function main() {
       },
       {
         name: 'Referral Support',
-        description: 'Coordination with hospitals, schools, and partner organizations.',
+        description:
+          'Coordination with hospitals, schools, and partner organizations.',
         category: 'Case Management',
         targetType: 'PARENT',
       },
@@ -132,19 +137,22 @@ async function main() {
       },
       {
         name: 'Behavioral Therapy',
-        description: 'Support for emotional regulation, routines, and social skills.',
+        description:
+          'Support for emotional regulation, routines, and social skills.',
         category: 'Therapy',
         targetType: 'CHILD',
       },
       {
         name: 'Assistive Device Provision',
-        description: 'Assessment and provision of mobility or communication devices.',
+        description:
+          'Assessment and provision of mobility or communication devices.',
         category: 'Equipment',
         targetType: 'CHILD',
       },
       {
         name: 'Recreational Program',
-        description: 'Inclusive play, art, sport, and peer interaction sessions.',
+        description:
+          'Inclusive play, art, sport, and peer interaction sessions.',
         category: 'Social Inclusion',
         targetType: 'CHILD',
       },
@@ -241,7 +249,8 @@ async function main() {
         disabilityType: 'PHYSICAL',
         disabilityCategory: 'mobility impairment',
         severityLevel: 'MODERATE',
-        medicalHistory: 'Congenital lower-limb weakness; regular follow-up recommended.',
+        medicalHistory:
+          'Congenital lower-limb weakness; regular follow-up recommended.',
         medications: null,
         schoolEnrollmentStatus: 'ENROLLED',
         communicationAbility: 'VERBAL',
@@ -277,7 +286,8 @@ async function main() {
         disabilityType: 'MULTIPLE',
         disabilityCategory: 'cerebral palsy with speech delay',
         severityLevel: 'SEVERE',
-        medicalHistory: 'History of seizures; neurology follow-up every six months.',
+        medicalHistory:
+          'History of seizures; neurology follow-up every six months.',
         medications: 'Sodium valproate as prescribed by physician.',
         schoolEnrollmentStatus: 'ENROLLED',
         communicationAbility: 'NON_VERBAL',
@@ -295,7 +305,8 @@ async function main() {
         disabilityType: 'INTELLECTUAL',
         disabilityCategory: 'autism',
         severityLevel: 'MODERATE',
-        medicalHistory: 'Sensory sensitivities and difficulty with transitions.',
+        medicalHistory:
+          'Sensory sensitivities and difficulty with transitions.',
         medications: null,
         schoolEnrollmentStatus: 'ENROLLED',
         communicationAbility: 'VERBAL',
@@ -331,7 +342,8 @@ async function main() {
         disabilityType: 'INTELLECTUAL',
         disabilityCategory: 'speech delay',
         severityLevel: 'MILD',
-        medicalHistory: 'No major medical history; referred for communication support.',
+        medicalHistory:
+          'No major medical history; referred for communication support.',
         medications: null,
         schoolEnrollmentStatus: 'NOT_ENROLLED',
         communicationAbility: 'ASSISTED',
@@ -371,7 +383,8 @@ async function main() {
         {
           childId: child.id,
           title: 'Complete baseline assessment',
-          description: 'Initial functional and family needs assessment completed.',
+          description:
+            'Initial functional and family needs assessment completed.',
           status: milestoneStatuses[(index + 2) % milestoneStatuses.length],
         },
         {
@@ -383,7 +396,8 @@ async function main() {
         {
           childId: child.id,
           title: 'Demonstrate home practice skill',
-          description: 'Caregiver reports consistent practice of assigned activities.',
+          description:
+            'Caregiver reports consistent practice of assigned activities.',
           status: milestoneStatuses[index % milestoneStatuses.length],
         },
       ],
@@ -394,7 +408,8 @@ async function main() {
         childId: child.id,
         staffId: child.assignedStaffId,
         title: `Improve ${child.communicationAbility === 'VERBAL' ? 'daily independence' : 'functional communication'}`,
-        description: 'Track progress over the next care-plan cycle with family participation.',
+        description:
+          'Track progress over the next care-plan cycle with family participation.',
         type: index % 2 === 0 ? 'SHORT_TERM' : 'LONG_TERM',
         achievedAt: index === 0 ? date('2026-05-20') : null,
       },
@@ -413,7 +428,8 @@ async function main() {
         receiptUrl: 'https://cdn.fikir.org/receipts/fa-0001.pdf',
         parentAcknowledged: true,
         acknowledgedAt: date('2026-05-12'),
-        notes: 'Mobility support equipment purchased and confirmed by caregiver.',
+        notes:
+          'Mobility support equipment purchased and confirmed by caregiver.',
       },
       {
         parentId: rahel.id,
@@ -551,7 +567,8 @@ async function main() {
     data: [
       {
         staffId: caseworker1.id,
-        message: 'Review pending school fee disbursement appointment for Rahel Tesfaye.',
+        message:
+          'Review pending school fee disbursement appointment for Rahel Tesfaye.',
         type: 'FUND_REMINDER',
         entityType: 'Appointment',
         entityId: fundAppointment.id,
@@ -581,11 +598,153 @@ async function main() {
     },
   });
 
+  const savedQueries = [
+    {
+      name: 'Active Children — Full Roster',
+      description: 'All currently active children with key profile details',
+      filters: { child: { status: ['ACTIVE'] } },
+      columns: [
+        'fullName',
+        'age',
+        'gender',
+        'disabilityType',
+        'severityLevel',
+        'subcity',
+        'assignedCaseWorker',
+      ],
+      dataSubject: 'CHILD',
+      isOrgWide: true,
+    },
+    {
+      name: 'Seed Funding Recipients (Disbursed & Acknowledged)',
+      description: 'Parents who received and acknowledged fund disbursements',
+      filters: {
+        financial: {
+          allocationStatus: ['DISBURSED'],
+          acknowledgementStatus: 'ACKNOWLEDGED',
+        },
+      },
+      columns: [
+        'parentFullName',
+        'subcity',
+        'financialBracket',
+        'fundAmount',
+        'fundPurpose',
+        'disbursedDate',
+      ],
+      dataSubject: 'PARENT',
+      isOrgWide: true,
+    },
+    {
+      name: 'Workshop Attendance — Current Year',
+      description:
+        'Parents who attended workshops or training sessions this year',
+      filters: {
+        training: {
+          attendedAfter: '2026-01-01',
+          attendanceStatus: ['PRESENT'],
+        },
+      },
+      columns: [
+        'parentFullName',
+        'phone',
+        'subcity',
+        'workshopName',
+        'attendanceDate',
+      ],
+      dataSubject: 'PARENT',
+      isOrgWide: true,
+    },
+    {
+      name: 'Children With No Progress Note (30 Days)',
+      description:
+        'Active children whose progress has not been logged in the last 30 days',
+      filters: {
+        progress: { noNoteInLastDays: 30 },
+        child: { status: ['ACTIVE'] },
+      },
+      columns: [
+        'fullName',
+        'age',
+        'disabilityType',
+        'severityLevel',
+        'assignedCaseWorker',
+        'lastProgressNoteDate',
+      ],
+      dataSubject: 'CHILD',
+      isOrgWide: true,
+    },
+    {
+      name: 'Unserved Active Members',
+      description:
+        'Active children with no service assignment — potential gap in coverage',
+      filters: {
+        services: { hasNoService: true },
+        child: { status: ['ACTIVE'] },
+      },
+      columns: [
+        'fullName',
+        'age',
+        'disabilityType',
+        'severityLevel',
+        'parentName',
+        'subcity',
+        'registrationDate',
+      ],
+      dataSubject: 'CHILD',
+      isOrgWide: true,
+    },
+    {
+      name: 'Members by Sub-city — Kirkos',
+      description: 'All parent-child pairs located in Kirkos sub-city',
+      filters: { location: { subcities: ['Kirkos'] } },
+      columns: [
+        'childFullName',
+        'age',
+        'disabilityType',
+        'parentFullName',
+        'parentPhone',
+        'financialBracket',
+      ],
+      dataSubject: 'PARENT_CHILD_PAIR',
+      isOrgWide: true,
+    },
+    {
+      name: 'Severe Disability — All Active',
+      description:
+        'All active children with severe disability level across all types',
+      filters: {
+        child: { severityLevel: ['SEVERE'], status: ['ACTIVE'] },
+      },
+      columns: [
+        'fullName',
+        'age',
+        'disabilityType',
+        'disabilityCategory',
+        'assignedCaseWorker',
+      ],
+      dataSubject: 'CHILD',
+      isOrgWide: true,
+    },
+  ];
+
+  for (const query of savedQueries) {
+    await prisma.savedQuery.create({
+      data: {
+        ...query,
+        createdById: admin1.id,
+      },
+    });
+  }
+
   console.log('Seed completed for Fikir system.');
-  console.log(`Staff: ${[admin1, admin2, caseworker1, caseworker2, viewer].length}`);
+  console.log(
+    `Staff: ${[admin1, admin2, caseworker1, caseworker2, viewer].length}`,
+  );
   console.log(`Services: ${services.length}`);
   console.log(`Parents: ${parents.length}`);
   console.log(`Children: ${children.length}`);
+  console.log(`Saved queries: ${savedQueries.length}`);
 }
 
 main()

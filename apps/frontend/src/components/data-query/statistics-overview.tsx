@@ -1,0 +1,291 @@
+'use client';
+
+import {
+  Baby,
+  HandCoins,
+  Users,
+  GraduationCap,
+} from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import api from '@/lib/api';
+import { exportToPDF } from '@/lib/export';
+import { t } from '@/lib/i18n';
+
+const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6'];
+
+export function StatisticsOverview() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .get('/data-query/statistics')
+      .then((res) => setData(res.data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleExportPdf = async () => {
+    const res = await api.get('/data-query/statistics/export');
+    const stats = res.data;
+    const body = `
+      <h2>Key Metrics</h2>
+      <ul>
+        <li>Active Children: ${stats.totalActiveChildren}</li>
+        <li>Active Parents: ${stats.totalActiveParents}</li>
+        <li>Funds Disbursed This Year: ETB ${Number(stats.fundsDisbursedThisYear).toLocaleString()}</li>
+        <li>Workshop Attendance Rate: ${stats.workshopAttendanceRate}%</li>
+        <li>Milestone Achievement Rate: ${stats.milestoneAchievementRate}%</li>
+      </ul>
+    `;
+    exportToPDF('Organizational Snapshot', body);
+  };
+
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-28" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const genderChildren = [
+    { name: 'Male', value: data.genderBreakdownChildren?.male ?? 0 },
+    { name: 'Female', value: data.genderBreakdownChildren?.female ?? 0 },
+  ];
+  const genderParents = [
+    { name: 'Male', value: data.genderBreakdownParents?.male ?? 0 },
+    { name: 'Female', value: data.genderBreakdownParents?.female ?? 0 },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Active Children</CardTitle>
+            <Baby className="h-4 w-4 text-blue-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.totalActiveChildren}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Active Parents</CardTitle>
+            <Users className="h-4 w-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.totalActiveParents}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Funds Disbursed (YTD)</CardTitle>
+            <HandCoins className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ETB {Number(data.fundsDisbursedThisYear).toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Workshop Attendance</CardTitle>
+            <GraduationCap className="h-4 w-4 text-violet-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.workshopAttendanceRate}%</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Children by Disability Type</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[240px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.childrenByDisabilityType}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="type" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#1e3a5f" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Children by Severity</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[240px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={data.childrenBySeverity} dataKey="count" nameKey="level" outerRadius={80}>
+                  {data.childrenBySeverity.map((_: unknown, i: number) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Children by Age Group</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[240px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.childrenByAgeGroup}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="group" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Members by Sub-city (Top 10)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.membersBySubcity} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="subcity" width={100} tick={{ fontSize: 9 }} />
+                <Tooltip />
+                <Bar dataKey="childCount" fill="#1e3a5f" name="Children" />
+                <Bar dataKey="parentCount" fill="#f59e0b" name="Parents" />
+                <Legend />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">New Registrations (12 months)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.newRegistrationsPerMonth}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 9 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="children" stroke="#1e3a5f" name="Children" />
+                <Line type="monotone" dataKey="parents" stroke="#f59e0b" name="Parents" />
+                <Legend />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Gender Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-2">
+            <div className="h-[140px]">
+              <p className="mb-1 text-center text-xs text-muted-foreground">Children</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={genderChildren} dataKey="value" nameKey="name" innerRadius={30} outerRadius={50}>
+                    {genderChildren.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="h-[140px]">
+              <p className="mb-1 text-center text-xs text-muted-foreground">Parents</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={genderParents} dataKey="value" nameKey="name" innerRadius={30} outerRadius={50}>
+                    {genderParents.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Services Delivered</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-around py-8">
+            <div className="text-center">
+              <p className="text-3xl font-bold">{data.servicesDeliveredThisYear}</p>
+              <p className="text-xs text-muted-foreground">This year</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-muted-foreground">
+                {data.servicesDeliveredLastYear}
+              </p>
+              <p className="text-xs text-muted-foreground">Last year</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Milestone Achievement</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-6">
+            <div
+              className="flex h-24 w-24 items-center justify-center rounded-full border-8 border-primary/20 text-xl font-bold text-primary"
+              style={{
+                borderTopColor: '#1e3a5f',
+                transform: `rotate(${(data.milestoneAchievementRate / 100) * 360}deg)`,
+              }}
+            >
+              {data.milestoneAchievementRate}%
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={handleExportPdf}>
+          {t('dataQuery.exportSnapshot', 'Export Organizational Snapshot as PDF')}
+        </Button>
+      </div>
+    </div>
+  );
+}

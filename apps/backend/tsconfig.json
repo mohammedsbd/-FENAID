@@ -5,11 +5,11 @@
     "moduleResolution": "Node",
     "outDir": "dist",
     "baseUrl": ".",
+    "paths": {},
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "incremental": true,
-    "types": ["node"],
-    "paths": {}
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"]
 }

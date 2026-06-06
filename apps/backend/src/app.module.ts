@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { SearchModule } from './search/search.module';
 import { SettingsModule } from './settings/settings.module';
+import { DataQueryModule } from './data-query/data-query.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { SettingsModule } from './settings/settings.module';
     AccountsModule,
     SearchModule,
     SettingsModule,
+    DataQueryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

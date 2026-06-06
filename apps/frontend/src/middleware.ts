@@ -16,6 +16,20 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  if (pathname.startsWith('/data-query')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    if (user?.role === 'CASE_WORKER') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    if (user?.mustChangePassword && pathname !== '/change-password') {
+      return NextResponse.redirect(new URL('/change-password', request.url));
+    }
+  }
+
   // Protect dashboard routes
   if (pathname.startsWith('/dashboard')) {
     if (!token) {

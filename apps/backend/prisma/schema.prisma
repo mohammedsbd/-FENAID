@@ -196,6 +196,7 @@ model Staff {
   photoUrl           String?
   role               StaffRole
   isActive           Boolean   @default(true)
+  canExportIdentified Boolean  @default(false)
   mustChangePassword Boolean   @default(true)
   deletedAt          DateTime?
   lastLoginAt        DateTime?
@@ -217,6 +218,8 @@ model Staff {
   auditLogs                AuditLog[]
   sessions                 Session[]
   passwordHistories        PasswordHistory[]
+  savedQueries             SavedQuery[]      @relation("SavedQueryCreator")
+  dataExportLogs           DataExportLog[]   @relation("DataExportLogStaff")
 }
 
 model Parent {
@@ -584,4 +587,45 @@ model RolePermission {
   @@unique([role, module])
   @@index([role])
   @@index([module])
+}
+
+model SavedQuery {
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  createdById       String
+  createdBy         Staff     @relation("SavedQueryCreator", fields: [createdById], references: [id])
+  isOrgWide         Boolean   @default(false)
+  filters           Json
+  columns           Json
+  dataSubject       String
+  sortBy            String?
+  sortDir           String?
+  lastRunAt         DateTime?
+  lastRunCount      Int?
+  isScheduled       Boolean   @default(false)
+  scheduleFrequency String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([createdById])
+  @@index([isOrgWide])
+}
+
+model DataExportLog {
+  id           String    @id @default(cuid())
+  staffId      String
+  staff        Staff     @relation("DataExportLogStaff", fields: [staffId], references: [id])
+  savedQueryId String?
+  queryFilters Json
+  queryColumns Json
+  dataSubject  String
+  recordCount  Int
+  exportFormat String
+  anonymized   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([staffId])
+  @@index([savedQueryId])
+  @@index([createdAt])
 }

@@ -11,6 +11,7 @@ import {
   BadgeDollarSign,
   CalendarDays,
   BarChart3,
+  Table2,
   Settings,
   ShieldCheck,
   LogOut,
@@ -34,6 +35,12 @@ const navItems = [
   { icon: BadgeDollarSign, label: 'Fund & Donations', href: '/dashboard/funds' },
   { icon: CalendarDays, label: 'Appointments', href: '/dashboard/appointments' },
   { icon: BarChart3, label: 'Reports', href: '/dashboard/reports' },
+  {
+    icon: Table2,
+    label: 'Data Query',
+    href: '/data-query',
+    roles: ['SUPER_ADMIN', 'VIEWER'],
+  },
   { icon: ShieldCheck, label: 'Accounts', href: '/accounts', superAdminOnly: true },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
@@ -70,6 +77,7 @@ export function Sidebar({ user }: { user: any }) {
         <nav className="flex flex-col gap-1 py-4">
           {navItems.map((item) => {
             if (item.superAdminOnly && user?.role !== 'SUPER_ADMIN') return null;
+            if (item.roles && !item.roles.includes(user?.role)) return null;
             const isActive = item.href === '/dashboard' 
               ? pathname === '/dashboard' 
               : pathname.startsWith(item.href);
