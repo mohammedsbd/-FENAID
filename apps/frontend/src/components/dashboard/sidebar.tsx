@@ -31,7 +31,7 @@ const navItems = [
   { icon: Users, label: 'Parents', href: '/dashboard/parents' },
   { icon: Baby, label: 'Children', href: '/dashboard/children' },
   { icon: HandPlatter, label: 'Services', href: '/dashboard/services' },
-  { icon: BadgeDollarSign, label: 'Fund & Donations', href: '/dashboard/finance' },
+  { icon: BadgeDollarSign, label: 'Fund & Donations', href: '/dashboard/funds' },
   { icon: CalendarDays, label: 'Appointments', href: '/dashboard/appointments' },
   { icon: BarChart3, label: 'Reports', href: '/dashboard/reports' },
   { icon: ShieldCheck, label: 'Accounts', href: '/accounts', superAdminOnly: true },

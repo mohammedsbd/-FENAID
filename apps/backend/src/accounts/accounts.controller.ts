@@ -18,6 +18,88 @@ import { UpdatePermissionsDto } from './dto/update-permissions.dto';
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
+  @Get('directory')
+  findAllDirectory() {
+    return this.accountsService.findAll({ status: 'active', limit: '100' });
+  }
+
+  @Get('me')
+  @ModuleAccess(PermissionModule.MY_ACCOUNT)
+  me(@Req() request: AuthenticatedRequest) {
+    return this.accountsService.me(request.user.staffId);
+  }
+
+  @Patch('me')
+  @ModuleAccess(PermissionModule.MY_ACCOUNT)
+  meUpdate(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpdateMyAccountDto,
+  ) {
+    return this.accountsService.updateMe(request.user.staffId, dto, requestMeta(request));
+  }
+
+  @Get('me/activity')
+  @ModuleAccess(PermissionModule.MY_ACCOUNT)
+  meActivity(@Req() request: AuthenticatedRequest) {
+    return this.accountsService.activity(request.user.staffId);
+  }
+
+  @Get('me/sessions')
+  @ModuleAccess(PermissionModule.MY_ACCOUNT)
+  meSessions(@Req() request: AuthenticatedRequest) {
+    return this.accountsService.sessions(request.user.staffId);
+  }
+
+  @Delete('me/sessions/:sessionId')
+  @ModuleAccess(PermissionModule.MY_ACCOUNT)
+  meTerminateSession(
+    @Req() request: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.accountsService.terminateMySession(request.user.staffId, sessionId, requestMeta(request));
+  }
+
+  @Get('permissions')
+  @ModuleAccess(PermissionModule.PERMISSIONS)
+  @Roles(StaffRole.SUPER_ADMIN)
+  permissions() {
+    return this.accountsService.getPermissions();
+  }
+
+  @Patch('permissions')
+  @ModuleAccess(PermissionModule.PERMISSIONS)
+  @Roles(StaffRole.SUPER_ADMIN)
+  updatePermissions(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpdatePermissionsDto,
+  ) {
+    return this.accountsService.updatePermissions(request.user.staffId, dto, requestMeta(request));
+  }
+
+  @Get('sessions')
+  @ModuleAccess(PermissionModule.SESSIONS)
+  @Roles(StaffRole.SUPER_ADMIN)
+  sessions(@Query('staffId') staffId?: string) {
+    return this.accountsService.sessions(staffId || undefined);
+  }
+
+  @Delete('sessions/:sessionId')
+  @ModuleAccess(PermissionModule.SESSIONS)
+  @Roles(StaffRole.SUPER_ADMIN)
+  terminateSession(
+    @Req() request: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.accountsService.terminateSession(request.user.staffId, sessionId, requestMeta(request));
+  }
+
+  @Get('audit-logs')
+  @ModuleAccess(PermissionModule.AUDIT_LOGS)
+  @Roles(StaffRole.SUPER_ADMIN)
+  auditLogs(@Query() query: { page?: string; limit?: string; staffId?: string; action?: string; from?: string; to?: string }) {
+    return this.accountsService.getAuditLogs(query);
+  }
+
   @Get()
   @ModuleAccess(PermissionModule.ACCOUNTS)
   @Roles(StaffRole.SUPER_ADMIN)
@@ -92,83 +174,6 @@ export class AccountsController {
     @Body() dto: DeleteAccountDto,
   ) {
     return this.accountsService.remove(request.user.staffId, id, dto, requestMeta(request));
-  }
-
-  @Get('permissions')
-  @ModuleAccess(PermissionModule.PERMISSIONS)
-  @Roles(StaffRole.SUPER_ADMIN)
-  permissions() {
-    return this.accountsService.getPermissions();
-  }
-
-  @Patch('permissions')
-  @ModuleAccess(PermissionModule.PERMISSIONS)
-  @Roles(StaffRole.SUPER_ADMIN)
-  updatePermissions(
-    @Req() request: AuthenticatedRequest,
-    @Body() dto: UpdatePermissionsDto,
-  ) {
-    return this.accountsService.updatePermissions(request.user.staffId, dto, requestMeta(request));
-  }
-
-  @Get('sessions')
-  @ModuleAccess(PermissionModule.SESSIONS)
-  @Roles(StaffRole.SUPER_ADMIN)
-  sessions(@Query('staffId') staffId?: string) {
-    return this.accountsService.sessions(staffId || undefined);
-  }
-
-  @Delete('sessions/:sessionId')
-  @ModuleAccess(PermissionModule.SESSIONS)
-  @Roles(StaffRole.SUPER_ADMIN)
-  terminateSession(
-    @Req() request: AuthenticatedRequest,
-    @Param('sessionId') sessionId: string,
-  ) {
-    return this.accountsService.terminateSession(request.user.staffId, sessionId, requestMeta(request));
-  }
-
-  @Get('audit-logs')
-  @ModuleAccess(PermissionModule.AUDIT_LOGS)
-  @Roles(StaffRole.SUPER_ADMIN)
-  auditLogs(@Query() query: { page?: string; limit?: string; staffId?: string; action?: string; from?: string; to?: string }) {
-    return this.accountsService.getAuditLogs(query);
-  }
-
-  @Get('me')
-  @ModuleAccess(PermissionModule.MY_ACCOUNT)
-  me(@Req() request: AuthenticatedRequest) {
-    return this.accountsService.me(request.user.staffId);
-  }
-
-  @Patch('me')
-  @ModuleAccess(PermissionModule.MY_ACCOUNT)
-  meUpdate(
-    @Req() request: AuthenticatedRequest,
-    @Body() dto: UpdateMyAccountDto,
-  ) {
-    return this.accountsService.updateMe(request.user.staffId, dto, requestMeta(request));
-  }
-
-  @Get('me/activity')
-  @ModuleAccess(PermissionModule.MY_ACCOUNT)
-  meActivity(@Req() request: AuthenticatedRequest) {
-    return this.accountsService.activity(request.user.staffId);
-  }
-
-  @Get('me/sessions')
-  @ModuleAccess(PermissionModule.MY_ACCOUNT)
-  meSessions(@Req() request: AuthenticatedRequest) {
-    return this.accountsService.sessions(request.user.staffId);
-  }
-
-  @Delete('me/sessions/:sessionId')
-  @ModuleAccess(PermissionModule.MY_ACCOUNT)
-  meTerminateSession(
-    @Req() request: AuthenticatedRequest,
-    @Param('sessionId') sessionId: string,
-  ) {
-    return this.accountsService.terminateMySession(request.user.staffId, sessionId, requestMeta(request));
   }
 }
 

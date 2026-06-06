@@ -91,6 +91,15 @@ export class DonationsService {
             },
           }
         : {}),
+      ...(query.search && {
+        OR: [
+          { donorName: { contains: query.search, mode: 'insensitive' } },
+          { receiptNumber: { contains: query.search, mode: 'insensitive' } },
+          { donorContact: { contains: query.search, mode: 'insensitive' } },
+          { purpose: { contains: query.search, mode: 'insensitive' } },
+          { notes: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }),
     };
 
     return this.prisma.donation.findMany({

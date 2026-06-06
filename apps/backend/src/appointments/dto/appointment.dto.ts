@@ -136,4 +136,8 @@ export class LogAttendanceDto {
   @ValidateNested({ each: true })
   @Type(() => AttendanceItemDto)
   records!: AttendanceItemDto[];
+
+  @IsOptional()
+  @IsEnum(AppointmentStatus)
+  appointmentStatus?: AppointmentStatus;
 }

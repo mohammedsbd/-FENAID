@@ -70,6 +70,13 @@ export class FundAllocationsService {
             },
           }
         : {}),
+      ...(query.search && {
+        OR: [
+          { parent: { fullName: { contains: query.search, mode: 'insensitive' } } },
+          { purpose: { contains: query.search, mode: 'insensitive' } },
+          { notes: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }),
     };
 
     return this.prisma.fundAllocation.findMany({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, ChangeEvent } from 'react';
 import type { ReactNode } from 'react';
 import { format } from 'date-fns';
 import {
@@ -16,6 +16,8 @@ import {
   UserPlus,
   UserMinus,
   LogOut,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -51,7 +53,6 @@ type Props = { currentUser: { id: string; fullName: string; email: string; role:
 type AccountForm = {
   fullName: string;
   email: string;
-  phone: string;
   photoUrl: string;
   role: 'SUPER_ADMIN' | 'CASE_WORKER' | 'VIEWER';
   password: string;
@@ -63,7 +64,6 @@ type AccountForm = {
 const emptyForm: AccountForm = {
   fullName: '',
   email: '',
-  phone: '',
   photoUrl: '',
   role: 'CASE_WORKER',
   password: '',
@@ -118,6 +118,11 @@ export function AccountManagementClient({ currentUser }: Props) {
   const [permissionRole, setPermissionRole] = useState<'CASE_WORKER' | 'VIEWER'>('CASE_WORKER');
   const [permissionDraft, setPermissionDraft] = useState<Record<PermissionModule, AccessLevel>>({} as Record<PermissionModule, AccessLevel>);
   const [activeSessionStaffId, setActiveSessionStaffId] = useState('');
+  
+  // Visibility toggles
+  const [showFormPassword, setShowFormPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   useEffect(() => {
     void loadAccounts();
@@ -199,7 +204,6 @@ export function AccountManagementClient({ currentUser }: Props) {
     setAccountForm({
       fullName: account.fullName,
       email: account.email,
-      phone: account.phone || '',
       photoUrl: account.photoUrl || '',
       role: account.role,
       password: '',
@@ -217,7 +221,6 @@ export function AccountManagementClient({ currentUser }: Props) {
         await api.patch(`/accounts/${selected.id}`, {
           fullName: accountForm.fullName,
           email: accountForm.email,
-          phone: accountForm.phone,
           photoUrl: accountForm.photoUrl,
           role: accountForm.role,
           isActive: accountForm.isActive,
@@ -226,7 +229,6 @@ export function AccountManagementClient({ currentUser }: Props) {
         await api.post('/accounts', {
           fullName: accountForm.fullName,
           email: accountForm.email,
-          phone: accountForm.phone,
           photoUrl: accountForm.photoUrl,
           role: accountForm.role,
           password: accountForm.password || undefined,
@@ -369,7 +371,7 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('accounts.search', 'Search by name, email, phone')} />
+                <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('accounts.search', 'Search by name, email')} />
               </div>
               <select className="h-10 rounded-md border px-3 text-sm" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="">{t('accounts.allRoles', 'All roles')}</option>
@@ -538,8 +540,13 @@ export function AccountManagementClient({ currentUser }: Props) {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={t('accounts.fullName', 'Full name')}><Input value={accountForm.fullName} onChange={(e) => setAccountForm((c) => ({ ...c, fullName: e.target.value }))} /></Field>
             <Field label={t('accounts.email', 'Email')}><Input value={accountForm.email} onChange={(e) => setAccountForm((c) => ({ ...c, email: e.target.value }))} /></Field>
-            <Field label={t('accounts.phone', 'Phone')}><Input value={accountForm.phone} onChange={(e) => setAccountForm((c) => ({ ...c, phone: e.target.value }))} /></Field>
-            <Field label={t('accounts.photoUrl', 'Photo URL')}><Input value={accountForm.photoUrl} onChange={(e) => setAccountForm((c) => ({ ...c, photoUrl: e.target.value }))} /></Field>
+            <div className="space-y-2">
+              <Label>User Profile</Label>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12"><AvatarImage src={accountForm.photoUrl || undefined} /><AvatarFallback>{initials(accountForm.fullName)}</AvatarFallback></Avatar>
+                <p className="text-xs text-muted-foreground italic">Profile photo uploads are disabled.</p>
+              </div>
+            </div>
             <Field label={t('accounts.role', 'Role')}>
               <select className="h-10 w-full rounded-md border px-3 text-sm" value={accountForm.role} onChange={(e) => setAccountForm((c) => ({ ...c, role: e.target.value as any }))}>
                 <option value="SUPER_ADMIN">Super Admin</option>
@@ -555,7 +562,14 @@ export function AccountManagementClient({ currentUser }: Props) {
             </Field>
             {!selected && (
               <>
-                <Field label={t('accounts.password', 'Password')}><Input type="password" value={accountForm.password} onChange={(e) => setAccountForm((c) => ({ ...c, password: e.target.value }))} /></Field>
+                <Field label={t('accounts.password', 'Password')}>
+                  <div className="relative">
+                    <Input type={showFormPassword ? 'text' : 'password'} value={accountForm.password} onChange={(e) => setAccountForm((c) => ({ ...c, password: e.target.value }))} />
+                    <button type="button" onClick={() => setShowFormPassword(!showFormPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </Field>
                 <Field label={t('accounts.sendWelcomeEmail', 'Send welcome email')}>
                   <input type="checkbox" checked={accountForm.sendWelcomeEmail} onChange={(e) => setAccountForm((c) => ({ ...c, sendWelcomeEmail: e.target.checked }))} />
                 </Field>
@@ -573,7 +587,14 @@ export function AccountManagementClient({ currentUser }: Props) {
         <Overlay title={t('accounts.resetPassword', 'Reset Password')} onClose={() => setShowReset(false)}>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{selected.fullName}</p>
-            <Field label={t('accounts.newPassword', 'New password (optional)')}><Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></Field>
+            <Field label={t('accounts.newPassword', 'New password (optional)')}>
+              <div className="relative">
+                <Input type={showResetPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showResetPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={forceChange} onChange={(e) => setForceChange(e.target.checked)} />{t('accounts.forceChange', 'Force change on next login')}</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={notifyUser} onChange={(e) => setNotifyUser(e.target.checked)} />{t('accounts.notifyUser', 'Notify user')}</label>
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowReset(false)}>{t('common.cancel', 'Cancel')}</Button><Button onClick={resetPassword}>{t('common.confirm', 'Confirm')}</Button></div>
@@ -584,7 +605,14 @@ export function AccountManagementClient({ currentUser }: Props) {
       {showPromote && (
         <Overlay title={t('accounts.promote', 'Promote to Super Admin')} onClose={() => setShowPromote(false)}>
           <div className="space-y-4">
-            <Field label={t('accounts.currentPassword', 'Your password')}><Input type="password" value={securityPassword} onChange={(e) => setSecurityPassword(e.target.value)} /></Field>
+            <Field label={t('accounts.currentPassword', 'Your password')}>
+              <div className="relative">
+                <Input type={showAdminPassword ? 'text' : 'password'} value={securityPassword} onChange={(e) => setSecurityPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </Field>
             <Field label={t('accounts.targetEmail', 'Target email')}><Input value={targetEmail} onChange={(e) => setTargetEmail(e.target.value)} /></Field>
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowPromote(false)}>{t('common.cancel', 'Cancel')}</Button><Button onClick={promote}>{t('common.confirm', 'Confirm')}</Button></div>
           </div>
@@ -595,7 +623,14 @@ export function AccountManagementClient({ currentUser }: Props) {
         <Overlay title={t('accounts.delete', 'Delete Account')} onClose={() => setShowDelete(false)}>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{selected.fullName}</p>
-            <Field label={t('accounts.currentPassword', 'Your password')}><Input type="password" value={securityPassword} onChange={(e) => setSecurityPassword(e.target.value)} /></Field>
+            <Field label={t('accounts.currentPassword', 'Your password')}>
+              <div className="relative">
+                <Input type={showAdminPassword ? 'text' : 'password'} value={securityPassword} onChange={(e) => setSecurityPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </Field>
             <Field label={t('accounts.reassignTo', 'Reassign members to staff id (required if assigned members exist)')}><Input value={reassignToStaffId} onChange={(e) => setReassignToStaffId(e.target.value)} /></Field>
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowDelete(false)}>{t('common.cancel', 'Cancel')}</Button><Button variant="destructive" onClick={deleteAccount}>{t('common.delete', 'Delete')}</Button></div>
           </div>

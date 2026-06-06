@@ -75,4 +75,8 @@ export class ListDonationsDto {
   @IsBoolean()
   @Type(() => Boolean)
   isRestricted?: boolean;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

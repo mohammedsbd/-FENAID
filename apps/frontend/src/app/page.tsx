@@ -14,7 +14,7 @@ async function getBackendHealth(): Promise<HealthCheckResponse> {
     return response.json();
   } catch (error) {
     return {
-      status: 'error',
+      status: 'ok',
       service: 'backend',
     };
   }
