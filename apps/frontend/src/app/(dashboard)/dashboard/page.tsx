@@ -97,7 +97,7 @@ function AdminDashboardView({ data }: { data: any }) {
   return (
     <div className="space-y-8">
       {/* Row 1: Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Total Parents"
           value={data.stats.totalParents}
@@ -113,6 +113,14 @@ function AdminDashboardView({ data }: { data: any }) {
           icon={Baby}
           color="text-amber-600"
           bg="bg-amber-50"
+        />
+        <StatCard
+          title="Allocated Funds"
+          value={`${Number(data.stats.totalFundsAllocated).toLocaleString()} ETB`}
+          subtitle="Total support committed"
+          icon={HandCoins}
+          color="text-blue-600"
+          bg="bg-blue-50"
         />
         <StatCard
           title="Disbursed Funds"
@@ -278,7 +286,7 @@ function AdminDashboardView({ data }: { data: any }) {
             </div>
             {data.pendingFundDisbursements.length > 5 && (
               <Button variant="ghost" size="sm" className="mt-4 w-full text-xs text-primary" asChild>
-                <Link href="/dashboard/finance">Manage allocations <ChevronRight className="ml-1 h-3 w-3" /></Link>
+                <Link href="/dashboard/funds">Manage allocations <ChevronRight className="ml-1 h-3 w-3" /></Link>
               </Button>
             )}
           </CardContent>
@@ -470,8 +478,8 @@ function StatCard({ title, value, subtitle, icon: Icon, color, bg }: any) {
 function DashboardSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {[...Array(5)].map((_, i) => (
           <Skeleton key={i} className="h-24 w-full rounded-xl" />
         ))}
       </div>

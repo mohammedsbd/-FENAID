@@ -23,8 +23,8 @@ export function isAuthenticated(): boolean {
 }
 
 export function logout() {
-  Cookies.remove('token');
-  Cookies.remove('user');
+  Cookies.remove('token', { path: '/' });
+  Cookies.remove('user', { path: '/' });
   if (typeof window !== 'undefined') {
     window.location.href = '/login';
   }

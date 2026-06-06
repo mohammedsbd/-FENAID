@@ -1,18 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useState, useEffect, ReactNode, ChangeEvent } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Lock } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Loader2, 
+  Lock, 
+  User, 
+  Mail, 
+  Camera, 
+  Activity, 
+  ShieldCheck, 
+  History,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { AccountRow, AuditLogRow, SessionRow } from '@/types/accounts';
 
 type Props = { currentUser: { id: string; fullName: string; email: string; role: string } };
@@ -24,10 +51,11 @@ export function MyAccountClient({ currentUser }: Props) {
   const [activity, setActivity] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<'profile' | 'security' | 'sessions' | 'notifications' | 'activity'>('profile');
-  const [form, setForm] = useState({ fullName: '', phone: '', photoUrl: '' });
+  const [tab, setTab] = useState<'profile' | 'security' | 'sessions' | 'activity'>('profile');
+  const [form, setForm] = useState({ fullName: '', email: '', photoUrl: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [prefs, setPrefs] = useState({ email: true, sms: false, inApp: true });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     void load();
@@ -44,10 +72,9 @@ export function MyAccountClient({ currentUser }: Props) {
       setProfile(me.data);
       setForm({
         fullName: me.data.fullName || '',
-        phone: me.data.phone || '',
+        email: me.data.email || '',
         photoUrl: me.data.photoUrl || '',
       });
-      setPrefs(me.data.notificationPreferences || { email: true, sms: false, inApp: true });
       setSessions(mySessions.data || []);
       setActivity(myActivity.data || []);
     } finally {
@@ -58,9 +85,27 @@ export function MyAccountClient({ currentUser }: Props) {
   async function saveProfile() {
     setSaving(true);
     try {
-      await api.patch('/accounts/me', { ...form, notificationPreferences: prefs });
+      const res = await api.patch('/accounts/me', form);
       toast({ title: t('myAccount.saved', 'Profile saved') });
-      await load();
+      
+      // Update persistent user data if changed (email, name, photo)
+      const updatedUser = {
+        id: res.data.id,
+        fullName: res.data.fullName,
+        email: res.data.email,
+        role: res.data.role,
+        photoUrl: res.data.photoUrl,
+        mustChangePassword: res.data.mustChangePassword,
+      };
+
+      // Update Cookies (primary auth source)
+      Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, path: '/' });
+
+      // Update local storage (secondary source)
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // Use a hard reload to ensure layout/sidebar pick up potential name/role/photo changes
+      window.location.reload();
     } catch (err: any) {
       toast({ variant: 'destructive', title: t('myAccount.saveFailed', 'Save failed'), description: err.response?.data?.message || t('myAccount.saveFailedDesc', 'Unable to save your profile.') });
     } finally {
@@ -69,13 +114,38 @@ export function MyAccountClient({ currentUser }: Props) {
   }
 
   async function changePassword() {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Passwords do not match', 
+        description: 'New password and confirmation do not match.' 
+      });
+      return;
+    }
+
     setSaving(true);
     try {
-      await api.post('/auth/change-password', passwordForm);
+      const res = await api.post('/auth/change-password', passwordForm);
       toast({ title: t('myAccount.passwordChanged', 'Password updated') });
+      
+      // Update local session to reflect password change (clears mustChangePassword)
+      const updatedUser = {
+        id: res.data.user.id,
+        fullName: res.data.user.fullName,
+        email: res.data.user.email,
+        role: res.data.user.role,
+        photoUrl: res.data.user.photoUrl,
+        mustChangePassword: false
+      };
+      Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, path: '/' });
+      
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: t('myAccount.passwordFailed', 'Password change failed'), description: err.response?.data?.message || t('myAccount.passwordFailedDesc', 'Unable to change password.') });
+      toast({ 
+        variant: 'destructive', 
+        title: t('myAccount.passwordFailed', 'Password change failed'), 
+        description: err.response?.data?.message || t('myAccount.passwordFailedDesc', 'Unable to change password.') 
+      });
     } finally {
       setSaving(false);
     }
@@ -85,117 +155,220 @@ export function MyAccountClient({ currentUser }: Props) {
     try {
       await api.delete(`/accounts/me/sessions/${sessionId}`);
       await load();
+      toast({ title: 'Session terminated' });
     } catch (err: any) {
-      toast({ variant: 'destructive', title: t('myAccount.sessionFailed', 'Could not terminate session'), description: err.response?.data?.message || t('myAccount.sessionFailedDesc', 'Unable to terminate the session.') });
+      toast({ 
+        variant: 'destructive', 
+        title: t('myAccount.sessionFailed', 'Could not terminate session'), 
+        description: err.response?.data?.message || t('myAccount.sessionFailedDesc', 'Unable to terminate the session.') 
+      });
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{t('myAccount.title', 'My Account')}</h1>
-        <p className="text-sm text-muted-foreground">{profile?.email || currentUser.email}</p>
-      </div>
-      <div className="flex gap-2">
-        {(['profile', 'security', 'sessions', 'notifications', 'activity'] as const).map((item) => (
-          <Button key={item} variant={tab === item ? 'default' : 'outline'} onClick={() => setTab(item)}>{t(`myAccount.tab.${item}`, item)}</Button>
-        ))}
+    <div className="max-w-6xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('myAccount.title', 'My Account')}</h1>
+          <p className="text-muted-foreground">{profile?.fullName} — {profile?.role.replace(/_/g, ' ')}</p>
+        </div>
       </div>
 
-      {loading ? <Skeleton className="h-96 w-full" /> : (
-        <>
+      <div className="flex flex-wrap gap-2 p-1 bg-muted rounded-lg w-fit">
+        <NavButton active={tab === 'profile'} onClick={() => setTab('profile')} icon={<User className="w-4 h-4" />}>{t('myAccount.tab.profile', 'Profile')}</NavButton>
+        <NavButton active={tab === 'security'} onClick={() => setTab('security')} icon={<ShieldCheck className="w-4 h-4" />}>{t('myAccount.tab.security', 'Security')}</NavButton>
+        <NavButton active={tab === 'sessions'} onClick={() => setTab('sessions')} icon={<History className="w-4 h-4" />}>{t('myAccount.tab.sessions', 'Sessions')}</NavButton>
+        <NavButton active={tab === 'activity'} onClick={() => setTab('activity')} icon={<Activity className="w-4 h-4" />}>{t('myAccount.tab.activity', 'Activity')}</NavButton>
+      </div>
+
+      {loading ? <Skeleton className="h-[500px] w-full rounded-xl" /> : (
+        <div className="grid gap-8">
           {tab === 'profile' && (
-            <Card>
-              <CardHeader><CardTitle>{t('myAccount.editProfile', 'Edit profile')}</CardTitle></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <Field label={t('myAccount.fullName', 'Full name')}><Input value={form.fullName} onChange={(e) => setForm((c) => ({ ...c, fullName: e.target.value }))} /></Field>
-                <Field label={t('myAccount.phone', 'Phone')}><Input value={form.phone} onChange={(e) => setForm((c) => ({ ...c, phone: e.target.value }))} /></Field>
-                <Field label={t('myAccount.photoUrl', 'Photo URL')}><Input value={form.photoUrl} onChange={(e) => setForm((c) => ({ ...c, photoUrl: e.target.value }))} /></Field>
-                <Field label={t('myAccount.emailPrefs', 'Email notifications')}>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={prefs.email} onChange={(e) => setPrefs((c) => ({ ...c, email: e.target.checked }))} />{t('myAccount.enabled', 'Enabled')}</label>
-                </Field>
+            <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>{t('myAccount.editProfile', 'Personal Information')}</CardTitle>
+                <CardDescription>Update your personal details and public profile.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="flex flex-col md:flex-row items-center gap-6 pb-6 border-b">
+                  <Avatar className="w-24 h-24 border-2 border-primary/10 shadow-lg">
+                    <AvatarImage src={form.photoUrl || undefined} />
+                    <AvatarFallback className="bg-primary/5 text-primary text-2xl">{form.fullName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-center md:text-left space-y-1">
+                    <h4 className="font-semibold">{t('myAccount.fullName', 'User Profile')}</h4>
+                    <p className="text-xs text-muted-foreground">{profile?.role.replace(/_/g, ' ')}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Field label={t('myAccount.fullName', 'Full name')} icon={<User className="w-4 h-4" />}>
+                    <Input value={form.fullName} onChange={(e) => setForm((c) => ({ ...c, fullName: e.target.value }))} placeholder="John Doe" />
+                  </Field>
+                  <Field label={t('myAccount.email', 'Email Address')} icon={<Mail className="w-4 h-4" />}>
+                    <Input type="email" value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} placeholder="john@example.com" />
+                  </Field>
+                </div>
+                
+                <div className="flex justify-end pt-4">
+                  <Button onClick={saveProfile} disabled={saving} className="min-w-[120px]">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {t('common.save', 'Save Changes')}
+                  </Button>
+                </div>
               </CardContent>
-              <div className="flex justify-end p-4"><Button onClick={saveProfile} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save', 'Save')}</Button></div>
             </Card>
           )}
 
           {tab === 'security' && (
-            <Card>
-              <CardHeader><CardTitle>{t('myAccount.changePassword', 'Change password')}</CardTitle></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <Field label={t('myAccount.currentPassword', 'Current password')}><Input type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, currentPassword: e.target.value }))} /></Field>
-                <Field label={t('myAccount.newPassword', 'New password')}>
-                  <Input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, newPassword: e.target.value }))} />
-                  <PasswordStrength password={passwordForm.newPassword} />
-                </Field>
-                <Field label={t('myAccount.confirmPassword', 'Confirm password')}><Input type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, confirmPassword: e.target.value }))} /></Field>
+            <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>{t('myAccount.changePassword', 'Security & Password')}</CardTitle>
+                <CardDescription>Ensure your account is using a long, random password to stay secure.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 max-w-2xl">
+                  <Field label={t('myAccount.currentPassword', 'Current password')}>
+                    <div className="relative">
+                      <Input type={showCurrentPassword ? 'text' : 'password'} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, currentPassword: e.target.value }))} />
+                      <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </Field>
+                  <Field label={t('myAccount.newPassword', 'New password')}>
+                    <div className="relative">
+                      <Input type={showNewPassword ? 'text' : 'password'} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, newPassword: e.target.value }))} />
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    <PasswordStrength password={passwordForm.newPassword} />
+                  </Field>
+                  <Field label={t('myAccount.confirmPassword', 'Confirm new password')}>
+                    <Input type={showNewPassword ? 'text' : 'password'} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, confirmPassword: e.target.value }))} />
+                  </Field>
+                </div>
+                <div className="flex justify-end pt-4 border-t">
+                  <Button onClick={changePassword} disabled={saving} className="min-w-[140px]">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {t('common.update', 'Update Password')}
+                  </Button>
+                </div>
               </CardContent>
-              <div className="flex justify-end p-4"><Button onClick={changePassword} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.update', 'Update')}</Button></div>
             </Card>
           )}
 
           {tab === 'sessions' && (
-            <Card>
-              <CardHeader><CardTitle>{t('myAccount.sessions', 'Active sessions')}</CardTitle></CardHeader>
+            <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>{t('myAccount.sessions', 'Active Sessions')}</CardTitle>
+                <CardDescription>Devices currently logged into your account.</CardDescription>
+              </CardHeader>
               <CardContent>
                 {sessions.length ? (
-                  <Table>
-                    <TableHeader><TableRow><TableHead>{t('myAccount.device', 'Device')}</TableHead><TableHead>{t('myAccount.ip', 'IP')}</TableHead><TableHead>{t('myAccount.lastSeen', 'Last seen')}</TableHead><TableHead /></TableRow></TableHeader>
-                    <TableBody>
-                      {sessions.map((session) => (
-                        <TableRow key={session.id}>
-                          <TableCell>{session.userAgent || '—'}</TableCell>
-                          <TableCell>{session.ipAddress || '—'}</TableCell>
-                          <TableCell>{session.lastSeenAt ? format(new Date(session.lastSeenAt), 'PPpp') : '—'}</TableCell>
-                          <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => terminateSession(session.tokenId)}><Lock className="h-4 w-4" />{t('common.terminate', 'Terminate')}</Button></TableCell>
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead>{t('myAccount.device', 'Device / Browser')}</TableHead>
+                          <TableHead>{t('myAccount.ip', 'IP Address')}</TableHead>
+                          <TableHead>{t('myAccount.lastSeen', 'Last seen')}</TableHead>
+                          <TableHead className="w-[100px]"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : <p className="text-sm text-muted-foreground">{t('myAccount.noSessions', 'No active sessions')}</p>}
-              </CardContent>
-            </Card>
-          )}
-
-          {tab === 'notifications' && (
-            <Card>
-              <CardHeader><CardTitle>{t('myAccount.notifications', 'Notification preferences')}</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {(['email', 'sms', 'inApp'] as const).map((key) => (
-                  <label key={key} className="flex items-center gap-2">
-                    <input type="checkbox" checked={prefs[key]} onChange={(e) => setPrefs((c) => ({ ...c, [key]: e.target.checked }))} />
-                    {key}
-                  </label>
-                ))}
-                <Button onClick={saveProfile} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save', 'Save')}</Button>
+                      </TableHeader>
+                      <TableBody>
+                        {sessions.map((session) => (
+                          <TableRow key={session.id}>
+                            <TableCell className="font-medium">{session.userAgent || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{session.ipAddress || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground whitespace-nowrap">{session.lastSeenAt ? format(new Date(session.lastSeenAt), 'PPpp') : '—'}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" onClick={() => terminateSession(session.tokenId)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Lock className="h-4 w-4 mr-2" />
+                                {t('common.terminate', 'Log out')}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : <div className="text-center py-10 text-muted-foreground">{t('myAccount.noSessions', 'No active sessions')}</div>}
               </CardContent>
             </Card>
           )}
 
           {tab === 'activity' && (
-            <Card>
-              <CardHeader><CardTitle>{t('myAccount.activity', 'Last 90 days')}</CardTitle></CardHeader>
+            <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>{t('myAccount.activity', 'Activity History')}</CardTitle>
+                <CardDescription>Review your recent actions and account changes from the last 90 days.</CardDescription>
+              </CardHeader>
               <CardContent>
                 {activity.length ? (
-                  <Table>
-                    <TableHeader><TableRow><TableHead>{t('myAccount.date', 'Date')}</TableHead><TableHead>{t('myAccount.action', 'Action')}</TableHead><TableHead>{t('myAccount.entity', 'Entity')}</TableHead></TableRow></TableHeader>
-                    <TableBody>{activity.map((entry) => <TableRow key={entry.id}><TableCell>{format(new Date(entry.createdAt), 'PPpp')}</TableCell><TableCell>{entry.action}</TableCell><TableCell>{entry.entity}</TableCell></TableRow>)}</TableBody>
-                  </Table>
-                ) : <p className="text-sm text-muted-foreground">{t('myAccount.noActivity', 'No recent activity')}</p>}
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-[200px]">{t('myAccount.date', 'Date & Time')}</TableHead>
+                          <TableHead>{t('myAccount.action', 'Action')}</TableHead>
+                          <TableHead>{t('myAccount.entity', 'Module')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activity.map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{format(new Date(entry.createdAt), 'PPpp')}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="font-mono text-[10px] uppercase">
+                                {entry.action.replace(/_/g, ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{entry.entity}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : <div className="text-center py-10 text-muted-foreground">{t('myAccount.noActivity', 'No recent activity')}</div>}
               </CardContent>
             </Card>
           )}
-        </>
+        </div>
       )}
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="space-y-2"><Label>{label}</Label>{children}</div>;
+function NavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) {
+  return (
+    <Button 
+      variant={active ? 'secondary' : 'ghost'} 
+      size="sm" 
+      onClick={onClick} 
+      className={cn("gap-2", active && "bg-background shadow-sm")}
+    >
+      {icon}
+      {children}
+    </Button>
+  );
+}
+
+function Field({ label, icon, children }: { label: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-2 text-muted-foreground">
+        {icon}
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
 }
 
 function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null;
   const score = [
     password.length >= 8,
     /[A-Z]/.test(password),
@@ -206,13 +379,14 @@ function PasswordStrength({ password }: { password: string }) {
 
   const width = `${Math.min(100, score * 20)}%`;
   const label = score < 2 ? 'Weak' : score < 4 ? 'Medium' : 'Strong';
+  const color = score < 2 ? 'bg-rose-500' : score < 4 ? 'bg-amber-500' : 'bg-emerald-500';
 
   return (
-    <div className="space-y-1">
-      <div className="h-2 rounded-full bg-slate-100">
-        <div className="h-2 rounded-full bg-primary transition-all" style={{ width }} />
+    <div className="space-y-1.5 mt-2">
+      <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+        <div className={cn("h-1 rounded-full transition-all duration-500", color)} style={{ width }} />
       </div>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label} Security</p>
     </div>
   );
 }

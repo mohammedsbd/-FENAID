@@ -7,16 +7,9 @@ export class UpdateMyAccountDto {
 
   @IsOptional()
   @IsString()
-  phone?: string;
+  email?: string;
 
   @IsOptional()
   @IsString()
   photoUrl?: string;
-
-  @IsOptional()
-  notificationPreferences?: {
-    email?: boolean;
-    sms?: boolean;
-    inApp?: boolean;
-  };
 }

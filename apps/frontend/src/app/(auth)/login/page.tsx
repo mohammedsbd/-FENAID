@@ -33,6 +33,19 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  // Clear any existing stale auth data when arriving at login page
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      Cookies.remove('token', { path: '/' });
+      Cookies.remove('user', { path: '/' });
+      localStorage.removeItem('user');
+    }
   });
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -41,26 +54,45 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', data);
       const { accessToken, user, mustChangePassword } = response.data;
 
-      // Set cookies (standardize expiry to 1 day for this prototype)
-      Cookies.set('token', accessToken, { expires: 1 });
-      Cookies.set('user', JSON.stringify(user), { expires: 1 });
+      // Ensure fresh state by clearing old data first
+      Cookies.remove('token');
+      Cookies.remove('user');
+      localStorage.removeItem('user');
 
-      if (mustChangePassword) {
-        router.push('/change-password');
-      } else {
-        router.push('/dashboard');
-      }
+      // Set cookies (standardize expiry to 1 day)
+      Cookies.set('token', accessToken, { expires: 1, path: '/' });
+      Cookies.set('user', JSON.stringify(user), { expires: 1, path: '/' });
       
+      // Also sync to localStorage for redundancy (used in some components)
+      localStorage.setItem('user', JSON.stringify(user));
+
       toast({
         title: 'Login Successful',
         description: `Welcome back, ${user.fullName}`,
       });
+
+      if (mustChangePassword) {
+        router.push('/change-password');
+      } else {
+        // Use window.location for a hard reload to ensure all contexts/layouts refresh with new user data
+        window.location.href = '/dashboard';
+      }
     } catch (error: any) {
+      console.error('Login error:', error);
+      let message = 'Invalid email or password';
+      
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.code === 'ERR_NETWORK') {
+        message = 'Network error: Cannot reach server';
+      }
+
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.response?.data?.message || 'Invalid email or password',
+        description: message,
       });
+      // Data is retained in form automatically by react-hook-form as long as we don't call reset()
     } finally {
       setIsLoading(false);
     }

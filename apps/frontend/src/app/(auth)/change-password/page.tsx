@@ -75,15 +75,16 @@ export default function ChangePasswordPage() {
 
       const { user } = response.data;
       
-      // Update local user cookie
-      Cookies.set('user', JSON.stringify(user), { expires: 1 });
+      // Update local user cookie with root path
+      Cookies.set('user', JSON.stringify(user), { expires: 7, path: '/' });
 
       toast({
         title: 'Password Updated',
         description: 'Your password has been successfully changed.',
       });
       
-      router.push('/dashboard');
+      // Use hard reload to ensure all layouts/sidebar refresh with new state
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         variant: 'destructive',

@@ -68,4 +68,8 @@ export class ListFundAllocationsDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

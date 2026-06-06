@@ -59,12 +59,13 @@ export class AppointmentsService {
         staff: { select: { fullName: true } },
         child: { select: { fullName: true, photoUrl: true } },
         parent: { select: { fullName: true, photoUrl: true } },
+        attendanceRecords: true,
       },
       orderBy: { scheduledAt: 'asc' },
     });
   }
 
-  async getCalendar(month: string) {
+  async getCalendar(month: string, query: ListAppointmentsDto) {
     // month format: YYYY-MM
     const date = new Date(`${month}-01`);
     if (isNaN(date.getTime())) {
@@ -74,17 +75,25 @@ export class AppointmentsService {
     const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
     const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
-    const appointments = await this.prisma.appointment.findMany({
-      where: {
-        scheduledAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
+    const where: Prisma.AppointmentWhereInput = {
+      scheduledAt: {
+        gte: startOfMonth,
+        lte: endOfMonth,
       },
+      ...(query.staffId && { staffId: query.staffId }),
+      ...(query.childId && { childId: query.childId }),
+      ...(query.parentId && { parentId: query.parentId }),
+      ...(query.status && { status: query.status }),
+      ...(query.type && { type: query.type }),
+    };
+
+    const appointments = await this.prisma.appointment.findMany({
+      where,
       include: {
         staff: { select: { fullName: true } },
         child: { select: { fullName: true, photoUrl: true } },
         parent: { select: { fullName: true, photoUrl: true } },
+        attendanceRecords: true,
       },
       orderBy: { scheduledAt: 'asc' },
     });
@@ -150,7 +159,7 @@ export class AppointmentsService {
 
   // Attendance
   async logAttendance(staffId: string, appointmentId: string, dto: LogAttendanceDto) {
-    await this.findOne(appointmentId); // Ensure appointment exists
+    const appointment = await this.findOne(appointmentId); // Ensure appointment exists
 
     const records = await Promise.all(
       dto.records.map((record) =>
@@ -166,9 +175,17 @@ export class AppointmentsService {
       ),
     );
 
+    if (dto.appointmentStatus && dto.appointmentStatus !== appointment.status) {
+      await this.prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { status: dto.appointmentStatus },
+      });
+    }
+
     await this.logAudit(staffId, 'LOG_ATTENDANCE', 'Appointment', appointmentId, {
       count: records.length,
       recordIds: records.map((r) => r.id),
+      newStatus: dto.appointmentStatus,
     });
 
     return records;

@@ -11,7 +11,7 @@ export default function SettingsPage() {
 
   let user;
   try {
-    user = JSON.parse(userCookie);
+    user = JSON.parse(decodeURIComponent(userCookie));
   } catch {
     redirect('/login');
   }

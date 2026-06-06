@@ -12,6 +12,7 @@ function date(value: string) {
 async function main() {
   const passwordHash = await bcrypt.hash(seedPassword, 12);
 
+  console.log('Clearing existing data...');
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.document.deleteMany();
@@ -26,13 +27,25 @@ async function main() {
   await prisma.child.deleteMany();
   await prisma.parent.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.passwordHistory.deleteMany();
   await prisma.staff.deleteMany();
 
-  const [admin, caseworker1, caseworker2, viewer] = await Promise.all([
+  console.log('Creating fresh Super Admin accounts...');
+  const [admin1, admin2, caseworker1, caseworker2, viewer] = await Promise.all([
     prisma.staff.create({
       data: {
-        email: 'admin@fikir.org',
-        fullName: 'Selam Tadesse',
+        email: 'superadmin@fikir.org',
+        fullName: 'Fikir Super Admin',
+        passwordHash,
+        role: 'SUPER_ADMIN',
+        mustChangePassword: true,
+      },
+    }),
+    prisma.staff.create({
+      data: {
+        email: 'headadmin@fikir.org',
+        fullName: 'Fikir Head Administrator',
         passwordHash,
         role: 'SUPER_ADMIN',
         mustChangePassword: true,
@@ -392,7 +405,7 @@ async function main() {
     data: [
       {
         parentId: hana.id,
-        allocatedById: admin.id,
+        allocatedById: admin1.id,
         amount: new Prisma.Decimal('12500.00'),
         purpose: 'therapy equipment',
         allocationDate: date('2026-05-10'),
@@ -404,7 +417,7 @@ async function main() {
       },
       {
         parentId: rahel.id,
-        allocatedById: admin.id,
+        allocatedById: admin1.id,
         amount: new Prisma.Decimal('8500.00'),
         purpose: 'school fees',
         allocationDate: date('2026-05-18'),
@@ -425,7 +438,7 @@ async function main() {
         donationDate: date('2026-05-01'),
         purpose: 'General child therapy support',
         isRestricted: false,
-        receivedById: admin.id,
+        receivedById: admin1.id,
         receiptNumber: 'DON-2026-0001',
         notes: 'Monthly individual donor contribution.',
       },
@@ -438,7 +451,7 @@ async function main() {
         purpose: 'Assistive device provision for children',
         isRestricted: true,
         restrictedToServiceId: serviceByName['Assistive Device Provision'].id,
-        receivedById: admin.id,
+        receivedById: admin1.id,
         receiptNumber: 'DON-2026-0002',
         notes: 'Restricted grant for mobility and communication devices.',
       },
@@ -473,7 +486,7 @@ async function main() {
   const fundAppointment = await prisma.appointment.create({
     data: {
       title: 'School fee disbursement meeting',
-      staffId: admin.id,
+      staffId: admin1.id,
       parentId: rahel.id,
       scheduledAt: date('2026-06-07T10:30:00+03:00'),
       durationMinutes: 45,
@@ -555,7 +568,7 @@ async function main() {
 
   await prisma.auditLog.create({
     data: {
-      staffId: admin.id,
+      staffId: admin1.id,
       action: 'CREATE',
       entity: 'SeedData',
       entityId: 'initial-seed',
@@ -569,7 +582,7 @@ async function main() {
   });
 
   console.log('Seed completed for Fikir system.');
-  console.log(`Staff: ${[admin, caseworker1, caseworker2, viewer].length}`);
+  console.log(`Staff: ${[admin1, admin2, caseworker1, caseworker2, viewer].length}`);
   console.log(`Services: ${services.length}`);
   console.log(`Parents: ${parents.length}`);
   console.log(`Children: ${children.length}`);

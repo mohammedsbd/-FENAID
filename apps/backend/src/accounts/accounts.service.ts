@@ -502,19 +502,32 @@ export class AccountsService {
   }
 
   async updateMe(staffId: string, dto: UpdateMyAccountDto, meta: AuditMeta = {}) {
+    const existing = await this.prisma.staff.findUnique({ where: { id: staffId } });
+    if (!existing) {
+      throw new NotFoundException('Account not found');
+    }
+
+    if (dto.email && dto.email.toLowerCase() !== existing.email) {
+      const duplicate = await this.prisma.staff.findUnique({
+        where: { email: dto.email.toLowerCase() },
+        select: { id: true },
+      });
+      if (duplicate) {
+        throw new BadRequestException('Another account already uses that email');
+      }
+    }
+
     const updated = await this.prisma.staff.update({
       where: { id: staffId },
       data: {
         fullName: dto.fullName?.trim(),
-        phone: dto.phone?.trim() ?? undefined,
+        email: dto.email?.toLowerCase(),
         photoUrl: dto.photoUrl?.trim() ?? undefined,
-        notificationPreferences: dto.notificationPreferences ?? undefined,
       },
       select: {
         id: true,
         fullName: true,
         email: true,
-        phone: true,
         photoUrl: true,
         role: true,
         isActive: true,
@@ -531,7 +544,18 @@ export class AccountsService {
         action: 'UPDATE_MY_ACCOUNT',
         entity: 'Staff',
         entityId: staffId,
-        changes: dto as Prisma.InputJsonValue,
+        changes: {
+          before: {
+            fullName: existing.fullName,
+            email: existing.email,
+            photoUrl: existing.photoUrl,
+          },
+          after: {
+            fullName: updated.fullName,
+            email: updated.email,
+            photoUrl: updated.photoUrl,
+          },
+        },
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
       },

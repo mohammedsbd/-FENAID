@@ -84,7 +84,7 @@ export class DashboardReportsService {
         select: { id: true, fullName: true, photoUrl: true, createdAt: true },
       }),
       this.prisma.fundAllocation.findMany({
-        where: { status: FundAllocationStatus.ALLOCATED },
+        where: { status: { in: [FundAllocationStatus.ALLOCATED, FundAllocationStatus.PARTIALLY_DISBURSED] } },
         include: { parent: { select: { fullName: true, photoUrl: true } } },
         orderBy: { allocationDate: 'desc' },
       }),

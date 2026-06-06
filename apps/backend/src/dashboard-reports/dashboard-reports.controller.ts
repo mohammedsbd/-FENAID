@@ -6,18 +6,18 @@ import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { DashboardReportsService } from './dashboard-reports.service';
 import { ReportQueryDto, ReportType } from './dto/report-query.dto';
 
-@Controller()
+@Controller('dashboard')
 @ModuleAccess('DASHBOARD' as any)
 export class DashboardReportsController {
   constructor(private readonly dashboardService: DashboardReportsService) {}
 
-  @Get('dashboard/admin')
+  @Get('admin')
   @Roles(StaffRole.SUPER_ADMIN)
   getAdminDashboard() {
     return this.dashboardService.getAdminDashboard();
   }
 
-  @Get('dashboard/staff')
+  @Get('staff')
   getStaffDashboard(@Req() req: AuthenticatedRequest) {
     return this.dashboardService.getStaffDashboard(req.user.staffId);
   }

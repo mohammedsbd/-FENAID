@@ -1,4 +1,5 @@
 import { ServiceTargetType } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -57,6 +58,7 @@ export class ListServicesDto {
   targetType?: ServiceTargetType;
 
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
 }

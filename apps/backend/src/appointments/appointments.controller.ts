@@ -41,8 +41,8 @@ export class AppointmentsController {
   }
 
   @Get('calendar')
-  getCalendar(@Query('month') month: string) {
-    return this.appointmentsService.getCalendar(month);
+  getCalendar(@Query('month') month: string, @Query() query: ListAppointmentsDto) {
+    return this.appointmentsService.getCalendar(month, query);
   }
 
   @Get(':id')
