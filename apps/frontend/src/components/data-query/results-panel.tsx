@@ -13,7 +13,7 @@ import {
   YAxis,
 } from 'recharts';
 import Link from 'next/link';
-import { Lock, Search, Table2, X } from 'lucide-react';
+import { Lock, Search, SearchCheck, X } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,19 +60,22 @@ export function ResultsPanel({
   exporting,
 }: ResultsPanelProps) {
   const [showCharts, setShowCharts] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
+  const [selectedRow, setSelectedRow] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   if (!hasRun) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
-        <Table2 className="mb-4 h-16 w-16 opacity-30" />
+        <SearchCheck className="mb-4 h-16 w-16 opacity-30" />
         <h3 className="text-lg font-semibold text-foreground">
           {t('dataQuery.buildTitle', 'Build your query')}
         </h3>
         <p className="mt-2 max-w-md text-sm">
           {t(
             'dataQuery.buildSubtitle',
-            'Use the filters on the left to define your criteria, then click Run Query to see matching members.',
+            'Use the filters on the left to define your criteria, then click Run Query.',
           )}
         </p>
       </div>
@@ -132,8 +135,12 @@ export function ResultsPanel({
           <div className="flex flex-wrap gap-2">
             {result.summary.byGender && (
               <>
-                <Badge variant="outline">{result.summary.byGender.male} Male</Badge>
-                <Badge variant="outline">{result.summary.byGender.female} Female</Badge>
+                <Badge variant="outline">
+                  {result.summary.byGender.male} Male
+                </Badge>
+                <Badge variant="outline">
+                  {result.summary.byGender.female} Female
+                </Badge>
               </>
             )}
             {result.summary.byStatus?.slice(0, 4).map((s) => (
@@ -145,7 +152,12 @@ export function ResultsPanel({
         </CardContent>
       </Card>
 
-      <Button variant="ghost" size="sm" className="w-fit" onClick={() => setShowCharts(!showCharts)}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-fit"
+        onClick={() => setShowCharts(!showCharts)}
+      >
         {showCharts ? 'Hide charts ▲' : 'Show charts ▼'}
       </Button>
 
@@ -169,7 +181,12 @@ export function ResultsPanel({
             <CardContent className="h-[200px] p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={chartData.gender} dataKey="value" nameKey="name" outerRadius={70}>
+                  <Pie
+                    data={chartData.gender}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={70}
+                  >
                     {chartData.gender.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
@@ -182,9 +199,17 @@ export function ResultsPanel({
           <Card>
             <CardContent className="h-[200px] p-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.subcity.slice(0, 8)} layout="vertical">
+                <BarChart
+                  data={chartData.subcity.slice(0, 8)}
+                  layout="vertical"
+                >
                   <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis type="category" dataKey="subcity" width={80} tick={{ fontSize: 9 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="subcity"
+                    width={80}
+                    tick={{ fontSize: 9 }}
+                  />
                   <Tooltip />
                   <Bar dataKey="count" fill="#f59e0b" />
                 </BarChart>
@@ -272,19 +297,36 @@ export function ResultsPanel({
         <div className="flex flex-wrap items-center gap-2">
           {(isSuperAdmin || canExportIdentified) && (
             <>
-              <Button size="sm" variant="outline" disabled={exporting} onClick={() => onExport('excel')}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={exporting}
+                onClick={() => onExport('excel')}
+              >
                 Export Excel
               </Button>
-              <Button size="sm" variant="outline" disabled={exporting} onClick={() => onExport('pdf')}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={exporting}
+                onClick={() => onExport('pdf')}
+              >
                 Export PDF
               </Button>
             </>
           )}
-          <Button size="sm" disabled={exporting} onClick={() => onExport('anonymized_excel')}>
+          <Button
+            size="sm"
+            disabled={exporting}
+            onClick={() => onExport('anonymized_excel')}
+          >
             Export Anonymized Excel
           </Button>
           {!isSuperAdmin && !canExportIdentified && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Contact your admin to enable full data exports">
+            <span
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+              title="Contact your admin to enable full data exports"
+            >
               <Lock className="h-3 w-3" />
               Identified exports locked
             </span>
@@ -296,14 +338,20 @@ export function ResultsPanel({
         <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm border-l bg-white p-4 shadow-2xl">
           <div className="mb-4 flex items-start justify-between">
             <h3 className="font-semibold">Member Summary</h3>
-            <Button size="icon" variant="ghost" onClick={() => setSelectedRow(null)}>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setSelectedRow(null)}
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
           <div className="space-y-2 text-sm">
             {columns.slice(0, 6).map((col) => (
               <div key={col}>
-                <p className="text-xs text-muted-foreground">{formatEnum(col)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatEnum(col)}
+                </p>
                 <p>{String(selectedRow[col] ?? '')}</p>
               </div>
             ))}
@@ -316,14 +364,15 @@ export function ResultsPanel({
               View Full Profile →
             </Link>
           )}
-          {typeof selectedRow._parentId === 'string' && !selectedRow._childId && (
-            <Link
-              href={`/dashboard/parents/${selectedRow._parentId}`}
-              className="mt-4 inline-flex text-sm font-medium text-primary"
-            >
-              View Full Profile →
-            </Link>
-          )}
+          {typeof selectedRow._parentId === 'string' &&
+            !selectedRow._childId && (
+              <Link
+                href={`/dashboard/parents/${selectedRow._parentId}`}
+                className="mt-4 inline-flex text-sm font-medium text-primary"
+              >
+                View Full Profile →
+              </Link>
+            )}
         </div>
       )}
     </div>
