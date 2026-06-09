@@ -9,8 +9,14 @@ import {
   type SavedQueryItem,
 } from '@/components/data-query/saved-queries-panel';
 import { StatisticsOverview } from '@/components/data-query/statistics-overview';
-import { DEFAULT_COLUMNS, emptyFilters } from '@/components/data-query/constants';
-import { exportQueryExcel, exportQueryPdf } from '@/components/data-query/export-utils';
+import {
+  DEFAULT_COLUMNS,
+  emptyFilters,
+} from '@/components/data-query/constants';
+import {
+  exportQueryExcel,
+  exportQueryPdf,
+} from '@/components/data-query/export-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import api from '@/lib/api';
@@ -74,7 +80,10 @@ export default function DataQueryPage() {
       setLoading(true);
       setHasRun(true);
       try {
-        const res = await api.post('/data-query/run', buildPayload(overridePage));
+        const res = await api.post(
+          '/data-query/run',
+          buildPayload(overridePage),
+        );
         setResult(res.data);
         if (overridePage) setPage(overridePage);
       } finally {
@@ -142,7 +151,10 @@ export default function DataQueryPage() {
     setLoading(true);
     setHasRun(true);
     try {
-      const res = await api.post(`/data-query/saved/${query.id}/run`, { page: 1, pageSize: 25 });
+      const res = await api.post(`/data-query/saved/${query.id}/run`, {
+        page: 1,
+        pageSize: 25,
+      });
       setResult(res.data);
       setPage(1);
       await loadSaved();
@@ -152,14 +164,17 @@ export default function DataQueryPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex h-full flex-col gap-6">
+      <div className="shrink-0 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-primary">
             {t('dataQuery.title', 'Data Query & Export Center')}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t('dataQuery.subtitle', 'የውሂብ መጠይቅ ማዕከል — Build custom queries and export reports')}
+            {t(
+              'dataQuery.subtitle',
+              'የውሂብ መጠይቅ ማዕከል — Build custom queries and export reports',
+            )}
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -179,11 +194,13 @@ export default function DataQueryPage() {
       </div>
 
       {activeTab === 'statistics' ? (
-        <StatisticsOverview />
+        <div className="flex-1 min-h-0">
+          <StatisticsOverview />
+        </div>
       ) : (
         <div
           className={cn(
-            'grid min-h-[640px] gap-4',
+            'grid flex-1 min-h-0 gap-4',
             savedCollapsed
               ? 'lg:grid-cols-[minmax(280px,320px)_1fr_40px]'
               : 'lg:grid-cols-[minmax(280px,320px)_1fr_minmax(220px,280px)]',
