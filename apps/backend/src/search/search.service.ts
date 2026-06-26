@@ -114,16 +114,16 @@ export class SearchService {
         id: child.id,
         idTag: child.idTag,
         title: child.fullName,
-        subtitle: `${child.parent.fullName} · ${child.disabilityType}`,
+        subtitle: `${child.parent?.fullName || 'Unknown'} · ${child.disabilityType}`,
         status: child.status,
         meta: child.severityLevel,
         assignedStaffName: child.assignedStaff.fullName,
         href: `/dashboard/children/${child.id}`,
-        parent: {
+        parent: child.parent ? {
           id: child.parent.id,
           fullName: child.parent.fullName,
           phone: child.parent.phone,
-        },
+        } : null,
       })),
       total: parents.length + children.length,
     };

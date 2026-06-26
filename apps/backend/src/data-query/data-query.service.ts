@@ -349,11 +349,12 @@ export class DataQueryService {
     const parentSubcities = await this.prisma.parent.findMany({
       select: { id: true, subcity: true },
     });
-    const parentSubcityMap = new Map(
+    const parentSubcityMap = new Map<string, string | null>(
       parentSubcities.map((p) => [p.id, p.subcity]),
     );
     const childCountBySubcity = new Map<string, number>();
     for (const row of subcityChildCounts) {
+      if (!row.parentId) continue;
       const subcity = parentSubcityMap.get(row.parentId) ?? 'Unknown';
       childCountBySubcity.set(
         subcity,

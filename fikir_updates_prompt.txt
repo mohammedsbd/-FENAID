@@ -1,0 +1,493 @@
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIKIR SYSTEM — UPDATES & FUNCTIONALITY IMPROVEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are working on the Fikir membership management system — a NestJS +
+Next.js 14 App Router monorepo using Prisma + PostgreSQL. The system
+manages parents and children for FENAID, an Ethiopian NGO.
+
+Read the full codebase before making any changes. Understand the existing
+Prisma schema, the registration forms (parent and child), the data query
+module, and the dashboard statistics panel before touching anything.
+
+This prompt covers 5 separate updates. Implement them in the order listed.
+After each update, confirm it compiles and works before moving to the next.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATE 1 — MEMBER PROFILE: NAME STRUCTURE + DROPDOWN FIELDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+─── 1A. Split Full Name into Three Fields ───
+
+Currently both Parent and Child models store a single `fullName` field.
+Replace this with three separate fields on BOTH models:
+
+  firstName       String
+  fatherName      String
+  grandfatherName String
+
+Migration steps:
+1. Add the three new fields to Parent and Child in schema.prisma
+2. Keep `fullName` temporarily as a computed virtual — do NOT drop it yet
+   (it will be used in the migration script below)
+3. Run: npx prisma migrate dev --name split_name_fields
+4. Write and run a one-time migration script that splits existing `fullName`
+   values by splitting on spaces:
+     word[0] → firstName
+     word[1] → fatherName (or empty string if only one word exists)
+     word[2] → grandfatherName (or empty string)
+5. After confirming all rows are migrated, remove the `fullName` column in
+   a second migration: npx prisma migrate dev --name remove_fullname
+
+Everywhere in the codebase that reads or displays `fullName`, replace with
+a helper function:
+  getFullName(member) → `${member.firstName} ${member.fatherName} ${member.grandfatherName}`.trim()
+
+Create this helper in packages/utils/name.utils.ts and import it wherever
+member names are displayed (tables, profile headers, dropdowns, reports,
+data query results, audit log descriptions, notifications, etc.)
+
+Registration forms: replace the single "Full Name" input with three
+consecutive text inputs:
+  - First Name (required)
+  - Father's Name (required)
+  - Grandfather's Name (required)
+
+─── 1B. Replace Free-Text Fields with Searchable Autocomplete Dropdowns ───
+
+For ALL fields listed below, replace free-text inputs with a searchable
+combobox component. Use shadcn/ui's Command + Popover pattern to build
+a reusable <SearchableSelect> component that:
+  - Shows a trigger button displaying the selected value (or placeholder)
+  - Opens a popover with a search input at the top
+  - Filters options in real time as the user types (keyboard-navigable)
+  - Allows selecting one value (single-select version)
+  - Allows selecting multiple values (multi-select version, shows chips)
+  - Works with react-hook-form (accepts value and onChange props)
+
+Create this component at:
+  components/ui/searchable-select.tsx      ← single select
+  components/ui/searchable-multi-select.tsx ← multi select
+
+Apply to the PARENT registration form:
+
+  GENDER:
+    Options: Male, Female
+
+  MARITAL STATUS:
+    Options: Single, Married, Divorced, Widowed, Separated
+
+  EMPLOYMENT STATUS:
+    Options: Employed (Government), Employed (Private), Self-Employed,
+             Daily Laborer, Unemployed, Retired, Student, Other
+
+  OCCUPATION:
+    Options: Teacher, Nurse, Doctor, Merchant, Farmer, Driver, Engineer,
+             Accountant, Civil Servant, Domestic Worker, Daily Laborer,
+             Housewife, Other
+    (free-text fallback: if user types a value not in the list, allow it)
+
+  EDUCATION LEVEL:
+    Options: No Formal Education, Primary (Grade 1-8), Secondary (Grade 9-12),
+             TVET / Vocational, Diploma, Bachelor's Degree,
+             Master's Degree, PhD / Doctorate
+
+  REFERRAL SOURCE:
+    Options: Self-Referral, Hospital / Health Center, Another NGO,
+             Government Office, School / Teacher, Community Leader,
+             Religious Institution, Media (TV/Radio), Word of Mouth, Other
+
+  CITY:
+    Options: Addis Ababa
+    (single value for now — Addis Ababa only — but built as a dropdown
+    so more cities can be added later without a code change)
+
+  SUB-CITY:
+    Options (all 10 Addis Ababa sub-cities in English transliteration):
+      Addis Ketema, Akaky Kaliti, Arada, Bole, Gulele, Kirkos,
+      Kolfe Keranio, Lideta, Nifas Silk-Lafto, Yeka
+
+  WOREDA:
+    Dynamically filtered based on selected sub-city.
+    Use the following mapping (woreda numbers per sub-city):
+
+    Addis Ketema:    Woreda 01 through Woreda 10
+    Akaky Kaliti:    Woreda 01 through Woreda 13
+    Arada:           Woreda 01 through Woreda 08
+    Bole:            Woreda 01 through Woreda 14
+    Gulele:          Woreda 01 through Woreda 10
+    Kirkos:          Woreda 01 through Woreda 10
+    Kolfe Keranio:   Woreda 01 through Woreda 15
+    Lideta:          Woreda 01 through Woreda 08
+    Nifas Silk-Lafto: Woreda 01 through Woreda 13
+    Yeka:            Woreda 01 through Woreda 13
+
+    When sub-city changes, reset and repopulate the woreda dropdown.
+    Store these mappings as a static constant in:
+      lib/constants/ethiopia-locations.ts
+    so they can be imported anywhere (forms, data query filters, seed data).
+
+  FINANCIAL BRACKET:
+    Keep the Low / Medium / High options but move them to a dropdown.
+    NOTE: see Update 1C below for the income range change.
+
+  STATUS:
+    Options: Active, Inactive, Under Review
+
+Apply to the CHILD registration form:
+
+  GENDER:
+    Options: Male, Female
+
+  DISABILITY TYPE:
+    Options: Physical, Intellectual, Multiple Disabilities
+    When this changes, reset and repopulate Disability Category (below).
+
+  DISABILITY CATEGORY:
+    Dynamically filtered based on Disability Type:
+      Physical:           Mobility Impairment, Visual Impairment,
+                          Hearing Impairment, Speech Impairment, Other Physical
+      Intellectual:       Autism Spectrum Disorder, Down Syndrome,
+                          Developmental Delay, Intellectual Disability NOS, Other Intellectual
+      Multiple Disabilities: Combination of above, Other Multiple
+
+  SEVERITY LEVEL:
+    Options: Mild, Moderate, Severe
+
+  COMMUNICATION ABILITY:
+    Options: Verbal, Non-Verbal, Assisted Communication (AAC Device),
+             Sign Language, Limited Verbal
+
+  SCHOOL ENROLLMENT STATUS:
+    Options: Not Enrolled, Enrolled (Regular School),
+             Enrolled (Special School), Home Schooled, Graduated, Dropped Out
+
+  STATUS:
+    Options: Active, Graduated, Transferred, Inactive, Deceased
+
+Also update the DATA QUERY filter panel to use the same
+SearchableSelect / SearchableMultiSelect components and the same
+option lists for all filter dropdowns (disability type, sub-city,
+severity, status, etc.) so they are consistent with the registration forms.
+Import from the same constants files — do not duplicate the option lists.
+
+─── 1C. Monthly Income Range — Split into Two Number Fields ───
+
+Currently the Parent model stores a single `monthlyIncome` field (or similar).
+
+Replace it with two fields:
+  monthlyIncomeMin    Int?
+  monthlyIncomeMax    Int?
+
+Run migration: npx prisma migrate dev --name split_income_range
+
+On the registration form, show two side-by-side number inputs:
+  [ Monthly Income (Min) ETB ]   [ Monthly Income (Max) ETB ]
+  e.g., 500 and 1000 represents an income range of ETB 500–1,000/month
+
+Add validation: monthlyIncomeMax must be greater than monthlyIncomeMin.
+Both fields are optional.
+
+Keep `financialBracket` (Low / Medium / High) as a separate explicit
+dropdown — it stays as the primary field used for service eligibility rules
+and data query filters. The income range fields are additional detail.
+
+Display on the Parent profile page as:
+  "Monthly Income: ETB 500 – 1,000"
+  If only one value is filled: "ETB 500+" or "Up to ETB 1,000"
+  If neither is filled: "Not specified"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATE 2 — ANONYMIZE USES SYSTEM-GENERATED MEMBER ID
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The system already generates member IDs in the format:
+  FKP-0001  (for parents)
+  FKC-0001  (for children)
+
+Currently, when "Anonymize data" is toggled on in the Data Query page,
+the system replaces names with generic labels like "Child #0042".
+
+Change this behavior so that anonymization uses the real system-generated
+member ID instead of a sequential counter.
+
+─── Backend change (data-query.service.ts) ───
+
+In the buildResults() function, find the anonymization block.
+
+Change:
+  replace child.fullName with "Child #XXXX" (sequential counter)
+  replace parent.fullName with "Parent #XXXX" (sequential counter)
+
+To:
+  replace child name fields (firstName, fatherName, grandfatherName)
+  with the child's existing memberId field value (e.g. "FKC-0047")
+
+  replace parent name fields with the parent's existing memberId field
+  value (e.g. "FKP-0023")
+
+  Still omit: phone, nationalId, email, internalNotes (no change here)
+
+The memberId must always be included in the raw Prisma query result
+even if the user did not select it as an output column, so the
+anonymization function always has it available. After anonymization,
+only include memberId in the output if the user selected it as a column —
+otherwise use it only as the replacement label for the name fields.
+
+─── Frontend change (data-query page) ───
+
+Update the tooltip text on the Anonymize toggle from whatever it currently
+says to:
+  "Replaces member names with their system ID (e.g. FKC-0047, FKP-0023)
+   and removes all contact details. Use when sharing data externally."
+
+No other frontend changes needed for this update.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATE 3 — PARENT ASSIGNMENT OPTIONAL WHEN REGISTERING A CHILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Currently the child registration form requires selecting a parent before
+the form can be submitted. Make this optional.
+
+─── Backend change ───
+
+In the Child model in schema.prisma, the parentId field is currently
+a required relation. Change it to optional:
+
+  parentId    String?
+  parent      Parent?   @relation(fields: [parentId], references: [id])
+
+Run migration: npx prisma migrate dev --name make_parent_optional
+
+In the child creation DTO (create-child.dto.ts), change parentId from
+@IsNotEmpty() to @IsOptional().
+
+In the child creation service method, handle the case where parentId
+is null or undefined — do not attempt to connect a relation if it is absent.
+
+─── Frontend change ───
+
+In the child registration form (Step 4 — Links & Assignment):
+  - Remove the "required" mark (*) from the Parent field
+  - Remove any form validation that blocks submission when parent is empty
+  - Change the placeholder text on the parent selector to:
+    "Search and select a parent (optional)"
+  - Add a small helper text below the field:
+    "You can assign a parent later from the child's profile page."
+
+On the Child profile page, in the profile header where parent name is shown:
+  - If parentId is null, show: "No parent assigned"
+    with a small button: [ Assign Parent ] that opens a slide-over
+    with a searchable parent selector and a Save button.
+  - If parentId exists, keep the current linked display.
+
+Also update the child list table: if a child has no parent assigned,
+show "—" in the Parent Name column instead of crashing or showing empty.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATE 4 — FIX THE DATE OF BIRTH CALENDAR (YEAR NAVIGATION)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The current date picker calendar does not allow easy year selection,
+making it frustrating to enter a birth year far in the past
+(e.g., a parent born in 1975 or a child born in 2010).
+
+Replace the date of birth input on BOTH the Parent and Child registration
+forms with a purpose-built date-of-birth picker that works as follows:
+
+─── New DateOfBirthPicker component ───
+
+Create: components/ui/date-of-birth-picker.tsx
+
+The component renders THREE separate dropdowns side by side:
+  [ Day ▾ ]   [ Month ▾ ]   [ Year ▾ ]
+
+  Day dropdown:    1 through 31 (filter invalid days based on selected month/year)
+  Month dropdown:  January through December
+  Year dropdown:   Current year down to 1930, in descending order
+                   (so recent years appear at the top for children,
+                   and the user can scroll down for older birth years)
+
+When all three are selected, combine into a valid Date object and
+call onChange with the ISO date string.
+
+Show validation error if the resulting date is in the future.
+
+For the PARENT form: year range is 1930 to (current year - 18)
+  — parents must be at least 18 years old
+For the CHILD form: year range is (current year - 25) to current year
+  — allows for young adults still in the system up to age 25
+
+The component must be compatible with react-hook-form (accept register
+or Controller pattern, show error messages from the form's error state).
+
+Replace every instance of the current date picker used for dateOfBirth
+on parent and child forms with this new component. Do not change date
+pickers used for other purposes (appointment dates, service start/end
+dates, filter date ranges) — only dateOfBirth fields.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UPDATE 5 — STATISTICS OVERVIEW REFLECTS QUERY RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Currently the Statistics Overview tab on the Data Query page always shows
+organization-wide aggregate numbers regardless of what filters are applied.
+
+Change it so the Statistics Overview tab dynamically reflects the current
+query result — it should show statistics ABOUT the members that matched
+the last query run, not the entire database.
+
+─── Behavior change ───
+
+State A — No query has been run yet (page first opens):
+  Show a centered empty state in the Statistics tab:
+    Icon: ChartBarIcon
+    Title: "No query results yet"
+    Message: "Run a query in the Query Builder tab first.
+              The statistics will reflect your filtered results."
+  Keep the "Organizational Overview" sub-tab (see below) for org-wide stats.
+
+State B — A query has been run:
+  The statistics tab shows charts and breakdowns derived from the
+  RESULT SET of that query, not the full database.
+
+  Use the `summary` object already returned by POST /data-query/run:
+    summary.byGender         → Gender breakdown (pie chart)
+    summary.byDisabilityType → Disability type breakdown (bar chart)
+    summary.bySubcity        → Sub-city breakdown (horizontal bar chart)
+    summary.bySeverity       → Severity level breakdown (bar chart)
+    summary.byStatus         → Status breakdown (bar chart)
+    summary.byFinancialBracket → Financial bracket breakdown (pie chart)
+
+  At the top of the statistics tab, show a context banner:
+    "Showing statistics for [N] members matching your last query"
+    with a small "[ Run New Query ]" link that switches back to the
+    Query Builder tab.
+
+  If the query returned 0 results, show:
+    "Your query returned no results — statistics are not available.
+     Adjust your filters and run again."
+
+─── Add "Organizational Overview" as a permanent sub-tab ───
+
+Do NOT remove the existing org-wide statistics. Instead, reorganize the
+Statistics tab into two sub-tabs:
+
+  Sub-tab 1: "Query Results"    ← the dynamic tab described above
+  Sub-tab 2: "Full Organization" ← the existing org-wide stats (unchanged)
+
+Use shadcn Tabs for the sub-tabs. Default active: "Query Results".
+
+The "Full Organization" sub-tab continues to fetch from
+GET /data-query/statistics and always shows org-wide totals —
+this is still useful for board/donor briefings independent of any query.
+
+─── Frontend-only change ───
+
+This is a frontend-only update. The backend already returns the `summary`
+object with each query result. No backend changes are needed.
+
+The statistics charts are already built — you are re-routing their data
+source from the statistics API response to the query result summary object.
+Use the same recharts components, same color tokens, same layout.
+
+The only new work is:
+  - The two sub-tabs structure
+  - Reading from query result summary instead of statistics API for sub-tab 1
+  - The empty state for when no query has been run
+  - The context banner showing what the stats are about
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SHARED CONSTANTS — CREATE THESE FILES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create the following constants files. They are imported by the registration
+forms, the data query filter panel, and the seed file — one source of
+truth, never duplicated.
+
+── lib/constants/ethiopia-locations.ts ──
+
+Export:
+  CITIES: string[]                          → ["Addis Ababa"]
+  SUBCITIES: string[]                       → all 10 sub-cities
+  WOREDAS_BY_SUBCITY: Record<string, string[]>  → full mapping as defined in Update 1B
+
+── lib/constants/member-options.ts ──
+
+Export all dropdown option arrays used across the system:
+  GENDER_OPTIONS
+  MARITAL_STATUS_OPTIONS
+  EMPLOYMENT_STATUS_OPTIONS
+  OCCUPATION_OPTIONS
+  EDUCATION_LEVEL_OPTIONS
+  REFERRAL_SOURCE_OPTIONS
+  FINANCIAL_BRACKET_OPTIONS
+  PARENT_STATUS_OPTIONS
+  DISABILITY_TYPE_OPTIONS
+  DISABILITY_CATEGORIES_BY_TYPE   (Record<string, string[]>)
+  SEVERITY_OPTIONS
+  COMMUNICATION_ABILITY_OPTIONS
+  SCHOOL_ENROLLMENT_OPTIONS
+  CHILD_STATUS_OPTIONS
+
+Use these constants in:
+  - Parent registration form
+  - Child registration form
+  - Data query filter panel
+  - Any other place these values are currently hardcoded
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Read existing files before editing them. Match the current code style,
+   naming conventions, and patterns exactly.
+
+2. Every Prisma schema change must have a corresponding migration.
+   Run migrations one at a time in the order they appear in this prompt.
+   Never modify existing migrations — always create new ones.
+
+3. The getFullName() helper must be used EVERYWHERE a member name is
+   displayed. Search the entire codebase for uses of .fullName and
+   replace them all. Do not miss: tables, profile headers, dropdowns,
+   notifications, audit log entries, reports, data query results,
+   export files, and the global search feature.
+
+4. The new SearchableSelect components must work with react-hook-form.
+   Test them in both the parent form and the child form before moving on.
+
+5. Do not change any existing API endpoint URLs, response shapes, or
+   authentication logic. All changes are additive or internal.
+
+6. After all 5 updates are complete, do a full end-to-end test:
+   Register a new parent (with split name + all dropdowns + income range)
+   → Register a child linked to that parent (with split name + all dropdowns)
+   → Register a second child with NO parent assigned
+   → Run a data query → toggle Anonymize → confirm IDs show (FKC-xxxx / FKP-xxxx)
+   → Go to Statistics tab → confirm it reflects the query result
+   → Go to Full Organization sub-tab → confirm it still shows org-wide data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BUILD ORDER — EXECUTE IN THIS EXACT SEQUENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Create lib/constants/ethiopia-locations.ts
+  2. Create lib/constants/member-options.ts
+  3. Create components/ui/searchable-select.tsx
+  4. Create components/ui/searchable-multi-select.tsx
+  5. Create packages/utils/name.utils.ts (getFullName helper)
+  6. Schema: split name fields + income range + optional parentId → run migrations
+  7. Update parent registration form (name split + all dropdowns + income range)
+  8. Update child registration form (name split + all dropdowns + optional parent)
+  9. Create components/ui/date-of-birth-picker.tsx
+  10. Replace dateOfBirth inputs on both forms with new picker
+  11. Update all name displays across the codebase to use getFullName()
+  12. Update data-query.service.ts anonymization to use memberId
+  13. Update data query statistics tab (sub-tabs + dynamic results)
+  14. Full end-to-end test
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF PROMPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
