@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useLocale } from '@/components/providers/locale-provider';
 import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { ExportButton } from '@/components/dashboard/export-button';
@@ -52,6 +53,7 @@ const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 export default function ParentsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [parents, setParents] = useState<ParentRow[]>([]);
@@ -153,7 +155,7 @@ export default function ParentsPage() {
       setPages(res.data.meta?.pages || 1);
       setTotal(res.data.meta?.total || 0);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to load parents.'));
+      setError(getErrorMessage(err, t('parents.errorLoad', 'Failed to load parents.')));
     } finally {
       setLoading(false);
     }
@@ -192,11 +194,11 @@ export default function ParentsPage() {
       fetchParents();
       
       toast({
-        title: isActivating ? 'Profile Activated' : 'Profile Deactivated',
-        description: `${name} has been successfully ${isActivating ? 'activated' : 'deactivated'}.`,
+        title: isActivating ? t('parents.toast.activated', 'Profile Activated') : t('parents.toast.deactivated', 'Profile Deactivated'),
+        description: t('parents.toast.description', '{name} has been successfully {action}.', { name, action: isActivating ? t('parents.toast.activatedAction', 'activated') : t('parents.toast.deactivatedAction', 'deactivated') }),
       });
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to update parent status.'));
+      setError(getErrorMessage(err, t('parents.errorUpdateStatus', 'Failed to update parent status.')));
     }
   }
 
@@ -216,7 +218,7 @@ export default function ParentsPage() {
       const filename = `parents-export-${new Date().toISOString().split('T')[0]}`;
 
       if (formatType === 'csv') {
-        const headers = ['ID Tag', 'Full Name', 'National ID', 'Phone', 'Email', 'City', 'Subcity', 'Woreda', 'Status', 'Financial Bracket', 'Marital Status', 'Assigned Worker', 'Registered Date'];
+        const headers = [t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'), t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'), t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'), t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'), t('parents.export.csv.status', 'Status'), t('parents.export.csv.financialBracket', 'Financial Bracket'), t('parents.export.csv.maritalStatus', 'Marital Status'), t('parents.export.csv.assignedWorker', 'Assigned Worker'), t('parents.export.csv.registeredDate', 'Registered Date')];
         const rows = data.map((p: any) => [
           p.idTag || '',
           p.fullName || '',
@@ -229,12 +231,12 @@ export default function ParentsPage() {
           p.status || '',
           p.financialBracket || '',
           p.maritalStatus || '',
-          p.assignedStaff?.fullName || 'Unassigned',
+          p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'),
           p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''
         ]);
         exportToCSV(headers, rows, `${filename}.csv`);
       } else if (formatType === 'excel') {
-        const headers = ['ID Tag', 'Full Name', 'National ID', 'Phone', 'Email', 'City', 'Subcity', 'Woreda', 'Status', 'Financial Bracket', 'Marital Status', 'Assigned Worker', 'Registered Date'];
+        const headers = [t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'), t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'), t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'), t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'), t('parents.export.csv.status', 'Status'), t('parents.export.csv.financialBracket', 'Financial Bracket'), t('parents.export.csv.maritalStatus', 'Marital Status'), t('parents.export.csv.assignedWorker', 'Assigned Worker'), t('parents.export.csv.registeredDate', 'Registered Date')];
         const rows = data.map((p: any) => [
           p.idTag || '',
           p.fullName || '',
@@ -247,10 +249,10 @@ export default function ParentsPage() {
           p.status || '',
           p.financialBracket || '',
           p.maritalStatus || '',
-          p.assignedStaff?.fullName || 'Unassigned',
+          p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'),
           p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''
         ]);
-        exportToExcelHTML('Parents Directory', headers, rows, `${filename}.xls`);
+        exportToExcelHTML(t('parents.export.directory', 'Parents Directory'), headers, rows, `${filename}.xls`);
       } else if (formatType === 'docx') {
         let tableRowsHTML = '';
         data.forEach((p: any) => {
@@ -263,24 +265,24 @@ export default function ParentsPage() {
               <td>${escapeHTML(p.city || '')}, ${escapeHTML(p.subcity || '')}</td>
               <td><span class="badge">${escapeHTML(formatEnum(p.status))}</span></td>
               <td>${escapeHTML(formatEnum(p.financialBracket))}</td>
-              <td>${escapeHTML(p.assignedStaff?.fullName || 'Unassigned')}</td>
+              <td>${escapeHTML(p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
         });
         const contentHTML = `
-          <h2>Parents Directory</h2>
-          <p>Total Records: ${data.length}</p>
+          <h2>${t('parents.export.directory', 'Parents Directory')}</h2>
+          <p>${t('parents.export.totalRecords', 'Total Records')}: ${data.length}</p>
           <table>
             <thead>
               <tr>
-                <th>ID Tag</th>
-                <th>Full Name</th>
-                <th>National ID</th>
-                <th>Phone</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Financial Bracket</th>
-                <th>Case Worker</th>
+                <th>${t('parents.export.csv.idTag', 'ID Tag')}</th>
+                <th>${t('parents.export.csv.fullName', 'Full Name')}</th>
+                <th>${t('parents.export.csv.nationalId', 'National ID')}</th>
+                <th>${t('parents.export.csv.phone', 'Phone')}</th>
+                <th>${t('parents.export.csv.location', 'Location')}</th>
+                <th>${t('parents.export.csv.status', 'Status')}</th>
+                <th>${t('parents.export.csv.financialBracket', 'Financial Bracket')}</th>
+                <th>${t('parents.export.csv.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
             <tbody>
@@ -288,7 +290,7 @@ export default function ParentsPage() {
             </tbody>
           </table>
         `;
-        exportToWordHTML('Parents Directory', contentHTML, `${filename}.doc`);
+        exportToWordHTML(t('parents.export.directory', 'Parents Directory'), contentHTML, `${filename}.doc`);
       } else if (formatType === 'pdf') {
         let tableRowsHTML = '';
         data.forEach((p: any) => {
@@ -302,25 +304,25 @@ export default function ParentsPage() {
               <td>${escapeHTML(p.city || '')}, ${escapeHTML(p.subcity || '')}</td>
               <td><span class="badge ${statusClass}">${escapeHTML(formatEnum(p.status))}</span></td>
               <td>${escapeHTML(formatEnum(p.financialBracket))}</td>
-              <td>${escapeHTML(p.assignedStaff?.fullName || 'Unassigned')}</td>
+              <td>${escapeHTML(p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
         });
         const htmlBody = `
           <div style="margin-bottom: 20px; font-size: 13px; color: #475569;">
-            Total records matching current filters: <b>${data.length}</b>
+            ${t('parents.export.matchingRecords', 'Total records matching current filters')}: <b>${data.length}</b>
           </div>
           <table>
             <thead>
               <tr>
-                <th style="width: 10%">ID Tag</th>
-                <th style="width: 25%">Full Name</th>
-                <th style="width: 15%">National ID</th>
-                <th style="width: 15%">Phone</th>
-                <th style="width: 15%">Location</th>
-                <th style="width: 10%">Status</th>
-                <th style="width: 10%">Financial</th>
-                <th style="width: 15%">Case Worker</th>
+                <th style="width: 10%">${t('parents.export.csv.idTag', 'ID Tag')}</th>
+                <th style="width: 25%">${t('parents.export.csv.fullName', 'Full Name')}</th>
+                <th style="width: 15%">${t('parents.export.csv.nationalId', 'National ID')}</th>
+                <th style="width: 15%">${t('parents.export.csv.phone', 'Phone')}</th>
+                <th style="width: 15%">${t('parents.export.csv.location', 'Location')}</th>
+                <th style="width: 10%">${t('parents.export.csv.status', 'Status')}</th>
+                <th style="width: 10%">${t('parents.export.csv.financial', 'Financial')}</th>
+                <th style="width: 15%">${t('parents.export.csv.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
             <tbody>
@@ -328,10 +330,10 @@ export default function ParentsPage() {
             </tbody>
           </table>
         `;
-        exportToPDF('Parent Directory', htmlBody);
+        exportToPDF(t('parents.export.parentDirectory', 'Parent Directory'), htmlBody);
       }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to export parents data.'));
+      setError(getErrorMessage(err, t('parents.errorExport', 'Failed to export parents data.')));
     } finally {
       setExporting(false);
     }
@@ -342,16 +344,16 @@ export default function ParentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Parents</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('parents.title', 'Parents')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage registered parents and their financial brackets.
+            {t('parents.description', 'Manage registered parents and their financial brackets.')}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           <ExportButton onExport={handleExport} loading={exporting} />
           <Button onClick={openNewDrawer} className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
-            Register New Parent
+            {t('parents.registerNew', 'Register New Parent')}
           </Button>
         </div>
       </div>
@@ -360,14 +362,14 @@ export default function ParentsPage() {
         <CardHeader className="gap-4">
           <div className="grid gap-4 lg:grid-cols-[minmax(250px,1fr)_160px_160px_160px_auto] lg:items-end">
             <div className="space-y-1.5">
-              <Label htmlFor="parent-search" className="text-sm font-semibold">Search Parents</Label>
+              <Label htmlFor="parent-search" className="text-sm font-semibold">{t('parents.search.label', 'Search Parents')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/70" />
                 <Input
                   id="parent-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name, phone, ID..."
+                  placeholder={t('parents.search.placeholder', 'Search by name, phone, ID...')}
                   className="h-12 pl-10 pr-10 text-base shadow-sm focus-visible:ring-primary"
                 />
                 {search && (
@@ -381,20 +383,20 @@ export default function ParentsPage() {
                 )}
               </div>
             </div>
-            <FilterSelect label="Status" value={status} onChange={setStatus}>
-              <option value="">All statuses</option>
+            <FilterSelect label={t('parents.filter.status', 'Status')} value={status} onChange={setStatus}>
+              <option value="">{t('parents.filter.statusAll', 'All statuses')}</option>
               {statusOptions.map((option) => (
                 <option key={option} value={option}>{formatEnum(option)}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="Financial Bracket" value={financialBracket} onChange={setFinancialBracket}>
-              <option value="">All brackets</option>
+            <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={setFinancialBracket}>
+              <option value="">{t('parents.filter.bracketAll', 'All brackets')}</option>
               {bracketOptions.map((option) => (
                 <option key={option} value={option}>{formatEnum(option)}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="Assigned Staff" value={assignedStaffId} onChange={setAssignedStaffId}>
-              <option value="">All staff</option>
+            <FilterSelect label={t('parents.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={setAssignedStaffId}>
+              <option value="">{t('parents.filter.staffAll', 'All staff')}</option>
               {staffOptions.map((worker) => (
                 <option key={worker.id} value={worker.id}>{worker.fullName}</option>
               ))}
@@ -411,7 +413,7 @@ export default function ParentsPage() {
               }}
             >
               <RotateCcw className="h-4 w-4" />
-              Reset
+              {t('parents.reset', 'Reset')}
             </Button>
           </div>
         </CardHeader>
@@ -425,14 +427,14 @@ export default function ParentsPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Parent Name</TableHead>
-                <TableHead className="w-[120px]">ID</TableHead>
-                <TableHead>National ID</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Financial</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Staff</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('parents.table.name', 'Parent Name')}</TableHead>
+                <TableHead className="w-[120px]">{t('parents.table.id', 'ID')}</TableHead>
+                <TableHead>{t('parents.table.nationalId', 'National ID')}</TableHead>
+                <TableHead>{t('parents.table.phone', 'Phone')}</TableHead>
+                <TableHead>{t('parents.table.financial', 'Financial')}</TableHead>
+                <TableHead>{t('parents.table.status', 'Status')}</TableHead>
+                <TableHead>{t('parents.table.staff', 'Staff')}</TableHead>
+                <TableHead className="text-right">{t('parents.table.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -459,12 +461,12 @@ export default function ParentsPage() {
                         </Avatar>
                         <div>
                           <div className="font-medium">{parent.fullName}</div>
-                          <div className="text-xs text-muted-foreground">{parent.email || 'No email'}</div>
+                          <div className="text-xs text-muted-foreground">{parent.email || t('parents.table.noEmail', 'No email')}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono font-bold text-primary">{parent.idTag || '---'}</span>
+                      <span className="font-mono font-bold text-primary">{parent.idTag || t('parents.table.idTagPlaceholder', '---')}</span>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{parent.nationalId}</TableCell>
                     <TableCell>{parent.phone}</TableCell>
@@ -474,7 +476,7 @@ export default function ParentsPage() {
                     <TableCell>
                       <StatusBadge status={parent.status} />
                     </TableCell>
-                    <TableCell>{parent.assignedStaff?.fullName || 'Unassigned'}</TableCell>
+                    <TableCell>{parent.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned')}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <Button
@@ -484,7 +486,7 @@ export default function ParentsPage() {
                             event.stopPropagation();
                             openEditDrawer(parent);
                           }}
-                          aria-label="Edit parent"
+                          aria-label={t('parents.table.editLabel', 'Edit parent')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -495,7 +497,7 @@ export default function ParentsPage() {
                             event.stopPropagation();
                             setDeactivatingParent(parent);
                           }}
-                          aria-label={parent.status === 'INACTIVE' ? 'Activate parent' : 'Deactivate parent'}
+                          aria-label={parent.status === 'INACTIVE' ? t('parents.table.activateLabel', 'Activate parent') : t('parents.table.deactivateLabel', 'Deactivate parent')}
                           className={parent.status === 'INACTIVE' ? "text-emerald-600 hover:text-emerald-700" : "text-red-600 hover:text-red-700"}
                         >
                           {parent.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
@@ -512,16 +514,16 @@ export default function ParentsPage() {
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-lg font-semibold">No parents found</p>
+                        <p className="text-lg font-semibold">{t('parents.empty.title', 'No parents found')}</p>
                         <p className="max-w-xs text-sm text-muted-foreground">
                           {debouncedSearch
-                            ? `We couldn't find any parents matching "${debouncedSearch}". Try a different name or ID.`
-                            : "You haven't registered any parents yet. Click the 'Register New Parent' button to get started."}
+                            ? t('parents.empty.searchDesc', 'We couldn\'t find any parents matching "{search}". Try a different name or ID.', { search: debouncedSearch })
+                            : t('parents.empty.generalDesc', "You haven't registered any parents yet. Click the 'Register New Parent' button to get started.")}
                         </p>
                       </div>
                       {debouncedSearch && (
                         <Button variant="outline" size="sm" onClick={() => setSearch('')}>
-                          Clear Search
+                          {t('parents.empty.clearSearch', 'Clear Search')}
                         </Button>
                       )}
                     </div>
@@ -533,7 +535,7 @@ export default function ParentsPage() {
 
           <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing page {page} of {pages} for {total} parent records
+              {t('parents.pagination.showing', 'Showing page {page} of {pages} for {total} parent records', { page: String(page), pages: String(pages), total: String(total) })}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -543,7 +545,7 @@ export default function ParentsPage() {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                {t('parents.pagination.previous', 'Previous')}
               </Button>
               <Button
                 variant="outline"
@@ -551,7 +553,7 @@ export default function ParentsPage() {
                 disabled={page >= pages}
                 onClick={() => setPage((current) => Math.min(pages, current + 1))}
               >
-                Next
+                {t('parents.pagination.next', 'Next')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -569,8 +571,8 @@ export default function ParentsPage() {
           closeDrawer();
           fetchParents();
           toast({
-            title: editingParentId ? 'Profile Updated' : 'Parent Registered',
-            description: 'The parent profile has been saved successfully.',
+            title: editingParentId ? t('parents.drawer.updated', 'Profile Updated') : t('parents.drawer.registered', 'Parent Registered'),
+            description: t('parents.drawer.saved', 'The parent profile has been saved successfully.'),
           });
         }}
       />
@@ -578,9 +580,9 @@ export default function ParentsPage() {
       {deactivatingParent && (
         <DeactivateConfirmationModal
           name={deactivatingParent.fullName}
-          title={deactivatingParent.status === 'INACTIVE' ? "Activate Profile?" : "Deactivate Profile?"}
-          description={deactivatingParent.status === 'INACTIVE' ? `Are you sure you want to activate ${deactivatingParent.fullName}? This will restore their access in the system.` : undefined}
-          confirmLabel={deactivatingParent.status === 'INACTIVE' ? "Activate Now" : "Deactivate Now"}
+          title={deactivatingParent.status === 'INACTIVE' ? t('parents.deactivate.titleActivate', 'Activate Profile?') : t('parents.deactivate.titleDeactivate', 'Deactivate Profile?')}
+          description={deactivatingParent.status === 'INACTIVE' ? t('parents.deactivate.descActivate', 'Are you sure you want to activate {name}? This will restore their access in the system.', { name: deactivatingParent.fullName }) : undefined}
+          confirmLabel={deactivatingParent.status === 'INACTIVE' ? t('parents.deactivate.confirmActivate', 'Activate Now') : t('parents.deactivate.confirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setDeactivatingParent(null)}
         />

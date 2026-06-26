@@ -38,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useLocale } from '@/components/providers/locale-provider';
+import { t as tI18n } from '@/lib/i18n';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/dashboard/export-button';
@@ -68,6 +70,7 @@ type Tab = (typeof tabs)[number];
 export default function ParentProfilePage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { t } = useLocale();
   const [parent, setParent] = useState<ParentDetailResponse | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [loading, setLoading] = useState(true);
@@ -90,7 +93,7 @@ export default function ParentProfilePage() {
       const res = await api.get(`/parents/${params.id}`);
       setParent(res.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load parent profile');
+      setError(err.response?.data?.message || t('parents.detail.errorLoad', 'Failed to load parent profile'));
     } finally {
       setLoading(false);
     }
@@ -117,16 +120,16 @@ export default function ParentProfilePage() {
       await api.delete(`/parents/${parent.id}`);
       const isActivating = parent.status === 'INACTIVE';
       toast({
-        title: isActivating ? 'Profile Activated' : 'Profile Deactivated',
-        description: `${parent.fullName} has been successfully ${isActivating ? 'activated' : 'deactivated'}.`,
+        title: isActivating ? t('parents.detail.toastActivated', 'Profile Activated') : t('parents.detail.toastDeactivated', 'Profile Deactivated'),
+        description: t('parents.detail.toastDescription', '{name} has been successfully {action}.', { name: parent.fullName, action: isActivating ? t('parents.detail.activatedAction', 'activated') : t('parents.detail.deactivatedAction', 'deactivated') }),
       });
       fetchParent();
       setShowDeactivateModal(false);
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to update status',
+        title: t('parents.detail.error', 'Error'),
+        description: err.response?.data?.message || t('parents.detail.errorUpdateStatus', 'Failed to update status'),
       });
     }
   };
@@ -136,47 +139,47 @@ export default function ParentProfilePage() {
     setExporting(true);
 
     const filename = `parent-${parent.fullName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
-    const title = `Parent Profile: ${parent.fullName}`;
+    const title = `${t('parents.detail.export.profileTitle', 'Parent Profile')}: ${parent.fullName}`;
 
     const profileSections = [
       {
-        title: 'Personal Information',
+        title: t('parents.detail.export.personalInfo', 'Personal Information'),
         fields: [
-          ['Full Name', parent.fullName],
-          ['National ID', parent.nationalId],
-          ['Date of Birth', formatDate(parent.dateOfBirth)],
-          ['Gender', parent.gender || 'N/A'],
-          ['Phone', parent.phone],
-          ['Email', parent.email || 'N/A'],
+          [t('parents.detail.export.fullName', 'Full Name'), parent.fullName],
+          [t('parents.detail.export.nationalId', 'National ID'), parent.nationalId],
+          [t('parents.detail.export.dateOfBirth', 'Date of Birth'), formatDate(parent.dateOfBirth)],
+          [t('parents.detail.export.gender', 'Gender'), parent.gender || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.phone', 'Phone'), parent.phone],
+          [t('parents.detail.export.email', 'Email'), parent.email || t('parents.detail.na', 'N/A')],
         ] as [string, string][],
       },
       {
-        title: 'Location & Social',
+        title: t('parents.detail.export.locationSocial', 'Location & Social'),
         fields: [
-          ['Address', parent.address || 'N/A'],
-          ['City', parent.city || 'N/A'],
-          ['Subcity', parent.subcity || 'N/A'],
-          ['Woreda', parent.woreda || 'N/A'],
-          ['Marital Status', formatEnum(parent.maritalStatus)],
-          ['Education Level', parent.educationLevel || 'N/A'],
-          ['Employment Status', formatEnum(parent.employmentStatus)],
+          [t('parents.detail.export.address', 'Address'), parent.address || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.city', 'City'), parent.city || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.subcity', 'Subcity'), parent.subcity || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.woreda', 'Woreda'), parent.woreda || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.maritalStatus', 'Marital Status'), formatEnum(parent.maritalStatus)],
+          [t('parents.detail.export.educationLevel', 'Education Level'), parent.educationLevel || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.employmentStatus', 'Employment Status'), formatEnum(parent.employmentStatus)],
         ] as [string, string][],
       },
       {
-        title: 'Program Details',
+        title: t('parents.detail.export.programDetails', 'Program Details'),
         fields: [
-          ['Status', formatEnum(parent.status)],
-          ['Financial Bracket', formatEnum(parent.financialBracket)],
-          ['Dependents', String(parent.numberOfDependents || 0)],
-          ['Referral Source', parent.referralSource || 'N/A'],
-          ['Case Worker', parent.assignedStaff?.fullName || 'Unassigned'],
-          ['Registered Date', formatDate(parent.createdAt)],
+          [t('parents.detail.export.status', 'Status'), formatEnum(parent.status)],
+          [t('parents.detail.export.financialBracket', 'Financial Bracket'), formatEnum(parent.financialBracket)],
+          [t('parents.detail.export.dependents', 'Dependents'), String(parent.numberOfDependents || 0)],
+          [t('parents.detail.export.referralSource', 'Referral Source'), parent.referralSource || t('parents.detail.na', 'N/A')],
+          [t('parents.detail.export.caseWorker', 'Case Worker'), parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')],
+          [t('parents.detail.export.registeredDate', 'Registered Date'), formatDate(parent.createdAt)],
         ] as [string, string][],
       },
     ];
 
     if (formatType === 'csv') {
-      const headers = ['Field', 'Value'];
+      const headers = [t('parents.detail.export.field', 'Field'), t('parents.detail.export.value', 'Value')];
       const rows = profileSections.flatMap((s) => [[s.title, ''], ...s.fields]);
       exportToCSV(headers, rows, `${filename}.csv`);
     } else if (formatType === 'excel') {
@@ -192,7 +195,7 @@ export default function ParentProfilePage() {
         contentHTML += `</tbody></table>`;
       });
       if (parent.internalNotes) {
-        contentHTML += `<h2>Internal Notes</h2><p>${escapeHTML(parent.internalNotes)}</p>`;
+        contentHTML += `<h2>${t('parents.detail.export.internalNotes', 'Internal Notes')}</h2><p>${escapeHTML(parent.internalNotes)}</p>`;
       }
       exportToWordHTML(title, contentHTML, `${filename}.doc`);
     } else if (formatType === 'pdf') {
@@ -210,7 +213,7 @@ export default function ParentProfilePage() {
       });
       htmlBody += `</div>`;
       if (parent.internalNotes) {
-        htmlBody += `<h2>Internal Notes</h2><div class="field" style="white-space: pre-wrap;">${escapeHTML(parent.internalNotes)}</div>`;
+        htmlBody += `<h2>${t('parents.detail.export.internalNotes', 'Internal Notes')}</h2><div class="field" style="white-space: pre-wrap;">${escapeHTML(parent.internalNotes)}</div>`;
       }
       exportToPDF(title, htmlBody);
     }
@@ -233,10 +236,10 @@ export default function ParentProfilePage() {
           <div className="rounded-full bg-red-100 p-3 text-red-600">
             <UserMinus className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-red-900">Error Loading Profile</h2>
-          <p className="mt-1 text-sm text-red-700">{error || 'Parent not found'}</p>
+          <h2 className="mt-4 text-lg font-semibold text-red-900">{t('parents.detail.errorTitle', 'Error Loading Profile')}</h2>
+          <p className="mt-1 text-sm text-red-700">{error || t('parents.detail.parentNotFound', 'Parent not found')}</p>
           <Button variant="outline" className="mt-6 border-red-200" asChild>
-            <Link href="/dashboard/parents">Back to Parents</Link>
+            <Link href="/dashboard/parents">{t('parents.detail.backToList', 'Back to Parents')}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -259,17 +262,17 @@ export default function ParentProfilePage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h1 className="text-2xl font-bold tracking-tight">{parent.fullName}</h1>
-                    <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{parent.idTag || '---'}</span>
+                    <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{parent.idTag || t('parents.detail.idTagPlaceholder', '---')}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <UserRound className="h-4 w-4" />
-                      {parent.assignedStaff?.fullName || 'Unassigned'}
+                      {parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')}
                     </span>
                     <span className="text-slate-300">•</span>
                     <span className="inline-flex items-center gap-1">
                       <CalendarDays className="h-4 w-4" />
-                      Joined {formatDate(parent.createdAt)}
+                      {t('parents.detail.joined', 'Joined')} {formatDate(parent.createdAt)}
                     </span>
                     <StatusBadge status={parent.status} />
                   </div>
@@ -279,7 +282,7 @@ export default function ParentProfilePage() {
                 <ExportButton onExport={handleExport} loading={exporting} />
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setDrawerOpen(true)}>
                   <Pencil className="h-4 w-4" />
-                  Edit Profile
+                  {t('parents.detail.editProfile', 'Edit Profile')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -288,16 +291,16 @@ export default function ParentProfilePage() {
                   onClick={() => setShowDeactivateModal(true)}
                 >
                   {parent.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
-                  {parent.status === 'INACTIVE' ? 'Activate' : 'Deactivate'}
+                  {parent.status === 'INACTIVE' ? t('parents.detail.activate', 'Activate') : t('parents.detail.deactivate', 'Deactivate')}
                 </Button>
               </div>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-8 sm:grid-cols-4">
-              <HeroMetric label="Status" value={formatEnum(parent.status)} />
-              <HeroMetric label="Bracket" value={formatEnum(parent.financialBracket)} />
-              <HeroMetric label="Children" value={parent.children.length} />
-              <HeroMetric label="Services" value={parent.serviceAssignments.length} />
+              <HeroMetric label={t('parents.detail.statusLabel', 'Status')} value={formatEnum(parent.status)} />
+              <HeroMetric label={t('parents.detail.bracketLabel', 'Bracket')} value={formatEnum(parent.financialBracket)} />
+              <HeroMetric label={t('parents.detail.childrenLabel', 'Children')} value={parent.children.length} />
+              <HeroMetric label={t('parents.detail.servicesLabel', 'Services')} value={parent.serviceAssignments.length} />
             </div>
           </div>
         </CardContent>
@@ -320,7 +323,7 @@ export default function ParentProfilePage() {
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                     )}
                   >
-                    {tab}
+                    {t(`parents.detail.tab.${tab.toLowerCase().replace(/[\s&]+/g, '_')}`, tab)}
                   </button>
                 ))}
               </nav>
@@ -330,14 +333,14 @@ export default function ParentProfilePage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-                Contact Info
+                {t('parents.detail.contactInfo', 'Contact Info')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ContactItem icon={Phone} label="Phone" value={parent.phone} />
-              <ContactItem icon={Mail} label="Email" value={parent.email || 'No email provided'} />
-              <ContactItem icon={MapPin} label="Location" value={`${parent.city}, ${parent.subcity}`} />
-              <ContactItem icon={Fingerprint} label="National ID" value={parent.nationalId} />
+              <ContactItem icon={Phone} label={t('parents.detail.phone', 'Phone')} value={parent.phone} />
+              <ContactItem icon={Mail} label={t('parents.detail.email', 'Email')} value={parent.email || t('parents.detail.noEmail', 'No email provided')} />
+              <ContactItem icon={MapPin} label={t('parents.detail.location', 'Location')} value={`${parent.city}, ${parent.subcity}`} />
+              <ContactItem icon={Fingerprint} label={t('parents.detail.nationalId', 'National ID')} value={parent.nationalId} />
             </CardContent>
           </Card>
         </div>
@@ -346,24 +349,24 @@ export default function ParentProfilePage() {
           {activeTab === 'Profile' && (
             <>
               <div className="grid gap-6 md:grid-cols-2">
-                <DetailCard title="Background Information">
-                  <DetailItem icon={Heart} label="Marital Status" value={formatEnum(parent.maritalStatus)} />
-                  <DetailItem icon={GraduationCap} label="Education" value={parent.educationLevel} />
-                  <DetailItem icon={Briefcase} label="Employment" value={formatEnum(parent.employmentStatus)} />
-                  <DetailItem icon={Users} label="Dependents" value={`${parent.numberOfDependents} family members`} />
+                <DetailCard title={t('parents.detail.backgroundInfo', 'Background Information')}>
+                  <DetailItem icon={Heart} label={t('parents.detail.maritalStatus', 'Marital Status')} value={formatEnum(parent.maritalStatus)} />
+                  <DetailItem icon={GraduationCap} label={t('parents.detail.education', 'Education')} value={parent.educationLevel} />
+                  <DetailItem icon={Briefcase} label={t('parents.detail.employment', 'Employment')} value={formatEnum(parent.employmentStatus)} />
+                  <DetailItem icon={Users} label={t('parents.detail.dependents', 'Dependents')} value={t('parents.detail.dependentsValue', '{count} family members', { count: String(parent.numberOfDependents) })} />
                 </DetailCard>
 
-                <DetailCard title="Financial Profile">
-                  <DetailItem icon={Wallet} label="Monthly Income" value={parseIncome(parent.internalNotes)} />
-                  <DetailItem icon={CheckCircle2} label="Financial Bracket" value={formatEnum(parent.financialBracket)} />
-                  <DetailItem icon={ExternalLink} label="Referral Source" value={parent.referralSource || 'Self-referral'} />
+                <DetailCard title={t('parents.detail.financialProfile', 'Financial Profile')}>
+                  <DetailItem icon={Wallet} label={t('parents.detail.monthlyIncome', 'Monthly Income')} value={parseIncome(parent.internalNotes)} />
+                  <DetailItem icon={CheckCircle2} label={t('parents.detail.financialBracket', 'Financial Bracket')} value={formatEnum(parent.financialBracket)} />
+                  <DetailItem icon={ExternalLink} label={t('parents.detail.referralSource', 'Referral Source')} value={parent.referralSource || t('parents.detail.selfReferral', 'Self-referral')} />
                 </DetailCard>
               </div>
 
               {parent.internalNotes && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base font-semibold">Internal Case Notes</CardTitle>
+                    <CardTitle className="text-base font-semibold">{t('parents.detail.internalCaseNotes', 'Internal Case Notes')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
@@ -378,11 +381,11 @@ export default function ParentProfilePage() {
           {activeTab === 'Children' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">Registered Children</CardTitle>
+                <CardTitle className="text-base font-semibold">{t('parents.detail.registeredChildren', 'Registered Children')}</CardTitle>
                 <Button size="sm" variant="outline" className="gap-2" asChild>
                   <Link href={`/dashboard/children?parent=${parent.id}`}>
                     <Plus className="h-4 w-4" />
-                    Add Child
+                    {t('parents.detail.addChild', 'Add Child')}
                   </Link>
                 </Button>
               </CardHeader>
@@ -408,7 +411,7 @@ export default function ParentProfilePage() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState message="No children registered under this parent profile." />
+                  <EmptyState message={t('parents.detail.noChildren', 'No children registered under this parent profile.')} />
                 )}
               </CardContent>
             </Card>
@@ -417,10 +420,10 @@ export default function ParentProfilePage() {
           {activeTab === 'Services' && (
              <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">Assigned Services</CardTitle>
+                <CardTitle className="text-base font-semibold">{t('parents.detail.assignedServices', 'Assigned Services')}</CardTitle>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Assign Service
+                  {t('parents.detail.assignService', 'Assign Service')}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -428,10 +431,10 @@ export default function ParentProfilePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Service</TableHead>
-                        <TableHead>Frequency</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('parents.detail.serviceTable.service', 'Service')}</TableHead>
+                        <TableHead>{t('parents.detail.serviceTable.frequency', 'Frequency')}</TableHead>
+                        <TableHead>{t('parents.detail.serviceTable.status', 'Status')}</TableHead>
+                        <TableHead className="text-right">{t('parents.detail.serviceTable.actions', 'Actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -453,7 +456,7 @@ export default function ParentProfilePage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <EmptyState message="No service assignments found." />
+                  <EmptyState message={t('parents.detail.noServices', 'No service assignments found.')} />
                 )}
               </CardContent>
             </Card>
@@ -462,10 +465,10 @@ export default function ParentProfilePage() {
           {activeTab === 'Fund & Finance' && (
             <Card>
                <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">Financial Allocations</CardTitle>
+                <CardTitle className="text-base font-semibold">{t('parents.detail.financialAllocations', 'Financial Allocations')}</CardTitle>
                 <Button size="sm" variant="outline" className="gap-2 text-primary border-primary hover:bg-primary/5">
                   <Plus className="h-4 w-4" />
-                  New Allocation
+                  {t('parents.detail.newAllocation', 'New Allocation')}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -484,7 +487,7 @@ export default function ParentProfilePage() {
                       ))}
                    </div>
                 ) : (
-                  <EmptyState message="No financial history for this profile." />
+                  <EmptyState message={t('parents.detail.noFinanceHistory', 'No financial history for this profile.')} />
                 )}
               </CardContent>
             </Card>
@@ -493,10 +496,10 @@ export default function ParentProfilePage() {
           {activeTab === 'Documents' && (
              <Card>
                <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">Uploaded Documents</CardTitle>
+                <CardTitle className="text-base font-semibold">{t('parents.detail.uploadedDocuments', 'Uploaded Documents')}</CardTitle>
                 <Button size="sm" variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Upload
+                  {t('parents.detail.upload', 'Upload')}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -520,7 +523,7 @@ export default function ParentProfilePage() {
                      ))}
                    </div>
                 ) : (
-                  <EmptyState message="No documents uploaded yet." />
+                  <EmptyState message={t('parents.detail.noDocuments', 'No documents uploaded yet.')} />
                 )}
               </CardContent>
             </Card>
@@ -538,8 +541,8 @@ export default function ParentProfilePage() {
           setDrawerOpen(false);
           fetchParent();
           toast({
-            title: 'Profile Updated',
-            description: 'The parent profile has been saved successfully.',
+            title: t('parents.detail.profileUpdated', 'Profile Updated'),
+            description: t('parents.detail.profileSaved', 'The parent profile has been saved successfully.'),
           });
         }}
       />
@@ -547,9 +550,9 @@ export default function ParentProfilePage() {
       {showDeactivateModal && (
         <DeactivateConfirmationModal
           name={parent.fullName}
-          title={parent.status === 'INACTIVE' ? "Activate Profile?" : "Deactivate Profile?"}
-          description={parent.status === 'INACTIVE' ? `Are you sure you want to activate ${parent.fullName}? This will restore their access in the system.` : undefined}
-          confirmLabel={parent.status === 'INACTIVE' ? "Activate Now" : "Deactivate Now"}
+          title={parent.status === 'INACTIVE' ? t('parents.detail.deactivateTitleActivate', 'Activate Profile?') : t('parents.detail.deactivateTitleDeactivate', 'Deactivate Profile?')}
+          description={parent.status === 'INACTIVE' ? t('parents.detail.deactivateDescActivate', 'Are you sure you want to activate {name}? This will restore their access in the system.', { name: parent.fullName }) : undefined}
+          confirmLabel={parent.status === 'INACTIVE' ? t('parents.detail.deactivateConfirmActivate', 'Activate Now') : t('parents.detail.deactivateConfirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setShowDeactivateModal(false)}
         />
@@ -632,9 +635,9 @@ function StatusBadge({ status }: { status: ParentStatus }) {
 }
 
 function parseIncome(notes?: string | null) {
-  if (!notes) return 'Not disclosed';
+  if (!notes) return tI18n('parents.detail.notDisclosed', 'Not disclosed');
   const match = notes.match(/Monthly income range:\s*(.*)/);
-  return match ? match[1] : 'Not disclosed';
+  return match ? match[1] : tI18n('parents.detail.notDisclosed', 'Not disclosed');
 }
 
 function initials(name: string) { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); }

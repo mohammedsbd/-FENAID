@@ -11,21 +11,23 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useLocale } from '@/components/providers/locale-provider';
 import api from '../../../lib/api';
 import { useToast } from '@/hooks/use-toast';
-
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLocale();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const loginSchema = z.object({
+    email: z.string().email(t('auth.login.emailError', 'Please enter a valid email address')),
+    password: z.string().min(1, t('auth.login.passwordRequired', 'Password is required')),
+  });
+
+  type LoginFormValues = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -67,8 +69,8 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(user));
 
       toast({
-        title: 'Login Successful',
-        description: `Welcome back, ${user.fullName}`,
+        title: t('auth.login.loginSuccessful', 'Login Successful'),
+        description: t('auth.login.welcomeBack', 'Welcome back, {name}', { name: user.fullName }),
       });
 
       if (mustChangePassword) {
@@ -79,17 +81,17 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      let message = 'Invalid email or password';
+      let message = t('auth.login.invalidCredentials', 'Invalid email or password');
       
       if (error.response?.data?.message) {
         message = error.response.data.message;
       } else if (error.code === 'ERR_NETWORK') {
-        message = 'Network error: Cannot reach server';
+        message = t('auth.login.networkError', 'Network error: Cannot reach server');
       }
 
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: t('auth.login.loginFailed', 'Login Failed'),
         description: message,
       });
       // Data is retained in form automatically by react-hook-form as long as we don't call reset()
@@ -102,11 +104,11 @@ export default function LoginPage() {
     <div className="p-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">{t('auth.login.emailLabel', 'Email Address')}</Label>
           <Input
             id="email"
             type="email"
-            placeholder="name@fikir.org"
+            placeholder={t('auth.login.emailPlaceholder', 'name@fikir.org')}
             {...register('email')}
             className={errors.email ? 'border-destructive' : ''}
             disabled={isLoading}
@@ -117,12 +119,12 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t('auth.login.passwordLabel', 'Password')}</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
+              placeholder={t('auth.login.passwordPlaceholder', '••••••••')}
               {...register('password')}
               className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
               disabled={isLoading}
@@ -144,16 +146,16 @@ export default function LoginPage() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Logging in...
+              {t('auth.login.loggingIn', 'Logging in...')}
             </>
           ) : (
-            'Login'
+            t('auth.login.loginButton', 'Login')
           )}
         </Button>
       </form>
       
       <div className="mt-6 text-center text-xs text-muted-foreground">
-        <p>Empowering Lives, Enabling Futures</p>
+        <p>{t('auth.login.tagline', 'Empowering Lives, Enabling Futures')}</p>
       </div>
     </div>
   );

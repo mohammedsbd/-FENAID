@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 import { cn } from '@/lib/utils';
 
 type DataSubject = 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
@@ -29,6 +29,7 @@ type Tab = 'builder' | 'statistics';
 
 export default function DataQueryPage() {
   const session = getSession();
+  const { t } = useLocale();
   const [activeTab, setActiveTab] = useState<Tab>('builder');
   const [dataSubject, setDataSubject] = useState<DataSubject>('CHILD');
   const [filters, setFilters] = useState<DataQueryFilters>(emptyFilters());
@@ -209,9 +210,9 @@ export default function DataQueryPage() {
           <Card className="flex flex-col overflow-hidden">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="border-b bg-slate-50 px-4 py-3">
-                <h2 className="text-sm font-semibold text-primary">Filters</h2>
+                <h2 className="text-sm font-semibold text-primary">{t('dataQuery.filtersTitle', 'Filters')}</h2>
                 <p className="text-xs text-muted-foreground">
-                  Define criteria, then run your query
+                  {t('dataQuery.filtersDesc', 'Define criteria, then run your query')}
                 </p>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -239,9 +240,9 @@ export default function DataQueryPage() {
           <Card className="flex min-w-0 flex-col overflow-hidden">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="border-b bg-slate-50 px-4 py-3">
-                <h2 className="text-sm font-semibold text-primary">Results</h2>
+                <h2 className="text-sm font-semibold text-primary">{t('dataQuery.resultsTitle', 'Results')}</h2>
                 <p className="text-xs text-muted-foreground">
-                  Matching members and export options
+                  {t('dataQuery.resultsDesc', 'Matching members and export options')}
                 </p>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto p-4">

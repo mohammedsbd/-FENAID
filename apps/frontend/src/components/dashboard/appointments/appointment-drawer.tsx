@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentType, AppointmentStatus } from '@/types/appointments';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { cn } from '@/lib/utils';
 
 interface AppointmentDrawerProps {
@@ -47,6 +49,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
   const [notes, setNotes] = useState('');
 
   const { toast } = useToast();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (open) {
@@ -119,7 +122,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title || !date || !time || !staffId) {
-      toast({ title: 'Error', description: 'Please fill in all required fields.', variant: 'destructive' });
+      toast({ title: t('appointmentDrawer.error', 'Error'), description: t('appointmentDrawer.requiredFields', 'Please fill in all required fields.'), variant: 'destructive' });
       return;
     }
 
@@ -141,16 +144,16 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
 
       if (appointment) {
         await api.patch(`/appointments/${appointment.id}`, payload);
-        toast({ title: 'Success', description: 'Appointment updated successfully.' });
+        toast({ title: t('appointmentDrawer.success', 'Success'), description: t('appointmentDrawer.updated', 'Appointment updated successfully.') });
       } else {
         await api.post('/appointments', payload);
-        toast({ title: 'Success', description: 'Appointment scheduled successfully.' });
+        toast({ title: t('appointmentDrawer.success', 'Success'), description: t('appointmentDrawer.scheduled', 'Appointment scheduled successfully.') });
       }
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to save appointment:', error);
-      toast({ title: 'Error', description: 'Failed to save appointment.', variant: 'destructive' });
+      toast({ title: t('appointmentDrawer.error', 'Error'), description: t('appointmentDrawer.saveFailed', 'Failed to save appointment.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -163,7 +166,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-background h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">{appointment ? 'Edit Appointment' : 'New Appointment'}</h2>
+          <h2 className="text-lg font-semibold">{appointment ? t('appointmentDrawer.editTitle', 'Edit Appointment') : t('appointmentDrawer.newTitle', 'New Appointment')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -171,10 +174,10 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t('appointmentDrawer.title', 'Title')}</Label>
             <Input 
               id="title" 
-              placeholder="e.g. Weekly Therapy Session" 
+              placeholder={t('appointmentDrawer.titlePlaceholder', 'e.g. Weekly Therapy Session')} 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required 
@@ -183,10 +186,10 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>{t('appointmentDrawer.type', 'Type')}</Label>
               <Select value={type} onValueChange={(v) => setType(v as AppointmentType)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t('appointmentDrawer.typePlaceholder', 'Select type')} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(AppointmentType).map((t) => (
@@ -196,7 +199,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Duration (min)</Label>
+              <Label>{t('appointmentDrawer.duration', 'Duration (min)')}</Label>
               <Input 
                 type="number" 
                 value={duration}
@@ -207,20 +210,20 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+              <Label>{t('appointmentDrawer.date', 'Date')}</Label>
+              <CalendarDatePicker value={date} onChange={setDate} />
             </div>
             <div className="space-y-2">
-              <Label>Time</Label>
+              <Label>{t('appointmentDrawer.time', 'Time')}</Label>
               <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Assigned Staff</Label>
+            <Label>{t('appointmentDrawer.assignedStaff', 'Assigned Staff')}</Label>
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select staff member" />
+                <SelectValue placeholder={t('appointmentDrawer.staffPlaceholder', 'Select staff member')} />
               </SelectTrigger>
               <SelectContent>
                 {staff.map((s) => (
@@ -231,13 +234,13 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
           </div>
 
           <div className="space-y-4 pt-2">
-            <Label>Linked Participants (Search and select)</Label>
+            <Label>{t('appointmentDrawer.linkedParticipants', 'Linked Participants (Search and select)')}</Label>
             
             <div className="space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search child or parent name..." 
+                  placeholder={t('appointmentDrawer.participantSearch', 'Search child or parent name...')} 
                   className="pl-9"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -250,7 +253,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                     <div key={c.id} className="p-2 hover:bg-muted cursor-pointer flex items-center justify-between border-b last:border-0" onClick={() => { setSelectedChild(c); setSearch(''); }}>
                       <div className="flex items-center space-x-2">
                         <Avatar className="w-6 h-6"><AvatarImage src={c.photoUrl} /><AvatarFallback>C</AvatarFallback></Avatar>
-                        <span className="text-sm">{c.fullName} <span className="text-[10px] text-muted-foreground ml-1 uppercase">Child</span></span>
+                        <span className="text-sm">{c.fullName} <span className="text-[10px] text-muted-foreground ml-1 uppercase">{t('appointmentDrawer.child', 'Child')}</span></span>
                       </div>
                       {selectedChild?.id === c.id && <CheckCircle className="w-4 h-4 text-primary" />}
                     </div>
@@ -259,14 +262,14 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                     <div key={p.id} className="p-2 hover:bg-muted cursor-pointer flex items-center justify-between border-b last:border-0" onClick={() => { setSelectedParent(p); setSearch(''); }}>
                       <div className="flex items-center space-x-2">
                         <Avatar className="w-6 h-6"><AvatarImage src={p.photoUrl} /><AvatarFallback>P</AvatarFallback></Avatar>
-                        <span className="text-sm">{p.fullName} <span className="text-[10px] text-muted-foreground ml-1 uppercase">Parent</span></span>
+                        <span className="text-sm">{p.fullName} <span className="text-[10px] text-muted-foreground ml-1 uppercase">{t('appointmentDrawer.parent', 'Parent')}</span></span>
                       </div>
                       {selectedParent?.id === p.id && <CheckCircle className="w-4 h-4 text-primary" />}
                     </div>
                   ))}
                 </div>
               ) : search.length > 2 && (
-                <div className="text-center p-4 text-xs text-muted-foreground border rounded-md">No results found</div>
+                <div className="text-center p-4 text-xs text-muted-foreground border rounded-md">{t('appointmentDrawer.noResults', 'No results found')}</div>
               )}
 
               <div className="space-y-2">
@@ -276,7 +279,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                       <Avatar className="w-8 h-8"><AvatarImage src={selectedChild.photoUrl} /><AvatarFallback>C</AvatarFallback></Avatar>
                       <div>
                         <div className="text-sm font-medium">{selectedChild.fullName}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Child</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">{t('appointmentDrawer.child', 'Child')}</div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedChild(null)}><X className="w-4 h-4" /></Button>
@@ -288,7 +291,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                       <Avatar className="w-8 h-8"><AvatarImage src={selectedParent.photoUrl} /><AvatarFallback>P</AvatarFallback></Avatar>
                       <div>
                         <div className="text-sm font-medium">{selectedParent.fullName}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Parent</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">{t('appointmentDrawer.parent', 'Parent')}</div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedParent(null)}><X className="w-4 h-4" /></Button>
@@ -296,7 +299,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                 )}
                 {!selectedChild && !selectedParent && (
                   <div className="text-xs text-center p-3 border border-dashed rounded-md text-muted-foreground">
-                    No participants linked
+                    {t('appointmentDrawer.noParticipants', 'No participants linked')}
                   </div>
                 )}
               </div>
@@ -307,7 +310,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Repeat className="w-4 h-4 text-muted-foreground" />
-                <Label htmlFor="recurring">Recurring Appointment</Label>
+                <Label htmlFor="recurring">{t('appointmentDrawer.recurring', 'Recurring Appointment')}</Label>
               </div>
               <Switch id="recurring" checked={isRecurring} onCheckedChange={setIsRecurring} />
             </div>
@@ -315,32 +318,32 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
             {isRecurring && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-2">
-                  <Label>Frequency</Label>
+                  <Label>{t('appointmentDrawer.frequency', 'Frequency')}</Label>
                   <Select value={recurrenceRule} onValueChange={setRecurrenceRule}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DAILY">Daily</SelectItem>
-                      <SelectItem value="WEEKLY">Weekly</SelectItem>
-                      <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="DAILY">{t('appointmentDrawer.daily', 'Daily')}</SelectItem>
+                      <SelectItem value="WEEKLY">{t('appointmentDrawer.weekly', 'Weekly')}</SelectItem>
+                      <SelectItem value="MONTHLY">{t('appointmentDrawer.monthly', 'Monthly')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Ends On</Label>
-                  <Input type="date" value={recurrenceEnd} onChange={(e) => setRecurrenceEnd(e.target.value)} required={isRecurring} />
+                  <Label>{t('appointmentDrawer.endsOn', 'Ends On')}</Label>
+                  <CalendarDatePicker value={recurrenceEnd} onChange={setRecurrenceEnd} />
                 </div>
               </div>
             )}
           </div>
 
           <div className="space-y-2 border-t pt-4">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t('appointmentDrawer.notes', 'Notes')}</Label>
             <textarea 
               id="notes"
               className="w-full min-h-[100px] p-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Additional details..."
+              placeholder={t('appointmentDrawer.notesPlaceholder', 'Additional details...')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -348,10 +351,10 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
         </form>
 
         <div className="p-4 border-t bg-muted/10 flex space-x-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" className="flex-1" onClick={onClose}>{t('appointmentDrawer.cancel', 'Cancel')}</Button>
           <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSubmit} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            {appointment ? 'Update Appointment' : 'Schedule Appointment'}
+            {appointment ? t('appointmentDrawer.update', 'Update Appointment') : t('appointmentDrawer.schedule', 'Schedule Appointment')}
           </Button>
         </div>
       </div>

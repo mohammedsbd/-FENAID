@@ -25,7 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 import { logout } from '@/lib/auth';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -48,6 +48,7 @@ const navItems = [
 export function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t } = useLocale();
 
   return (
     <div
@@ -124,7 +125,7 @@ export function Sidebar({ user }: { user: any }) {
             onClick={() => logout()}
           >
             <LogOut className="h-5 w-5" />
-            {!isCollapsed && <span>Logout</span>}
+            {!isCollapsed && <span>{t('sidebar.logout', 'Logout')}</span>}
           </Button>
         </div>
       </div>

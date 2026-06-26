@@ -40,11 +40,13 @@ import api from '@/lib/api';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { Appointment, AppointmentType, AppointmentStatus } from '@/types/appointments';
 import { cn } from '@/lib/utils';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentDrawer } from '@/components/dashboard/appointments/appointment-drawer';
 import { AttendanceDrawer } from '@/components/dashboard/appointments/attendance-drawer';
 
 export default function AppointmentsPage() {
+  const { t } = useLocale();
   const [view, setView] = useState<'list' | 'calendar'>('calendar');
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -100,7 +102,7 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
-      toast({ title: 'Error', description: 'Failed to load appointments.', variant: 'destructive' });
+      toast({ title: t('appointments.dashboard.error', 'Error'), description: t('appointments.dashboard.errorLoad', 'Failed to load appointments.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -125,8 +127,8 @@ export default function AppointmentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
-          <p className="text-muted-foreground">Manage therapy sessions and member meetings.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('appointments.dashboard.title', 'Appointments')}</h1>
+          <p className="text-muted-foreground">{t('appointments.dashboard.description', 'Manage therapy sessions and member meetings.')}</p>
         </div>
         <div className="flex items-center space-x-2">
           <div className="bg-muted p-1 rounded-lg flex">
@@ -136,7 +138,7 @@ export default function AppointmentsPage() {
               onClick={() => setView('calendar')}
               className="px-3"
             >
-              <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
+              <CalendarIcon className="w-4 h-4 mr-2" /> {t('appointments.dashboard.calendarView', 'Calendar')}
             </Button>
             <Button 
               variant={view === 'list' ? 'secondary' : 'ghost'} 
@@ -144,11 +146,11 @@ export default function AppointmentsPage() {
               onClick={() => setView('list')}
               className="px-3"
             >
-              <List className="w-4 h-4 mr-2" /> List
+              <List className="w-4 h-4 mr-2" /> {t('appointments.dashboard.listView', 'List')}
             </Button>
           </div>
           <Button onClick={() => { setEditingAppointment(null); setDrawerOpen(true); }} className="bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" /> New Appointment
+            <Plus className="w-4 h-4 mr-2" /> {t('appointments.dashboard.newAppointment', 'New Appointment')}
           </Button>
         </div>
       </div>
@@ -158,7 +160,7 @@ export default function AppointmentsPage() {
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Search title, participant, or staff..." 
+            placeholder={t('appointments.dashboard.searchPlaceholder', 'Search title, participant, or staff...')} 
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -169,11 +171,11 @@ export default function AppointmentsPage() {
           <SelectTrigger className="w-[180px]">
             <div className="flex items-center">
               <Filter className="w-3 h-3 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder={t('appointments.dashboard.allTypes', 'All Types')} />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Types</SelectItem>
+            <SelectItem value="ALL">{t('appointments.dashboard.allTypes', 'All Types')}</SelectItem>
             {Object.values(AppointmentType).map(t => (
               <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
             ))}
@@ -182,10 +184,10 @@ export default function AppointmentsPage() {
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder={t('appointments.dashboard.allStatuses', 'All Statuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="ALL">{t('appointments.dashboard.allStatuses', 'All Statuses')}</SelectItem>
             {Object.values(AppointmentStatus).map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
@@ -194,10 +196,10 @@ export default function AppointmentsPage() {
 
         <Select value={staffFilter} onValueChange={setStaffFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Staff" />
+            <SelectValue placeholder={t('appointments.dashboard.allStaff', 'All Staff')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Staff</SelectItem>
+            <SelectItem value="ALL">{t('appointments.dashboard.allStaff', 'All Staff')}</SelectItem>
             {staff.map(s => (
               <SelectItem key={s.id} value={s.id}>{s.fullName}</SelectItem>
             ))}
@@ -208,7 +210,7 @@ export default function AppointmentsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          <p className="text-muted-foreground animate-pulse">Loading appointments...</p>
+          <p className="text-muted-foreground animate-pulse">{t('appointments.dashboard.loading', 'Loading appointments...')}</p>
         </div>
       ) : view === 'calendar' ? (
         <CalendarView 
@@ -243,6 +245,7 @@ export default function AppointmentsPage() {
 }
 
 function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick }: any) {
+  const { t } = useLocale();
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -268,7 +271,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick 
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>Today</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>{t('appointments.dashboard.calendar.today', 'Today')}</Button>
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -276,7 +279,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick 
       </div>
       
       <div className="grid grid-cols-7 border-b bg-muted/30">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+        {[t('appointments.dashboard.calendar.sun', 'Sun'), t('appointments.dashboard.calendar.mon', 'Mon'), t('appointments.dashboard.calendar.tue', 'Tue'), t('appointments.dashboard.calendar.wed', 'Wed'), t('appointments.dashboard.calendar.thu', 'Thu'), t('appointments.dashboard.calendar.fri', 'Fri'), t('appointments.dashboard.calendar.sat', 'Sat')].map(day => (
           <div key={day} className="py-2 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {day}
           </div>
@@ -332,25 +335,26 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick 
 }
 
 function ListView({ appointments, onEdit, onView }: any) {
+  const { t } = useLocale();
   return (
     <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Participant</TableHead>
-            <TableHead>Assigned Staff</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('appointments.dashboard.list.title', 'Title')}</TableHead>
+            <TableHead>{t('appointments.dashboard.list.type', 'Type')}</TableHead>
+            <TableHead>{t('appointments.dashboard.list.dateTime', 'Date & Time')}</TableHead>
+            <TableHead>{t('appointments.dashboard.list.participant', 'Participant')}</TableHead>
+            <TableHead>{t('appointments.dashboard.list.assignedStaff', 'Assigned Staff')}</TableHead>
+            <TableHead>{t('appointments.dashboard.list.status', 'Status')}</TableHead>
+            <TableHead className="text-right">{t('appointments.dashboard.list.actions', 'Actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {appointments.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-20 text-muted-foreground">
-                No appointments found for the current selection.
+                {t('appointments.dashboard.list.noAppointments', 'No appointments found for the current selection.')}
               </TableCell>
             </TableRow>
           ) : appointments.map((app: any) => (
@@ -379,7 +383,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                       </Avatar>
                       <div className="text-xs">
                         <div className="font-medium">{app.child.fullName}</div>
-                        <div className="text-muted-foreground uppercase text-[8px] font-bold">Child</div>
+                          <div className="text-muted-foreground uppercase text-[8px] font-bold">{t('appointments.dashboard.list.child', 'Child')}</div>
                       </div>
                     </div>
                   )}
@@ -391,12 +395,12 @@ function ListView({ appointments, onEdit, onView }: any) {
                       </Avatar>
                       <div className="text-xs">
                         <div className="font-medium">{app.parent.fullName}</div>
-                        <div className="text-muted-foreground uppercase text-[8px] font-bold">Parent</div>
+                          <div className="text-muted-foreground uppercase text-[8px] font-bold">{t('appointments.dashboard.list.parent', 'Parent')}</div>
                       </div>
                     </div>
                   )}
                   {!app.child && !app.parent && (
-                    <span className="text-muted-foreground italic text-xs">None</span>
+                    <span className="text-muted-foreground italic text-xs">{t('appointments.dashboard.list.none', 'None')}</span>
                   )}
                 </div>
               </TableCell>

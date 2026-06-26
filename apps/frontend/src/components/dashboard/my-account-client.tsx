@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Cookies from 'js-cookie';
 import api from '@/lib/api';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AccountRow, AuditLogRow, SessionRow } from '@/types/accounts';
@@ -46,6 +46,7 @@ type Props = { currentUser: { id: string; fullName: string; email: string; role:
 
 export function MyAccountClient({ currentUser }: Props) {
   const { toast } = useToast();
+  const { t } = useLocale();
   const [profile, setProfile] = useState<AccountRow | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [activity, setActivity] = useState<AuditLogRow[]>([]);
@@ -187,7 +188,7 @@ export function MyAccountClient({ currentUser }: Props) {
             <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>{t('myAccount.editProfile', 'Personal Information')}</CardTitle>
-                <CardDescription>Update your personal details and public profile.</CardDescription>
+                <CardDescription>{t('myAccount.editProfileDesc', 'Update your personal details and public profile.')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="flex flex-col md:flex-row items-center gap-6 pb-6 border-b">
@@ -203,10 +204,10 @@ export function MyAccountClient({ currentUser }: Props) {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <Field label={t('myAccount.fullName', 'Full name')} icon={<User className="w-4 h-4" />}>
-                    <Input value={form.fullName} onChange={(e) => setForm((c) => ({ ...c, fullName: e.target.value }))} placeholder="John Doe" />
+                    <Input value={form.fullName} onChange={(e) => setForm((c) => ({ ...c, fullName: e.target.value }))} placeholder={t('myAccount.fullNamePlaceholder', 'John Doe')} />
                   </Field>
                   <Field label={t('myAccount.email', 'Email Address')} icon={<Mail className="w-4 h-4" />}>
-                    <Input type="email" value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} placeholder="john@example.com" />
+                    <Input type="email" value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} placeholder={t('myAccount.emailPlaceholder', 'john@example.com')} />
                   </Field>
                 </div>
                 
@@ -224,7 +225,7 @@ export function MyAccountClient({ currentUser }: Props) {
             <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>{t('myAccount.changePassword', 'Security & Password')}</CardTitle>
-                <CardDescription>Ensure your account is using a long, random password to stay secure.</CardDescription>
+                <CardDescription>{t('myAccount.securityDesc', 'Ensure your account is using a long, random password to stay secure.')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid gap-6 max-w-2xl">
@@ -263,7 +264,7 @@ export function MyAccountClient({ currentUser }: Props) {
             <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>{t('myAccount.sessions', 'Active Sessions')}</CardTitle>
-                <CardDescription>Devices currently logged into your account.</CardDescription>
+                <CardDescription>{t('myAccount.sessionsDesc', 'Devices currently logged into your account.')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {sessions.length ? (

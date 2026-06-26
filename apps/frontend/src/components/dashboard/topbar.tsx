@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from '@/components/providers/locale-provider';
 import {
   Activity,
   ArrowRight,
@@ -91,6 +92,7 @@ const notificationStyles: Record<
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLocale();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -104,8 +106,8 @@ export function Topbar() {
   // Helper to generate dynamic title from pathname
   const getPageTitle = () => {
     const parts = pathname.split('/').filter(Boolean);
-    if (parts.length === 0) return 'Dashboard';
-    
+    if (parts.length === 0) return t('topbar.dashboard', 'Dashboard');
+
     const lastPart = parts[parts.length - 1];
     return lastPart.charAt(0).toUpperCase() + lastPart.slice(1).replace(/-/g, ' ');
   };
@@ -257,7 +259,7 @@ export function Topbar() {
           {getPageTitle()}
         </h2>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>Home</span>
+          <span>{t('topbar.home', 'Home')}</span>
           {pathname.split('/').filter(Boolean).map((part, i, arr) => (
             <span key={part} className="flex items-center gap-1">
               <span>/</span>
@@ -297,7 +299,7 @@ export function Topbar() {
               }
             }
           }}
-          placeholder="Search parents or children by name, ID, phone..."
+          placeholder={t('topbar.searchPlaceholder', 'Search parents or children by name, ID, phone...')}
           className="h-10 pr-10 pl-9"
         />
         {isSearchLoading ? (
@@ -307,7 +309,7 @@ export function Topbar() {
             type="button"
             onClick={clearSearch}
             className="absolute right-3 top-1/2 rounded-sm p-0.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            aria-label="Clear search"
+            aria-label={t('topbar.clearSearch', 'Clear search')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -328,7 +330,7 @@ export function Topbar() {
           size="icon"
           className="relative"
           onClick={() => setIsOpen((value) => !value)}
-          aria-label="Notifications"
+          aria-label={t('topbar.notifications', 'Notifications')}
         >
           <Bell className="h-5 w-5 text-muted-foreground" />
           {notifications.length > 0 && (
@@ -342,9 +344,9 @@ export function Topbar() {
           <div className="absolute right-0 top-12 z-50 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-md border bg-white shadow-lg">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
-                <p className="text-sm font-semibold">Notifications</p>
+                <p className="text-sm font-semibold">{t('topbar.notificationsTitle', 'Notifications')}</p>
                 <p className="text-xs text-muted-foreground">
-                  {notifications.length} unread
+                  {t('topbar.unread', '{count} unread', { count: notifications.length })}
                 </p>
               </div>
               <Button
@@ -355,14 +357,14 @@ export function Topbar() {
                 disabled={!notifications.length}
               >
                 <CheckCheck className="h-4 w-4" />
-                Mark all
+                {t('topbar.markAll', 'Mark all')}
               </Button>
             </div>
 
             <div className="max-h-[520px] overflow-y-auto p-3">
               {notifications.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
-                  No unread notifications
+                  {t('topbar.noUnread', 'No unread notifications')}
                 </div>
               ) : (
                 (Object.keys(groupedNotifications) as NotificationGroup[]).map(
@@ -402,6 +404,7 @@ function GlobalSearchPanel({
   isLoading: boolean;
   onSelect: (result: GlobalSearchItem) => void;
 }) {
+  const { t } = useLocale();
   const parents = results?.parents ?? [];
   const children = results?.children ?? [];
   const hasResults = parents.length > 0 || children.length > 0;
@@ -409,9 +412,9 @@ function GlobalSearchPanel({
   return (
     <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-md border bg-white shadow-lg">
       <div className="border-b px-4 py-3">
-        <p className="text-sm font-semibold">Global search</p>
+        <p className="text-sm font-semibold">{t('topbar.globalSearch', 'Global search')}</p>
         <p className="text-xs text-muted-foreground">
-          Parents and children across the system
+          {t('topbar.globalSearchDesc', 'Parents and children across the system')}
         </p>
       </div>
 
@@ -419,19 +422,19 @@ function GlobalSearchPanel({
         {isLoading && !results ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Searching records
+            {t('topbar.searching', 'Searching records')}
           </div>
         ) : !hasResults ? (
           <div className="py-8 text-center">
-            <p className="text-sm font-medium">No matching records</p>
+            <p className="text-sm font-medium">{t('topbar.noResults', 'No matching records')}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Search by parent name, child name, ID tag, phone, or national ID.
+              {t('topbar.searchHint', 'Search by parent name, child name, ID tag, phone, or national ID.')}
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {parents.length > 0 && (
-              <SearchGroup title="Parents" count={parents.length}>
+              <SearchGroup title={t('topbar.parents', 'Parents')} count={parents.length}>
                 {parents.map((parent) => (
                   <SearchResultRow
                     key={`parent-${parent.id}`}
@@ -443,7 +446,7 @@ function GlobalSearchPanel({
             )}
 
             {children.length > 0 && (
-              <SearchGroup title="Children" count={children.length}>
+              <SearchGroup title={t('topbar.children', 'Children')} count={children.length}>
                 {children.map((child) => (
                   <SearchResultRow
                     key={`child-${child.id}`}
@@ -491,6 +494,7 @@ function SearchResultRow({
   result: GlobalSearchItem;
   onSelect: (result: GlobalSearchItem) => void;
 }) {
+  const { t } = useLocale();
   const Icon = result.type === 'PARENT' ? Users : Baby;
 
   return (
@@ -518,7 +522,7 @@ function SearchResultRow({
           {result.subtitle}
         </span>
         <span className="mt-1 block truncate text-xs text-muted-foreground">
-          {result.meta} · Assigned to {result.assignedStaffName}
+          {result.meta} · {t('topbar.assignedTo', 'Assigned to')} {result.assignedStaffName}
         </span>
       </span>
 

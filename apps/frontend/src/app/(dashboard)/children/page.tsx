@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useLocale } from '@/components/providers/locale-provider';
 import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,7 @@ const severityOptions: SeverityLevel[] = ['MILD', 'MODERATE', 'SEVERE'];
 export default function ChildrenPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLocale();
   const [children, setChildren] = useState<ChildRow[]>([]);
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [search, setSearch] = useState('');
@@ -146,7 +148,7 @@ export default function ChildrenPage() {
       setPages(res.data.meta?.pages || 1);
       setTotal(res.data.meta?.total || 0);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to load children.'));
+      setError(getErrorMessage(err, t('children.errorLoad', 'Failed to load children.')));
     } finally {
       setLoading(false);
     }
@@ -173,11 +175,11 @@ export default function ChildrenPage() {
       fetchChildren();
       
       toast({
-        title: isActivating ? 'Profile Activated' : 'Profile Deactivated',
-        description: `${name} has been successfully ${isActivating ? 'activated' : 'deactivated'}.`,
+        title: isActivating ? t('children.toastActivated', 'Profile Activated') : t('children.toastDeactivated', 'Profile Deactivated'),
+        description: t('children.toastDescription', '{name} has been successfully {action}.', { name, action: isActivating ? t('children.activatedAction', 'activated') : t('children.deactivatedAction', 'deactivated') }),
       });
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to update child status.'));
+      setError(getErrorMessage(err, t('children.errorUpdateStatus', 'Failed to update child status.')));
     }
   }
 
@@ -198,7 +200,7 @@ export default function ChildrenPage() {
       const filename = `children-export-${new Date().toISOString().split('T')[0]}`;
 
       if (formatType === 'csv') {
-        const headers = ['ID Tag', 'Full Name', 'Gender', 'Date of Birth', 'Disability Type', 'Disability Category', 'Severity Level', 'School Status', 'Communication', 'Status', 'Parent Name', 'Assigned Worker', 'Registered Date'];
+        const headers = [t('children.export.idTag', 'ID Tag'), t('children.export.fullName', 'Full Name'), t('children.export.gender', 'Gender'), t('children.export.dateOfBirth', 'Date of Birth'), t('children.export.disabilityType', 'Disability Type'), t('children.export.disabilityCategory', 'Disability Category'), t('children.export.severityLevel', 'Severity Level'), t('children.export.schoolStatus', 'School Status'), t('children.export.communication', 'Communication'), t('children.export.status', 'Status'), t('children.export.parentName', 'Parent Name'), t('children.export.assignedWorker', 'Assigned Worker'), t('children.export.registeredDate', 'Registered Date')];
         const rows = data.map((c: any) => [
           c.idTag || '',
           c.fullName || '',
@@ -211,12 +213,12 @@ export default function ChildrenPage() {
           c.communicationAbility || '',
           c.status || '',
           c.parent?.fullName || '',
-          c.assignedStaff?.fullName || 'Unassigned',
+          c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'),
           c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
         ]);
         exportToCSV(headers, rows, `${filename}.csv`);
       } else if (formatType === 'excel') {
-        const headers = ['ID Tag', 'Full Name', 'Gender', 'Date of Birth', 'Disability Type', 'Disability Category', 'Severity Level', 'School Status', 'Communication', 'Status', 'Parent Name', 'Assigned Worker', 'Registered Date'];
+        const headers = [t('children.export.idTag', 'ID Tag'), t('children.export.fullName', 'Full Name'), t('children.export.gender', 'Gender'), t('children.export.dateOfBirth', 'Date of Birth'), t('children.export.disabilityType', 'Disability Type'), t('children.export.disabilityCategory', 'Disability Category'), t('children.export.severityLevel', 'Severity Level'), t('children.export.schoolStatus', 'School Status'), t('children.export.communication', 'Communication'), t('children.export.status', 'Status'), t('children.export.parentName', 'Parent Name'), t('children.export.assignedWorker', 'Assigned Worker'), t('children.export.registeredDate', 'Registered Date')];
         const rows = data.map((c: any) => [
           c.idTag || '',
           c.fullName || '',
@@ -229,10 +231,10 @@ export default function ChildrenPage() {
           c.communicationAbility || '',
           c.status || '',
           c.parent?.fullName || '',
-          c.assignedStaff?.fullName || 'Unassigned',
+          c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'),
           c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
         ]);
-        exportToExcelHTML('Children Directory', headers, rows, `${filename}.xls`);
+        exportToExcelHTML(t('children.export.directory', 'Children Directory'), headers, rows, `${filename}.xls`);
       } else if (formatType === 'docx') {
         let tableRowsHTML = '';
         data.forEach((c: any) => {
@@ -245,24 +247,24 @@ export default function ChildrenPage() {
               <td>${escapeHTML(formatEnum(c.disabilityType))}</td>
               <td><span class="badge">${escapeHTML(formatEnum(c.severityLevel))}</span></td>
               <td>${escapeHTML(c.parent?.fullName || '')}</td>
-              <td>${escapeHTML(c.assignedStaff?.fullName || 'Unassigned')}</td>
+              <td>${escapeHTML(c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
         });
         const contentHTML = `
-          <h2>Children Directory</h2>
-          <p>Total Records: ${data.length}</p>
+          <h2>${t('children.export.directory', 'Children Directory')}</h2>
+          <p>${t('children.export.totalRecords', 'Total Records')}: ${data.length}</p>
           <table>
             <thead>
               <tr>
-                <th>ID Tag</th>
-                <th>Full Name</th>
-                <th>Gender</th>
-                <th>DOB</th>
-                <th>Disability Type</th>
-                <th>Severity</th>
-                <th>Parent</th>
-                <th>Case Worker</th>
+                <th>${t('children.export.idTag', 'ID Tag')}</th>
+                <th>${t('children.export.fullName', 'Full Name')}</th>
+                <th>${t('children.export.gender', 'Gender')}</th>
+                <th>${t('children.export.dob', 'DOB')}</th>
+                <th>${t('children.export.disabilityType', 'Disability Type')}</th>
+                <th>${t('children.export.severity', 'Severity')}</th>
+                <th>${t('children.export.parent', 'Parent')}</th>
+                <th>${t('children.export.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
             <tbody>
@@ -270,7 +272,7 @@ export default function ChildrenPage() {
             </tbody>
           </table>
         `;
-        exportToWordHTML('Children Directory', contentHTML, `${filename}.doc`);
+        exportToWordHTML(t('children.export.directory', 'Children Directory'), contentHTML, `${filename}.doc`);
       } else if (formatType === 'pdf') {
         let tableRowsHTML = '';
         data.forEach((c: any) => {
@@ -284,25 +286,25 @@ export default function ChildrenPage() {
               <td>${escapeHTML(formatEnum(c.disabilityType))}</td>
               <td><span class="badge ${severityClass}">${escapeHTML(formatEnum(c.severityLevel))}</span></td>
               <td>${escapeHTML(c.parent?.fullName || '')}</td>
-              <td>${escapeHTML(c.assignedStaff?.fullName || 'Unassigned')}</td>
+              <td>${escapeHTML(c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
         });
         const htmlBody = `
           <div style="margin-bottom: 20px; font-size: 13px; color: #475569;">
-            Total records matching current filters: <b>${data.length}</b>
+            ${t('children.export.matchingRecords', 'Total records matching current filters')}: <b>${data.length}</b>
           </div>
           <table>
             <thead>
               <tr>
-                <th style="width: 10%">ID Tag</th>
-                <th style="width: 22%">Full Name</th>
-                <th style="width: 8%">Gender</th>
-                <th style="width: 12%">DOB</th>
-                <th style="width: 15%">Disability Type</th>
-                <th style="width: 10%">Severity</th>
-                <th style="width: 13%">Parent</th>
-                <th style="width: 10%">Case Worker</th>
+                <th style="width: 10%">${t('children.export.idTag', 'ID Tag')}</th>
+                <th style="width: 22%">${t('children.export.fullName', 'Full Name')}</th>
+                <th style="width: 8%">${t('children.export.gender', 'Gender')}</th>
+                <th style="width: 12%">${t('children.export.dob', 'DOB')}</th>
+                <th style="width: 15%">${t('children.export.disabilityType', 'Disability Type')}</th>
+                <th style="width: 10%">${t('children.export.severity', 'Severity')}</th>
+                <th style="width: 13%">${t('children.export.parent', 'Parent')}</th>
+                <th style="width: 10%">${t('children.export.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
             <tbody>
@@ -310,10 +312,10 @@ export default function ChildrenPage() {
             </tbody>
           </table>
         `;
-        exportToPDF('Child Directory', htmlBody);
+        exportToPDF(t('children.export.childDirectory', 'Child Directory'), htmlBody);
       }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to export children data.'));
+      setError(getErrorMessage(err, t('children.errorExport', 'Failed to export children data.')));
     } finally {
       setExporting(false);
     }
@@ -324,16 +326,16 @@ export default function ChildrenPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Children</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('children.title', 'Children')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Register and manage children profiles and progress.
+            {t('children.description', 'Register and manage children profiles and progress.')}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
           <ExportButton onExport={handleExport} loading={exporting} />
           <Button onClick={openNewDrawer} className="w-full sm:w-auto">
             <Plus className="h-4 w-4" />
-            Register New Child
+            {t('children.registerNew', 'Register New Child')}
           </Button>
         </div>
 
@@ -343,14 +345,14 @@ export default function ChildrenPage() {
         <CardHeader className="gap-4">
           <div className="grid gap-4 lg:grid-cols-[minmax(250px,1fr)_160px_160px_160px_200px_auto] lg:items-end">
             <div className="space-y-1.5">
-              <Label htmlFor="child-search" className="text-sm font-semibold">Search Children</Label>
+              <Label htmlFor="child-search" className="text-sm font-semibold">{t('children.search.label', 'Search Children')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/70" />
                 <Input
                   id="child-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by name, ID..."
+                  placeholder={t('children.search.placeholder', 'Search by name, ID...')}
                   className="h-12 pl-10 pr-10 text-base shadow-sm focus-visible:ring-primary"
                 />
                 {search && (
@@ -364,26 +366,26 @@ export default function ChildrenPage() {
                 )}
               </div>
             </div>
-            <FilterSelect label="Disability Type" value={disabilityType} onChange={setDisabilityType}>
-              <option value="">All types</option>
+            <FilterSelect label={t('children.filter.disabilityType', 'Disability Type')} value={disabilityType} onChange={setDisabilityType}>
+              <option value="">{t('children.filter.typesAll', 'All types')}</option>
               {disabilityOptions.map((option) => (
                 <option key={option} value={option}>{formatEnum(option)}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="Severity" value={severityLevel} onChange={setSeverityLevel}>
-              <option value="">All levels</option>
+            <FilterSelect label={t('children.filter.severity', 'Severity')} value={severityLevel} onChange={setSeverityLevel}>
+              <option value="">{t('children.filter.levelsAll', 'All levels')}</option>
               {severityOptions.map((option) => (
                 <option key={option} value={option}>{formatEnum(option)}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="Status" value={status} onChange={setStatus}>
-              <option value="">All statuses</option>
+            <FilterSelect label={t('children.filter.status', 'Status')} value={status} onChange={setStatus}>
+              <option value="">{t('children.filter.statusesAll', 'All statuses')}</option>
               {statusOptions.map((option) => (
                 <option key={option} value={option}>{formatEnum(option)}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="Assigned Staff" value={assignedStaffId} onChange={setAssignedStaffId}>
-              <option value="">All staff</option>
+            <FilterSelect label={t('children.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={setAssignedStaffId}>
+              <option value="">{t('children.filter.staffAll', 'All staff')}</option>
               {staffOptions.map((worker) => (
                 <option key={worker.id} value={worker.id}>{worker.fullName}</option>
               ))}
@@ -401,7 +403,7 @@ export default function ChildrenPage() {
               }}
             >
               <RotateCcw className="h-4 w-4" />
-              Reset
+              {t('children.reset', 'Reset')}
             </Button>
           </div>
         </CardHeader>
@@ -415,14 +417,14 @@ export default function ChildrenPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Child Name</TableHead>
-                <TableHead className="w-[120px]">ID</TableHead>
-                <TableHead>Disability Type</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Parent Name</TableHead>
-                <TableHead>Assigned Staff</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('children.table.name', 'Child Name')}</TableHead>
+                <TableHead className="w-[120px]">{t('children.table.id', 'ID')}</TableHead>
+                <TableHead>{t('children.table.disabilityType', 'Disability Type')}</TableHead>
+                <TableHead>{t('children.table.severity', 'Severity')}</TableHead>
+                <TableHead>{t('children.table.status', 'Status')}</TableHead>
+                <TableHead>{t('children.table.parentName', 'Parent Name')}</TableHead>
+                <TableHead>{t('children.table.assignedStaff', 'Assigned Staff')}</TableHead>
+                <TableHead className="text-right">{t('children.table.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -449,12 +451,12 @@ export default function ChildrenPage() {
                         </Avatar>
                         <div>
                           <div className="font-medium">{child.fullName}</div>
-                          <div className="text-xs text-muted-foreground">{calculateAge(child.dateOfBirth)} years old</div>
+                          <div className="text-xs text-muted-foreground">{t('children.table.age', '{age} years old', { age: String(calculateAge(child.dateOfBirth)) })}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono font-bold text-primary">{child.idTag || '---'}</span>
+                      <span className="font-mono font-bold text-primary">{child.idTag || t('children.table.idTagPlaceholder', '---')}</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -478,10 +480,10 @@ export default function ChildrenPage() {
                           {child.parent.fullName}
                         </Link>
                       ) : (
-                        'N/A'
+                        t('children.table.na', 'N/A')
                       )}
                     </TableCell>
-                    <TableCell>{child.assignedStaff?.fullName || 'Unassigned'}</TableCell>
+                    <TableCell>{child.assignedStaff?.fullName || t('children.unassigned', 'Unassigned')}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <Button
@@ -491,7 +493,7 @@ export default function ChildrenPage() {
                             event.stopPropagation();
                             openEditDrawer(child);
                           }}
-                          aria-label="Edit child"
+                          aria-label={t('children.table.editLabel', 'Edit child')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -502,7 +504,7 @@ export default function ChildrenPage() {
                             event.stopPropagation();
                             setDeactivatingChild(child);
                           }}
-                          aria-label={child.status === 'INACTIVE' ? 'Activate child' : 'Deactivate child'}
+                          aria-label={child.status === 'INACTIVE' ? t('children.table.activateLabel', 'Activate child') : t('children.table.deactivateLabel', 'Deactivate child')}
                           className={child.status === 'INACTIVE' ? "text-emerald-600 hover:text-emerald-700" : "text-red-600 hover:text-red-700"}
                         >
                           {child.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
@@ -519,16 +521,16 @@ export default function ChildrenPage() {
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-lg font-semibold">No children found</p>
+                        <p className="text-lg font-semibold">{t('children.empty.title', 'No children found')}</p>
                         <p className="max-w-xs text-sm text-muted-foreground">
                           {debouncedSearch
-                            ? `We couldn't find any children matching "${debouncedSearch}". Try a different name or ID.`
-                            : "You haven't registered any children yet. Click the 'Register New Child' button to get started."}
+                            ? t('children.empty.searchDesc', 'We couldn\'t find any children matching "{search}". Try a different name or ID.', { search: debouncedSearch })
+                            : t('children.empty.generalDesc', "You haven't registered any children yet. Click the 'Register New Child' button to get started.")}
                         </p>
                       </div>
                       {debouncedSearch && (
                         <Button variant="outline" size="sm" onClick={() => setSearch('')}>
-                          Clear Search
+                          {t('children.empty.clearSearch', 'Clear Search')}
                         </Button>
                       )}
                     </div>
@@ -540,7 +542,7 @@ export default function ChildrenPage() {
 
           <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing page {page} of {pages} for {total} child records
+              {t('children.pagination.showing', 'Showing page {page} of {pages} for {total} child records', { page: String(page), pages: String(pages), total: String(total) })}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -550,7 +552,7 @@ export default function ChildrenPage() {
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                {t('children.pagination.previous', 'Previous')}
               </Button>
               <Button
                 variant="outline"
@@ -558,7 +560,7 @@ export default function ChildrenPage() {
                 disabled={page >= pages}
                 onClick={() => setPage((current) => Math.min(pages, current + 1))}
               >
-                Next
+                {t('children.pagination.next', 'Next')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -576,8 +578,8 @@ export default function ChildrenPage() {
           setDrawerOpen(false);
           fetchChildren();
           toast({
-            title: editingChild ? 'Profile Updated' : 'Child Registered',
-            description: 'The child profile has been saved successfully.',
+            title: editingChild ? t('children.drawer.updated', 'Profile Updated') : t('children.drawer.registered', 'Child Registered'),
+            description: t('children.drawer.saved', 'The child profile has been saved successfully.'),
           });
         }}
       />
@@ -591,13 +593,13 @@ export default function ChildrenPage() {
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold">Registration successful</h2>
-                  <p className="text-sm text-muted-foreground">The profile has been saved.</p>
+                  <h2 className="text-lg font-semibold">{t('children.confirm.success', 'Registration successful')}</h2>
+                  <p className="text-sm text-muted-foreground">{t('children.confirm.saved', 'The profile has been saved.')}</p>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t p-4">
-              <Button onClick={() => setShowConfirmation(false)}>Close</Button>
+              <Button onClick={() => setShowConfirmation(false)}>{t('children.confirm.close', 'Close')}</Button>
             </div>
           </div>
         </div>
@@ -606,9 +608,9 @@ export default function ChildrenPage() {
       {deactivatingChild && (
         <DeactivateConfirmationModal
           name={deactivatingChild.fullName}
-          title={deactivatingChild.status === 'INACTIVE' ? "Activate Profile?" : "Deactivate Profile?"}
-          description={deactivatingChild.status === 'INACTIVE' ? `Are you sure you want to activate ${deactivatingChild.fullName}? This will restore their access in the system.` : undefined}
-          confirmLabel={deactivatingChild.status === 'INACTIVE' ? "Activate Now" : "Deactivate Now"}
+          title={deactivatingChild.status === 'INACTIVE' ? t('children.deactivate.titleActivate', 'Activate Profile?') : t('children.deactivate.titleDeactivate', 'Deactivate Profile?')}
+          description={deactivatingChild.status === 'INACTIVE' ? t('children.deactivate.descActivate', 'Are you sure you want to activate {name}? This will restore their access in the system.', { name: deactivatingChild.fullName }) : undefined}
+          confirmLabel={deactivatingChild.status === 'INACTIVE' ? t('children.deactivate.confirmActivate', 'Activate Now') : t('children.deactivate.confirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setDeactivatingChild(null)}
         />

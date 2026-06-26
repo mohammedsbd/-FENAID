@@ -38,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useLocale } from '@/components/providers/locale-provider';
+import { t as tI18n } from '@/lib/i18n';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/dashboard/export-button';
@@ -117,6 +119,7 @@ type Tab = (typeof tabs)[number];
 export default function ChildProfilePage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { t } = useLocale();
   const { calendarSystem } = useCalendarSettings();
   const [child, setChild] = useState<ChildProfile | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
@@ -134,7 +137,7 @@ export default function ChildProfilePage() {
       const res = await api.get(`/children/${params.id}`);
       setChild(res.data);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to load child profile.'));
+      setError(getErrorMessage(err, t('children.detail.errorLoad', 'Failed to load child profile.')));
     } finally {
       setLoading(false);
     }
@@ -166,16 +169,16 @@ export default function ChildProfilePage() {
       await api.delete(`/children/${child.id}`);
       const isActivating = child.status === 'INACTIVE';
       toast({
-        title: isActivating ? 'Profile Activated' : 'Profile Deactivated',
-        description: `${child.fullName} has been successfully ${isActivating ? 'activated' : 'deactivated'}.`,
+        title: isActivating ? t('children.detail.toastActivated', 'Profile Activated') : t('children.detail.toastDeactivated', 'Profile Deactivated'),
+        description: t('children.detail.toastDescription', '{name} has been successfully {action}.', { name: child.fullName, action: isActivating ? t('children.detail.activatedAction', 'activated') : t('children.detail.deactivatedAction', 'deactivated') }),
       });
       setShowDeactivateModal(false);
       await fetchChild();
     } catch (err: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: getErrorMessage(err, 'Failed to update child status.'),
+        title: t('children.detail.error', 'Error'),
+        description: getErrorMessage(err, t('children.detail.errorUpdateStatus', 'Failed to update child status.')),
       });
     }
   };
@@ -185,41 +188,41 @@ export default function ChildProfilePage() {
     setExporting(true);
 
     const filename = `child-${child.fullName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
-    const title = `Child Profile: ${child.fullName}`;
+    const title = `${t('children.detail.export.profileTitle', 'Child Profile')}: ${child.fullName}`;
 
     const profileSections = [
       {
-        title: 'Personal Information',
+        title: t('children.detail.export.personalInfo', 'Personal Information'),
         fields: [
-          ['Full Name', child.fullName],
-          ['Gender', child.gender],
-          ['Date of Birth', formatDate(child.dateOfBirth, calendarSystem)],
-          ['Age', `${calculateAge(child.dateOfBirth)} years`],
-          ['Communication', formatEnum(child.communicationAbility)],
-          ['Status', formatEnum(child.status)],
+          [t('children.detail.export.fullName', 'Full Name'), child.fullName],
+          [t('children.detail.export.gender', 'Gender'), child.gender],
+          [t('children.detail.export.dateOfBirth', 'Date of Birth'), formatDate(child.dateOfBirth, calendarSystem)],
+          [t('children.detail.export.age', 'Age'), `${calculateAge(child.dateOfBirth)} ${t('children.detail.export.years', 'years')}`],
+          [t('children.detail.export.communication', 'Communication'), formatEnum(child.communicationAbility)],
+          [t('children.detail.export.status', 'Status'), formatEnum(child.status)],
         ] as [string, string][],
       },
       {
-        title: 'Disability & Education',
+        title: t('children.detail.export.disabilityEducation', 'Disability & Education'),
         fields: [
-          ['Type', formatEnum(child.disabilityType)],
-          ['Category', child.disabilityCategory],
-          ['Severity', formatEnum(child.severityLevel)],
-          ['School Status', formatEnum(child.schoolEnrollmentStatus)],
+          [t('children.detail.export.type', 'Type'), formatEnum(child.disabilityType)],
+          [t('children.detail.export.category', 'Category'), child.disabilityCategory],
+          [t('children.detail.export.severity', 'Severity'), formatEnum(child.severityLevel)],
+          [t('children.detail.export.schoolStatus', 'School Status'), formatEnum(child.schoolEnrollmentStatus)],
         ] as [string, string][],
       },
       {
-        title: 'Medical & Assignment',
+        title: t('children.detail.export.medicalAssignment', 'Medical & Assignment'),
         fields: [
-          ['Parent', child.parent.fullName],
-          ['Case Worker', child.assignedStaff?.fullName || 'Unassigned'],
-          ['Registered Date', formatDate(child.createdAt, calendarSystem)],
+          [t('children.detail.export.parent', 'Parent'), child.parent.fullName],
+          [t('children.detail.export.caseWorker', 'Case Worker'), child.assignedStaff?.fullName || t('children.detail.export.unassigned', 'Unassigned')],
+          [t('children.detail.export.registeredDate', 'Registered Date'), formatDate(child.createdAt, calendarSystem)],
         ] as [string, string][],
       },
     ];
 
     if (formatType === 'csv') {
-      const headers = ['Field', 'Value'];
+      const headers = [t('children.detail.export.field', 'Field'), t('children.detail.export.value', 'Value')];
       const rows = profileSections.flatMap((s) => [[s.title, ''], ...s.fields]);
       exportToCSV(headers, rows, `${filename}.csv`);
     } else if (formatType === 'excel') {
@@ -235,9 +238,9 @@ export default function ChildProfilePage() {
         contentHTML += `</tbody></table>`;
       });
       if (child.medicalHistory || child.medications) {
-        contentHTML += `<h2>Medical Background</h2>`;
-        if (child.medicalHistory) contentHTML += `<p><b>History:</b> ${escapeHTML(child.medicalHistory)}</p>`;
-        if (child.medications) contentHTML += `<p><b>Medications:</b> ${escapeHTML(child.medications)}</p>`;
+        contentHTML += `<h2>${t('children.detail.export.medicalBackground', 'Medical Background')}</h2>`;
+        if (child.medicalHistory) contentHTML += `<p><b>${t('children.detail.export.history', 'History')}:</b> ${escapeHTML(child.medicalHistory)}</p>`;
+        if (child.medications) contentHTML += `<p><b>${t('children.detail.export.medications', 'Medications')}:</b> ${escapeHTML(child.medications)}</p>`;
       }
       exportToWordHTML(title, contentHTML, `${filename}.doc`);
     } else if (formatType === 'pdf') {
@@ -255,9 +258,9 @@ export default function ChildProfilePage() {
       });
       htmlBody += `</div>`;
       if (child.medicalHistory || child.medications) {
-        htmlBody += `<h2>Medical Background</h2>`;
-        if (child.medicalHistory) htmlBody += `<div class="field"><strong>History:</strong><br/>${escapeHTML(child.medicalHistory)}</div>`;
-        if (child.medications) htmlBody += `<div class="field"><strong>Medications:</strong><br/>${escapeHTML(child.medications)}</div>`;
+        htmlBody += `<h2>${t('children.detail.export.medicalBackground', 'Medical Background')}</h2>`;
+        if (child.medicalHistory) htmlBody += `<div class="field"><strong>${t('children.detail.export.history', 'History')}:</strong><br/>${escapeHTML(child.medicalHistory)}</div>`;
+        if (child.medications) htmlBody += `<div class="field"><strong>${t('children.detail.export.medications', 'Medications')}:</strong><br/>${escapeHTML(child.medications)}</div>`;
       }
       exportToPDF(title, htmlBody);
     }
@@ -277,9 +280,9 @@ export default function ChildProfilePage() {
   if (error || !child) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-center">
-        <p className="text-sm font-medium text-muted-foreground">{error || 'Child profile not found.'}</p>
+        <p className="text-sm font-medium text-muted-foreground">{error || t('children.detail.notFound', 'Child profile not found.')}</p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/children">Back to Children</Link>
+          <Link href="/dashboard/children">{t('children.detail.backToList', 'Back to Children')}</Link>
         </Button>
       </div>
     );
@@ -299,12 +302,12 @@ export default function ChildProfilePage() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-bold tracking-tight">{child.fullName}</h1>
-                  <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{child.idTag || '---'}</span>
+                  <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{child.idTag || t('children.detail.idTagPlaceholder', '---')}</span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {calculateAge(child.dateOfBirth)} years old
+                    {t('children.detail.yearsOld', '{age} years old', { age: String(calculateAge(child.dateOfBirth)) })}
                   </span>
                   <span className="flex items-center gap-1">
                     <DisabilityIcon type={child.disabilityType as any} />
@@ -312,7 +315,7 @@ export default function ChildProfilePage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <UserRound className="h-4 w-4" />
-                    Parent: <Link href={`/dashboard/parents/${child.parent.id}`} className="text-primary hover:underline font-medium">{child.parent.fullName}</Link>
+                    {t('children.detail.parentLabel', 'Parent')}: <Link href={`/dashboard/parents/${child.parent.id}`} className="text-primary hover:underline font-medium">{child.parent.fullName}</Link>
                   </span>
                 </div>
               </div>
@@ -326,11 +329,11 @@ export default function ChildProfilePage() {
               <ExportButton onExport={handleExport} loading={exporting} />
               <Button size="sm">
                 <Plus className="h-4 w-4" />
-                Add Progress Note
+                {t('children.detail.addProgressNote', 'Add Progress Note')}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setDrawerOpen(true)}>
                   <Pencil className="h-4 w-4" />
-                  Edit Profile
+                  {t('children.detail.editProfile', 'Edit Profile')}
               </Button>
               <Button
                 variant="outline"
@@ -344,7 +347,7 @@ export default function ChildProfilePage() {
                 onClick={() => setShowDeactivateModal(true)}
               >
                 {child.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
-                {child.status === 'INACTIVE' ? 'Activate' : 'Deactivate'}
+                {child.status === 'INACTIVE' ? t('children.detail.activate', 'Activate') : t('children.detail.deactivate', 'Deactivate')}
               </Button>
             </div>
           </div>
@@ -365,7 +368,7 @@ export default function ChildProfilePage() {
                 : 'border-transparent text-muted-foreground hover:text-foreground',
             )}
           >
-            {tab}
+            {t(`children.detail.tab.${tab.toLowerCase().replace(/[\s&]+/g, '_')}`, tab)}
           </button>
         ))}
       </div>
@@ -390,8 +393,8 @@ export default function ChildProfilePage() {
           setDrawerOpen(false);
           await fetchChild();
           toast({
-            title: 'Profile Updated',
-            description: 'The child profile has been saved successfully.',
+            title: t('children.detail.profileUpdated', 'Profile Updated'),
+            description: t('children.detail.profileSaved', 'The child profile has been saved successfully.'),
           });
         }}
       />
@@ -399,13 +402,13 @@ export default function ChildProfilePage() {
       {showDeactivateModal && (
         <DeactivateConfirmationModal
           name={child.fullName}
-          title={child.status === 'INACTIVE' ? 'Activate Profile?' : 'Deactivate Profile?'}
+          title={child.status === 'INACTIVE' ? t('children.detail.deactivateTitleActivate', 'Activate Profile?') : t('children.detail.deactivateTitleDeactivate', 'Deactivate Profile?')}
           description={
             child.status === 'INACTIVE'
-              ? `Are you sure you want to activate ${child.fullName}? This will restore their access in the system.`
+              ? t('children.detail.deactivateDescActivate', 'Are you sure you want to activate {name}? This will restore their access in the system.', { name: child.fullName })
               : undefined
           }
-          confirmLabel={child.status === 'INACTIVE' ? 'Activate Now' : 'Deactivate Now'}
+          confirmLabel={child.status === 'INACTIVE' ? t('children.detail.deactivateConfirmActivate', 'Activate Now') : t('children.detail.deactivateConfirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setShowDeactivateModal(false)}
         />
@@ -422,27 +425,28 @@ function ProfileTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   const groups = [
     {
-      title: 'Personal Information',
+      title: t('children.detail.profileTab.personalInfo', 'Personal Information'),
       icon: UserRound,
       fields: [
-        ['Full Name', child.fullName],
-        ['Gender', child.gender],
-        ['Date of Birth', formatDate(child.dateOfBirth, calendarSystem)],
-        ['Age', `${calculateAge(child.dateOfBirth)} years`],
-        ['Communication', formatEnum(child.communicationAbility)],
-        ['Status', formatEnum(child.status)],
+        [t('children.detail.profileTab.fullName', 'Full Name'), child.fullName],
+        [t('children.detail.profileTab.gender', 'Gender'), child.gender],
+        [t('children.detail.profileTab.dob', 'Date of Birth'), formatDate(child.dateOfBirth, calendarSystem)],
+        [t('children.detail.profileTab.age', 'Age'), `${calculateAge(child.dateOfBirth)} ${t('children.detail.profileTab.years', 'years')}`],
+        [t('children.detail.profileTab.communication', 'Communication'), formatEnum(child.communicationAbility)],
+        [t('children.detail.profileTab.status', 'Status'), formatEnum(child.status)],
       ],
     },
     {
-      title: 'Disability & Education',
+      title: t('children.detail.profileTab.disabilityEducation', 'Disability & Education'),
       icon: Accessibility,
       fields: [
-        ['Type', formatEnum(child.disabilityType)],
-        ['Category', child.disabilityCategory],
-        ['Severity', formatEnum(child.severityLevel)],
-        ['School Status', formatEnum(child.schoolEnrollmentStatus)],
+        [t('children.detail.profileTab.type', 'Type'), formatEnum(child.disabilityType)],
+        [t('children.detail.profileTab.category', 'Category'), child.disabilityCategory],
+        [t('children.detail.profileTab.severity', 'Severity'), formatEnum(child.severityLevel)],
+        [t('children.detail.profileTab.schoolStatus', 'School Status'), formatEnum(child.schoolEnrollmentStatus)],
       ],
     },
   ];
@@ -470,19 +474,19 @@ function ProfileTab({
       <Card className="lg:col-span-2">
         <CardHeader className="flex flex-row items-center gap-2 space-y-0">
           <Stethoscope className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">Medical Background</CardTitle>
+          <CardTitle className="text-base">{t('children.detail.profileTab.medicalBackground', 'Medical Background')}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Medical History</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('children.detail.profileTab.medicalHistory', 'Medical History')}</p>
             <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-md border italic">
-              {child.medicalHistory || 'No medical history recorded.'}
+              {child.medicalHistory || t('children.detail.profileTab.noMedicalHistory', 'No medical history recorded.')}
             </p>
           </div>
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Current Medications</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('children.detail.profileTab.currentMedications', 'Current Medications')}</p>
             <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-md border italic">
-              {child.medications || 'No medications recorded.'}
+              {child.medications || t('children.detail.profileTab.noMedications', 'No medications recorded.')}
             </p>
           </div>
         </CardContent>
@@ -498,6 +502,7 @@ function ProgressTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Timeline of Notes */}
@@ -506,9 +511,9 @@ function ProgressTab({
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <History className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Progress Timeline</CardTitle>
+              <CardTitle className="text-base">{t('children.detail.progressTab.timeline', 'Progress Timeline')}</CardTitle>
             </div>
-            <Button size="sm" variant="outline">View All</Button>
+            <Button size="sm" variant="outline">{t('children.detail.progressTab.viewAll', 'View All')}</Button>
           </CardHeader>
           <CardContent>
             {child.progressNotes.length ? (
@@ -530,7 +535,7 @@ function ProgressTab({
                 ))}
               </div>
             ) : (
-              <EmptyState message="No progress notes recorded yet." />
+              <EmptyState message={t('children.detail.progressTab.noNotes', 'No progress notes recorded yet.')} />
             )}
           </CardContent>
         </Card>
@@ -540,7 +545,7 @@ function ProgressTab({
           <CardHeader>
             <div className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Milestones</CardTitle>
+              <CardTitle className="text-base">{t('children.detail.progressTab.milestones', 'Milestones')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -561,7 +566,7 @@ function ProgressTab({
                 ))}
               </div>
             ) : (
-              <EmptyState message="No milestones defined." />
+              <EmptyState message={t('children.detail.progressTab.noMilestones', 'No milestones defined.')} />
             )}
           </CardContent>
         </Card>
@@ -573,7 +578,7 @@ function ProgressTab({
           <CardHeader>
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Active Goals</CardTitle>
+              <CardTitle className="text-base">{t('children.detail.progressTab.activeGoals', 'Active Goals')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -595,7 +600,7 @@ function ProgressTab({
                 </div>
               ))
             ) : (
-              <EmptyState message="No goals set." />
+              <EmptyState message={t('children.detail.progressTab.noGoals', 'No goals set.')} />
             )}
           </CardContent>
         </Card>
@@ -611,18 +616,19 @@ function ServicesTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   return (
     <Card>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Service</TableHead>
-              <TableHead>Staff</TableHead>
-              <TableHead>Frequency</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('children.detail.servicesTab.service', 'Service')}</TableHead>
+              <TableHead>{t('children.detail.servicesTab.staff', 'Staff')}</TableHead>
+              <TableHead>{t('children.detail.servicesTab.frequency', 'Frequency')}</TableHead>
+              <TableHead>{t('children.detail.servicesTab.startDate', 'Start Date')}</TableHead>
+              <TableHead>{t('children.detail.servicesTab.endDate', 'End Date')}</TableHead>
+              <TableHead>{t('children.detail.servicesTab.status', 'Status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -630,15 +636,15 @@ function ServicesTab({
               child.serviceAssignments.map((sa) => (
                 <TableRow key={sa.id}>
                   <TableCell className="font-semibold">{sa.service.name}</TableCell>
-                  <TableCell>{sa.assignedStaff?.fullName || 'N/A'}</TableCell>
+                  <TableCell>{sa.assignedStaff?.fullName || t('children.detail.servicesTab.na', 'N/A')}</TableCell>
                   <TableCell>{formatEnum(sa.frequency)}</TableCell>
                   <TableCell>{formatDate(sa.startDate, calendarSystem)}</TableCell>
-                  <TableCell>{sa.endDate ? formatDate(sa.endDate, calendarSystem) : 'Ongoing'}</TableCell>
+                  <TableCell>{sa.endDate ? formatDate(sa.endDate, calendarSystem) : t('children.detail.servicesTab.ongoing', 'Ongoing')}</TableCell>
                   <TableCell><GenericStatusBadge status={sa.status} /></TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">No assigned services.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">{t('children.detail.servicesTab.noServices', 'No assigned services.')}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -654,14 +660,15 @@ function AppointmentsTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
          <div className="flex items-center gap-2">
            <CalendarDays className="h-5 w-5 text-primary" />
-           <CardTitle className="text-base">Upcoming Appointments</CardTitle>
+           <CardTitle className="text-base">{t('children.detail.appointmentsTab.upcoming', 'Upcoming Appointments')}</CardTitle>
          </div>
-         <Button size="sm">Schedule New</Button>
+         <Button size="sm">{t('children.detail.appointmentsTab.scheduleNew', 'Schedule New')}</Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -688,7 +695,7 @@ function AppointmentsTab({
               );
             })
           ) : (
-            <EmptyState message="No upcoming appointments." />
+            <EmptyState message={t('children.detail.appointmentsTab.noAppointments', 'No upcoming appointments.')} />
           )}
         </div>
       </CardContent>
@@ -703,6 +710,7 @@ function FinanceTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   const allocations = child.parent.fundAllocations || [];
 
   return (
@@ -710,7 +718,7 @@ function FinanceTab({
       <CardHeader>
         <div className="flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">Fund Allocations (Parent Linked)</CardTitle>
+          <CardTitle className="text-base">{t('children.detail.financeTab.fundAllocations', 'Fund Allocations (Parent Linked)')}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
@@ -726,18 +734,18 @@ function FinanceTab({
                   <div className="flex items-center gap-2">
                     <GenericStatusBadge status={fund.status} />
                     {fund.parentAcknowledged ? (
-                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">Acknowledged</Badge>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">{t('children.detail.financeTab.acknowledged', 'Acknowledged')}</Badge>
                     ) : (
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">Pending</Badge>
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">{t('children.detail.financeTab.pending', 'Pending')}</Badge>
                     )}
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">Allocated on {formatDate(fund.allocationDate, calendarSystem)}</p>
+                <p className="mt-3 text-xs text-muted-foreground">{t('children.detail.financeTab.allocatedOn', 'Allocated on')} {formatDate(fund.allocationDate, calendarSystem)}</p>
               </div>
             ))}
           </div>
         ) : (
-          <EmptyState message="No fund allocations linked to this child's parent." />
+          <EmptyState message={t('children.detail.financeTab.noAllocations', 'No fund allocations linked to this child\'s parent.')} />
         )}
       </CardContent>
     </Card>
@@ -751,14 +759,15 @@ function DocumentsTab({
   child: ChildProfile;
   calendarSystem: CalendarSystem;
 }) {
+  const { t } = useLocale();
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Files className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">Documents</CardTitle>
+          <CardTitle className="text-base">{t('children.detail.documentsTab.documents', 'Documents')}</CardTitle>
         </div>
-        <Button size="sm"><FileUp className="h-4 w-4" /> Upload</Button>
+        <Button size="sm"><FileUp className="h-4 w-4" /> {t('children.detail.documentsTab.upload', 'Upload')}</Button>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -771,15 +780,15 @@ function DocumentsTab({
                 </div>
                 <div>
                   <h4 className="text-sm font-bold truncate">{doc.name}</h4>
-                  <p className="text-xs text-muted-foreground">Added {formatDate(doc.createdAt, calendarSystem)}</p>
+                  <p className="text-xs text-muted-foreground">{t('children.detail.documentsTab.added', 'Added')} {formatDate(doc.createdAt, calendarSystem)}</p>
                 </div>
                 <Button size="sm" variant="outline" className="w-full" asChild>
-                  <Link href={doc.fileUrl} target="_blank">Open Document <ExternalLink className="h-3 w-3 ml-2" /></Link>
+                  <Link href={doc.fileUrl} target="_blank">{t('children.detail.documentsTab.openDocument', 'Open Document')} <ExternalLink className="h-3 w-3 ml-2" /></Link>
                 </Button>
               </div>
             ))
           ) : (
-            <div className="col-span-full"><EmptyState message="No documents uploaded." /></div>
+            <div className="col-span-full"><EmptyState message={t('children.detail.documentsTab.noDocuments', 'No documents uploaded.')} /></div>
           )}
         </div>
       </CardContent>
@@ -866,13 +875,14 @@ function calculateAge(dob: string) {
 }
 
 function formatDate(value: string, calendarSystem: CalendarSystem) {
-  return formatCalendarDate(value, calendarSystem) || 'N/A';
+  return formatCalendarDate(value, calendarSystem) || tI18n('children.detail.na', 'N/A');
 }
 
 function appointmentDateChip(value: string, calendarSystem: CalendarSystem) {
+  const placeholder = { month: tI18n('children.detail.datePlaceholder', '--'), day: tI18n('children.detail.datePlaceholder', '--') };
   if (calendarSystem === 'ETHIOPIAN') {
     const iso = toIsoDateInputValue(value);
-    if (!iso) return { month: '--', day: '--' };
+    if (!iso) return placeholder;
 
     const date = gregorianToEthiopian(parseIsoDate(iso));
     return {
@@ -882,7 +892,7 @@ function appointmentDateChip(value: string, calendarSystem: CalendarSystem) {
   }
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { month: '--', day: '--' };
+  if (Number.isNaN(date.getTime())) return placeholder;
 
   return {
     month: gregorianMonths[date.getUTCMonth()].slice(0, 3),

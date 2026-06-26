@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, User, Calendar, DollarSign, FileText, Loader2, Tag, Shield, Info } from 'lucide-react';
+import { X, Search, User, DollarSign, FileText, Loader2, Tag, Shield, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { DonorType } from '@/types/finance';
 
 interface DonationDrawerProps {
@@ -33,6 +35,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
   const [services, setServices] = useState<any[]>([]);
   
   const { toast } = useToast();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (open) {
@@ -74,15 +77,15 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!donorName && donorType !== DonorType.ANONYMOUS) {
-      toast({ title: 'Error', description: 'Please enter donor name.', variant: 'destructive' });
+      toast({ title: t('donationDrawer.error', 'Error'), description: t('donationDrawer.enterDonorName', 'Please enter donor name.'), variant: 'destructive' });
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: 'Error', description: 'Please enter a valid amount.', variant: 'destructive' });
+      toast({ title: t('donationDrawer.error', 'Error'), description: t('donationDrawer.enterValidAmount', 'Please enter a valid amount.'), variant: 'destructive' });
       return;
     }
     if (isRestricted && !restrictedToChildId && !restrictedToServiceId) {
-      toast({ title: 'Error', description: 'Please select a child or service for restricted donation.', variant: 'destructive' });
+      toast({ title: t('donationDrawer.error', 'Error'), description: t('donationDrawer.selectRestriction', 'Please select a child or service for restricted donation.'), variant: 'destructive' });
       return;
     }
 
@@ -107,16 +110,16 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
 
       const res = await api.post('/donations', payload);
       toast({ 
-        title: 'Success', 
-        description: `Donation recorded. Receipt: ${res.data.receiptNumber}` 
+        title: t('donationDrawer.success', 'Success'), 
+        description: `${t('donationDrawer.donationRecorded', 'Donation recorded. Receipt:')} ${res.data.receiptNumber}` 
       });
       onSuccess();
       onClose();
     } catch (error: any) {
       console.error('Failed to record donation:', error);
-      const message = error.response?.data?.message || 'Failed to record donation.';
+      const message = error.response?.data?.message || t('donationDrawer.recordFailed', 'Failed to record donation.');
       toast({ 
-        title: 'Error', 
+        title: t('donationDrawer.error', 'Error'), 
         description: Array.isArray(message) ? message[0] : message, 
         variant: 'destructive' 
       });
@@ -132,7 +135,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-background h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Record Donation</h2>
+          <h2 className="text-lg font-semibold">{t('donationDrawer.title', 'Record Donation')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -140,7 +143,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-4">
-            <Label>Donor Information</Label>
+            <Label>{t('donationDrawer.donorInformation', 'Donor Information')}</Label>
             <div className="flex gap-2">
               {(['INDIVIDUAL', 'ORGANIZATION', 'ANONYMOUS'] as DonorType[]).map((type) => (
                 <button
@@ -161,12 +164,12 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
             {donorType !== DonorType.ANONYMOUS && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="donorName">Donor Name</Label>
+                  <Label htmlFor="donorName">{t('donationDrawer.donorName', 'Donor Name')}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       id="donorName"
-                      placeholder="Full name or Company name"
+                      placeholder={t('donationDrawer.donorNamePlaceholder', 'Full name or Company name')}
                       className="pl-9"
                       value={donorName}
                       onChange={(e) => setDonorName(e.target.value)}
@@ -175,10 +178,10 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="donorContact">Contact Info (Optional)</Label>
+                  <Label htmlFor="donorContact">{t('donationDrawer.contactInfo', 'Contact Info (Optional)')}</Label>
                   <Input 
                     id="donorContact"
-                    placeholder="Phone or Email"
+                    placeholder={t('donationDrawer.contactPlaceholder', 'Phone or Email')}
                     value={donorContact}
                     onChange={(e) => setDonorContact(e.target.value)}
                   />
@@ -189,13 +192,13 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (ETB)</Label>
+              <Label htmlFor="amount">{t('donationDrawer.amount', 'Amount (ETB)')}</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="amount"
                   type="number"
-                  placeholder="0.00"
+                  placeholder={t('donationDrawer.amountPlaceholder', '0.00')}
                   className="pl-9"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -204,28 +207,21 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Donation Date</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  id="date"
-                  type="date"
-                  className="pl-9"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </div>
+              <Label htmlFor="date">{t('donationDrawer.donationDate', 'Donation Date')}</Label>
+              <CalendarDatePicker
+                value={date}
+                onChange={setDate}
+              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purpose">Purpose / Fund</Label>
+            <Label htmlFor="purpose">{t('donationDrawer.purpose', 'Purpose / Fund')}</Label>
             <div className="relative">
               <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input 
                 id="purpose"
-                placeholder="e.g. General Fund, Ramadan 2024"
+                placeholder={t('donationDrawer.purposePlaceholder', 'e.g. General Fund, Ramadan 2024')}
                 className="pl-9"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
@@ -237,7 +233,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Shield className="w-4 h-4 text-amber-600" />
-                <Label className="cursor-pointer" htmlFor="restricted">Restricted Donation</Label>
+                <Label className="cursor-pointer" htmlFor="restricted">{t('donationDrawer.restrictedDonation', 'Restricted Donation')}</Label>
               </div>
               <input 
                 id="restricted"
@@ -251,7 +247,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
             {isRestricted && (
               <div className="space-y-3 animate-in fade-in duration-200">
                 <div className="space-y-2">
-                  <Label className="text-xs">Restricted to Child (Optional)</Label>
+                  <Label className="text-xs">{t('donationDrawer.restrictedToChild', 'Restricted to Child (Optional)')}</Label>
                   <select 
                     className="w-full text-sm border rounded-md p-2 bg-background"
                     value={restrictedToChildId}
@@ -260,13 +256,13 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
                       if (e.target.value) setRestrictedToServiceId('');
                     }}
                   >
-                    <option value="">-- Select Child --</option>
+                    <option value="">{t('donationDrawer.selectChild', '-- Select Child --')}</option>
                     {Array.isArray(children) && children.map(c => <option key={c.id} value={c.id}>{c.fullName}</option>)}
                   </select>
                 </div>
-                <div className="text-center text-xs text-muted-foreground">OR</div>
+                <div className="text-center text-xs text-muted-foreground">{t('donationDrawer.or', 'OR')}</div>
                 <div className="space-y-2">
-                  <Label className="text-xs">Restricted to Service (Optional)</Label>
+                  <Label className="text-xs">{t('donationDrawer.restrictedToService', 'Restricted to Service (Optional)')}</Label>
                   <select 
                     className="w-full text-sm border rounded-md p-2 bg-background"
                     value={restrictedToServiceId}
@@ -275,7 +271,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
                       if (e.target.value) setRestrictedToChildId('');
                     }}
                   >
-                    <option value="">-- Select Service --</option>
+                    <option value="">{t('donationDrawer.selectService', '-- Select Service --')}</option>
                     {Array.isArray(services) && services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
@@ -284,11 +280,11 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Internal Notes (Optional)</Label>
+            <Label htmlFor="notes">{t('donationDrawer.internalNotes', 'Internal Notes (Optional)')}</Label>
             <textarea 
               id="notes"
               className="w-full min-h-[80px] p-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Any additional details..."
+              placeholder={t('donationDrawer.notesPlaceholder', 'Any additional details...')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -296,10 +292,10 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
         </form>
 
         <div className="p-4 border-t bg-muted/10 flex space-x-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" className="flex-1" onClick={onClose}>{t('donationDrawer.cancel', 'Cancel')}</Button>
           <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSubmit} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Record Donation
+            {t('donationDrawer.recordDonation', 'Record Donation')}
           </Button>
         </div>
       </div>

@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: fikir
       POSTGRES_PASSWORD: fikir_dev_password
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - fikir_postgres_data:/var/lib/postgresql/data
     healthcheck:

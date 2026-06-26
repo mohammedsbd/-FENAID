@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, User, Calendar, DollarSign, FileText, Loader2 } from 'lucide-react';
+import { X, Search, User, DollarSign, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { useToast } from '@/hooks/use-toast';
 
 interface Parent {
@@ -33,6 +35,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const { toast } = useToast();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (open) {
@@ -71,11 +74,11 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedParent) {
-      toast({ title: 'Error', description: 'Please select a parent.', variant: 'destructive' });
+      toast({ title: t('allocationDrawer.error', 'Error'), description: t('allocationDrawer.selectParent', 'Please select a parent.'), variant: 'destructive' });
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: 'Error', description: 'Please enter a valid amount.', variant: 'destructive' });
+      toast({ title: t('allocationDrawer.error', 'Error'), description: t('allocationDrawer.enterValidAmount', 'Please enter a valid amount.'), variant: 'destructive' });
       return;
     }
 
@@ -88,12 +91,12 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
         allocationDate: new Date(date).toISOString(),
         notes,
       });
-      toast({ title: 'Success', description: 'Fund allocation recorded successfully.' });
+      toast({ title: t('allocationDrawer.success', 'Success'), description: t('allocationDrawer.recorded', 'Fund allocation recorded successfully.') });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to create allocation:', error);
-      toast({ title: 'Error', description: 'Failed to record allocation.', variant: 'destructive' });
+      toast({ title: t('allocationDrawer.error', 'Error'), description: t('allocationDrawer.recordFailed', 'Failed to record allocation.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -106,7 +109,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-background h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">New Fund Allocation</h2>
+          <h2 className="text-lg font-semibold">{t('allocationDrawer.title', 'New Fund Allocation')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -114,13 +117,13 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-4">
-            <Label>Select Parent</Label>
+            <Label>{t('allocationDrawer.selectParentLabel', 'Select Parent')}</Label>
             {!selectedParent ? (
               <div className="space-y-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search by name or ID..." 
+                    placeholder={t('allocationDrawer.searchPlaceholder', 'Search by name or ID...')} 
                     className="pl-9"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -128,7 +131,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
                 </div>
                 <div className="border rounded-md max-h-48 overflow-y-auto bg-muted/20">
                   {filteredParents.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">No parents found.</div>
+                    <div className="p-4 text-center text-sm text-muted-foreground">{t('allocationDrawer.noParents', 'No parents found.')}</div>
                   ) : (
                     filteredParents.map(p => (
                       <div 
@@ -162,7 +165,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedParent(null)} className="text-primary hover:text-primary/90 hover:bg-primary/10">
-                  Change
+                  {t('allocationDrawer.change', 'Change')}
                 </Button>
               </div>
             )}
@@ -170,13 +173,13 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (ETB)</Label>
+              <Label htmlFor="amount">{t('allocationDrawer.amount', 'Amount (ETB)')}</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="amount"
                   type="number"
-                  placeholder="0.00"
+                  placeholder={t('allocationDrawer.amountPlaceholder', '0.00')}
                   className="pl-9"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -185,28 +188,21 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Allocation Date</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  id="date"
-                  type="date"
-                  className="pl-9"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </div>
+              <Label htmlFor="date">{t('allocationDrawer.allocationDate', 'Allocation Date')}</Label>
+              <CalendarDatePicker
+                value={date}
+                onChange={setDate}
+              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="purpose">Purpose</Label>
+            <Label htmlFor="purpose">{t('allocationDrawer.purpose', 'Purpose')}</Label>
             <div className="relative">
               <FileText className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
               <Input 
                 id="purpose"
-                placeholder="e.g. Monthly Support, School Fees"
+                placeholder={t('allocationDrawer.purposePlaceholder', 'e.g. Monthly Support, School Fees')}
                 className="pl-9"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
@@ -216,11 +212,11 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="notes">{t('allocationDrawer.notes', 'Notes (Optional)')}</Label>
             <textarea 
               id="notes"
               className="w-full min-h-[100px] p-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Any additional details..."
+              placeholder={t('allocationDrawer.notesPlaceholder', 'Any additional details...')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -228,10 +224,10 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
         </form>
 
         <div className="p-4 border-t bg-muted/10 flex space-x-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" className="flex-1" onClick={onClose}>{t('allocationDrawer.cancel', 'Cancel')}</Button>
           <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSubmit} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Record Allocation
+            {t('allocationDrawer.record', 'Record Allocation')}
           </Button>
         </div>
       </div>

@@ -46,6 +46,8 @@ import { AllocationDrawer } from './allocation-drawer';
 import { DonationDrawer } from './donation-drawer';
 import { DisburseModal } from './disburse-modal';
 import { AcknowledgeModal } from './acknowledge-modal';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ExportButton, ExportFormat } from '@/components/dashboard/export-button';
 import { 
   exportToCSV, 
@@ -68,6 +70,7 @@ export default function FinanceClient() {
   const [allocations, setAllocations] = useState<FundAllocation[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const { toast } = useToast();
+  const { t } = useLocale();
 
   // Drawers and Modals State
   const [allocationDrawerOpen, setAllocationDrawerOpen] = useState(false);
@@ -130,8 +133,8 @@ export default function FinanceClient() {
     } catch (error) {
       console.error('Unexpected error in fetchData:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load financial records.',
+        title: t('finance.error', 'Error'),
+        description: t('finance.loadError', 'Failed to load financial records.'),
         variant: 'destructive',
       });
     } finally {
@@ -155,17 +158,17 @@ export default function FinanceClient() {
     setExporting(true);
     try {
       const filename = `${activeTab}-export-${new Date().toISOString().split('T')[0]}`;
-      const title = activeTab === 'allocations' ? 'Fund Allocations Directory' : 'Donations Directory';
+      const title = activeTab === 'allocations' ? t('finance.export.allocationsTitle', 'Fund Allocations Directory') : t('finance.export.donationsTitle', 'Donations Directory');
 
       if (activeTab === 'allocations') {
-        const headers = ['Parent Name', 'Amount (ETB)', 'Purpose', 'Date', 'Status', 'Acknowledged'];
+        const headers = [t('finance.parentName', 'Parent Name'), t('finance.amountEtb', 'Amount (ETB)'), t('finance.purpose', 'Purpose'), t('finance.date', 'Date'), t('finance.status', 'Status'), t('finance.acknowledged', 'Acknowledged')];
         const rows = allocations.map(a => [
           a.parent.fullName,
           a.amount.toString(),
           a.purpose,
           format(new Date(a.allocationDate), 'MMM d, yyyy'),
           a.status,
-          a.parentAcknowledged ? 'Yes' : 'No'
+          a.parentAcknowledged ? t('finance.yes', 'Yes') : t('finance.no', 'No')
         ]);
 
         if (formatType === 'csv') {
@@ -188,15 +191,15 @@ export default function FinanceClient() {
           exportToPDF(title, htmlBody);
         }
       } else {
-        const headers = ['Receipt No.', 'Donor Name', 'Type', 'Amount (ETB)', 'Date', 'Restricted', 'Received By'];
+        const headers = [t('finance.receiptNo', 'Receipt No.'), t('finance.donorName', 'Donor Name'), t('finance.type', 'Type'), t('finance.amountEtb', 'Amount (ETB)'), t('finance.date', 'Date'), t('finance.restricted', 'Restricted'), t('finance.receivedBy', 'Received By')];
         const rows = donations.map(d => [
           d.receiptNumber,
           d.donorName,
           d.donorType,
           d.amount.toString(),
           format(new Date(d.donationDate), 'MMM d, yyyy'),
-          d.isRestricted ? `Yes (${d.restrictedToChild?.fullName || d.restrictedToService?.name || 'Unknown'})` : 'No',
-          d.receivedBy?.fullName || 'System'
+          d.isRestricted ? `${t('finance.yes', 'Yes')} (${d.restrictedToChild?.fullName || d.restrictedToService?.name || t('finance.unknown', 'Unknown')})` : t('finance.no', 'No'),
+          d.receivedBy?.fullName || t('finance.system', 'System')
         ]);
 
         if (formatType === 'csv') {
@@ -221,7 +224,7 @@ export default function FinanceClient() {
       }
     } catch (err) {
       console.error('Export failed:', err);
-      toast({ title: 'Error', description: 'Failed to export data.', variant: 'destructive' });
+      toast({ title: t('finance.error', 'Error'), description: t('finance.exportError', 'Failed to export data.'), variant: 'destructive' });
     } finally {
       setExporting(false);
     }
@@ -235,7 +238,7 @@ export default function FinanceClient() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Allocated</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('finance.totalAllocated', 'Total Allocated')}</p>
                 <h3 className="text-2xl font-bold mt-1">{stats.totalAllocated.toLocaleString()} ETB</h3>
               </div>
               <div className="p-3 bg-primary/10 rounded-full">
@@ -244,7 +247,7 @@ export default function FinanceClient() {
             </div>
             <div className="mt-4 flex items-center text-xs text-primary">
               <Clock className="w-3 h-3 mr-1" />
-              <span>Lifetime allocations</span>
+              <span>{t('finance.lifetimeAllocations', 'Lifetime allocations')}</span>
             </div>
           </CardContent>
         </Card>
@@ -253,7 +256,7 @@ export default function FinanceClient() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Disbursed</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('finance.totalDisbursed', 'Total Disbursed')}</p>
                 <h3 className="text-2xl font-bold mt-1">{stats.totalDisbursed.toLocaleString()} ETB</h3>
               </div>
               <div className="p-3 bg-green-50 rounded-full">
@@ -262,7 +265,7 @@ export default function FinanceClient() {
             </div>
             <div className="mt-4 flex items-center text-xs text-green-600">
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              <span>Verified disbursements</span>
+              <span>{t('finance.verifiedDisbursements', 'Verified disbursements')}</span>
             </div>
           </CardContent>
         </Card>
@@ -271,7 +274,7 @@ export default function FinanceClient() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Donations Received</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('finance.totalDonations', 'Total Donations Received')}</p>
                 <h3 className="text-2xl font-bold mt-1">{stats.totalDonations.toLocaleString()} ETB</h3>
               </div>
               <div className="p-3 bg-accent/10 rounded-full">
@@ -280,7 +283,7 @@ export default function FinanceClient() {
             </div>
             <div className="mt-4 flex items-center text-xs text-accent">
               <Calendar className="w-3 h-3 mr-1" />
-              <span>Current fiscal year</span>
+              <span>{t('finance.currentFiscalYear', 'Current fiscal year')}</span>
             </div>
           </CardContent>
         </Card>
@@ -299,7 +302,7 @@ export default function FinanceClient() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Fund Allocations
+              {t('finance.fundAllocations', 'Fund Allocations')}
               {activeTab === 'allocations' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
@@ -313,7 +316,7 @@ export default function FinanceClient() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Donations
+              {t('finance.donations', 'Donations')}
               {activeTab === 'donations' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
@@ -327,7 +330,7 @@ export default function FinanceClient() {
               onClick={() => activeTab === 'allocations' ? setAllocationDrawerOpen(true) : setDonationDrawerOpen(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
-              {activeTab === 'allocations' ? 'New Allocation' : 'Record Donation'}
+              {activeTab === 'allocations' ? t('finance.newAllocation', 'New Allocation') : t('finance.recordDonation', 'Record Donation')}
             </Button>
           </div>
         </div>
@@ -337,7 +340,7 @@ export default function FinanceClient() {
           <div className="relative flex-1 min-w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder={activeTab === 'allocations' ? "Search parent name or purpose..." : "Search donor name or receipt..."}
+              placeholder={activeTab === 'allocations' ? t('finance.searchAllocations', 'Search parent name or purpose...') : t('finance.searchDonations', 'Search donor name or receipt...')}
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -352,9 +355,9 @@ export default function FinanceClient() {
                 value={allocationStatus}
                 onChange={(e) => setAllocationStatus(e.target.value)}
               >
-                <option value="ALL">All Statuses</option>
-                <option value="ALLOCATED">Allocated</option>
-                <option value="DISBURSED">Disbursed</option>
+                <option value="ALL">{t('finance.allStatuses', 'All Statuses')}</option>
+                <option value="ALLOCATED">{t('finance.allocated', 'Allocated')}</option>
+                <option value="DISBURSED">{t('finance.disbursed', 'Disbursed')}</option>
               </select>
             ) : (
               <select 
@@ -362,24 +365,22 @@ export default function FinanceClient() {
                 value={donorType}
                 onChange={(e) => setDonorType(e.target.value)}
               >
-                <option value="ALL">All Donor Types</option>
-                <option value="INDIVIDUAL">Individual</option>
-                <option value="ORGANIZATION">Organization</option>
-                <option value="ANONYMOUS">Anonymous</option>
+                <option value="ALL">{t('finance.allDonorTypes', 'All Donor Types')}</option>
+                <option value="INDIVIDUAL">{t('finance.individual', 'Individual')}</option>
+                <option value="ORGANIZATION">{t('finance.organization', 'Organization')}</option>
+                <option value="ANONYMOUS">{t('finance.anonymous', 'Anonymous')}</option>
               </select>
             )}
-            <Input 
-              type="date" 
-              className="w-40 h-9" 
+            <CalendarDatePicker
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={setStartDate}
+              placeholder={t('finance.fromDate', 'From date')}
             />
-            <span className="text-muted-foreground">to</span>
-            <Input 
-              type="date" 
-              className="w-40 h-9" 
+            <span className="text-muted-foreground">{t('finance.to', 'to')}</span>
+            <CalendarDatePicker
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={setEndDate}
+              placeholder={t('finance.toDate', 'To date')}
             />
           </div>
         </div>
@@ -390,24 +391,24 @@ export default function FinanceClient() {
             <TableHeader>
               {activeTab === 'allocations' ? (
                 <TableRow>
-                  <TableHead>Parent Name</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Purpose</TableHead>
-                  <TableHead>Allocation Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Ack.</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('finance.parentName', 'Parent Name')}</TableHead>
+                  <TableHead>{t('finance.amount', 'Amount')}</TableHead>
+                  <TableHead>{t('finance.purpose', 'Purpose')}</TableHead>
+                  <TableHead>{t('finance.allocationDate', 'Allocation Date')}</TableHead>
+                  <TableHead>{t('finance.status', 'Status')}</TableHead>
+                  <TableHead className="text-center">{t('finance.ack', 'Ack.')}</TableHead>
+                  <TableHead className="text-right">{t('finance.actions', 'Actions')}</TableHead>
                 </TableRow>
               ) : (
                 <TableRow>
-                  <TableHead>Receipt No.</TableHead>
-                  <TableHead>Donor Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Restricted</TableHead>
-                  <TableHead>Received By</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('finance.receiptNo', 'Receipt No.')}</TableHead>
+                  <TableHead>{t('finance.donorName', 'Donor Name')}</TableHead>
+                  <TableHead>{t('finance.type', 'Type')}</TableHead>
+                  <TableHead>{t('finance.amount', 'Amount')}</TableHead>
+                  <TableHead>{t('finance.date', 'Date')}</TableHead>
+                  <TableHead>{t('finance.restricted', 'Restricted')}</TableHead>
+                  <TableHead>{t('finance.receivedBy', 'Received By')}</TableHead>
+                  <TableHead className="text-right">{t('finance.actions', 'Actions')}</TableHead>
                 </TableRow>
               )}
             </TableHeader>
@@ -417,7 +418,7 @@ export default function FinanceClient() {
                   <TableCell colSpan={activeTab === 'allocations' ? 7 : 8} className="text-center py-10">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Clock className="w-8 h-8 text-muted-foreground animate-pulse" />
-                      <p className="text-muted-foreground">Loading records...</p>
+                      <p className="text-muted-foreground">{t('finance.loadingRecords', 'Loading records...')}</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -425,7 +426,7 @@ export default function FinanceClient() {
                 allocations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                      No fund allocations found.
+                      {t('finance.noAllocations', 'No fund allocations found.')}
                     </TableCell>
                   </TableRow>
                 ) : allocations.map((item) => (
@@ -464,7 +465,7 @@ export default function FinanceClient() {
                       {item.status === 'DISBURSED' && item.parentAcknowledged ? (
                         <div className="flex items-center justify-end text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-100 w-fit ml-auto">
                           <ShieldCheck className="w-4 h-4 mr-1" />
-                          <span className="text-xs font-semibold uppercase tracking-wider">Verified</span>
+                          <span className="text-xs font-semibold uppercase tracking-wider">{t('finance.verified', 'Verified')}</span>
                           <Lock className="w-3 h-3 ml-2" />
                         </div>
                       ) : (
@@ -473,7 +474,7 @@ export default function FinanceClient() {
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              title="Mark as Disbursed" 
+                              title={t('finance.markAsDisbursed', 'Mark as Disbursed')} 
                               className="text-primary h-8 w-8"
                               onClick={(e) => handleDisburseClick(e, item)}
                             >
@@ -484,7 +485,7 @@ export default function FinanceClient() {
                             <Button 
                               size="icon" 
                               variant="ghost" 
-                              title="Record Acknowledgement" 
+                              title={t('finance.recordAcknowledgement', 'Record Acknowledgement')} 
                               className="text-accent h-8 w-8"
                               onClick={(e) => handleAcknowledgeClick(e, item)}
                             >
@@ -503,7 +504,7 @@ export default function FinanceClient() {
                 donations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                      No donation records found.
+                      {t('finance.noDonations', 'No donation records found.')}
                     </TableCell>
                   </TableRow>
                 ) : donations.map((item) => (
@@ -522,27 +523,27 @@ export default function FinanceClient() {
                         <div className="space-y-1">
                           <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex items-center w-fit">
                             <AlertCircle className="w-3 h-3 mr-1" />
-                            Restricted
+                            {t('finance.restricted', 'Restricted')}
                           </Badge>
                           <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                            {item.restrictedToChild?.fullName || item.restrictedToService?.name || 'Unknown'}
+                            {item.restrictedToChild?.fullName || item.restrictedToService?.name || t('finance.unknown', 'Unknown')}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">No</span>
+                        <span className="text-muted-foreground text-sm">{t('finance.no', 'No')}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <User className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{item.receivedBy?.fullName || 'System'}</span>
+                        <span className="text-sm">{item.receivedBy?.fullName || t('finance.system', 'System')}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                          <div className="flex items-center text-muted-foreground bg-muted/50 px-2 py-1 rounded-md border text-[10px] font-medium uppercase tracking-wider">
                           <Lock className="w-3 h-3 mr-1" />
-                          Immutable
+                           {t('finance.immutable', 'Immutable')}
                         </div>
                         <Button size="icon" variant="ghost" className="h-8 w-8">
                           <ExternalLink className="w-4 h-4" />

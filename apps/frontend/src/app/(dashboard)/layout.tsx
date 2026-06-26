@@ -2,11 +2,14 @@ import { cookies } from 'next/headers';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
 import { CalendarSettingsProvider } from '@/components/providers/calendar-settings-provider';
+import { LocaleProvider } from '@/components/providers/locale-provider';
 import type { ReactNode } from 'react';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const cookieStore = cookies();
   const userCookie = cookieStore.get('user')?.value;
+  const localeCookie = cookieStore.get('locale')?.value;
+  const initialLocale = localeCookie || 'en';
   let user = null;
 
   if (userCookie) {
@@ -19,15 +22,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <CalendarSettingsProvider>
-      <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar user={user} />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Topbar />
-          <main className="flex-1 overflow-y-auto p-6">
-            {children}
-          </main>
+      <LocaleProvider initialLocale={initialLocale}>
+        <div className="flex h-screen overflow-hidden bg-slate-50">
+          <Sidebar user={user} />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <Topbar />
+            <main className="flex-1 overflow-y-auto p-6">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </LocaleProvider>
     </CalendarSettingsProvider>
   );
 }

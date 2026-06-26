@@ -28,7 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatEnum } from '@/lib/export';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
@@ -59,6 +59,7 @@ export function ResultsPanel({
   onExport,
   exporting,
 }: ResultsPanelProps) {
+  const { t } = useLocale();
   const [showCharts, setShowCharts] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Record<
     string,

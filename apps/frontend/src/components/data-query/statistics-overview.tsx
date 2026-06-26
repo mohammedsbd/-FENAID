@@ -27,11 +27,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/lib/api';
 import { exportToPDF } from '@/lib/export';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6'];
 
 export function StatisticsOverview() {
+  const { t } = useLocale();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

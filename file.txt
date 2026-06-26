@@ -1,0 +1,180 @@
+FENAID Unified Case Management & Research System
+Modular Feature and Price Breakdown
+
+Pricing assumptions:
+- Currency conversion used for this estimate: 1 USD = 150 ETB.
+- Prices are agency-grade custom software estimates for a NestJS, Next.js, Prisma, PostgreSQL system.
+- Ranges include feature analysis, backend API, database modeling, frontend UI, validation, role checks, audit behavior where applicable, and implementation testing.
+- Hosting, SMS/email gateway fees, long-term maintenance, hardware, production backup operations, and third-party license fees are excluded unless agreed separately.
+
+1. Core Auth & Role-Based Access Control with Audit Logs
+Technical Description:
+Staff authenticate with email and password using bcrypt password hashing and JWT access tokens. The system enforces the three internal roles: SUPER_ADMIN, CASE_WORKER, and VIEWER through backend guards, decorators, protected routes, session handling, forced password-change workflow, and global audit logging for login and data actions.
+Operational Value:
+This protects vulnerable beneficiary data and ensures only authorized FENAID staff can view or modify records. The audit trail gives management a tamper-resistant accountability record for staff actions, role changes, record edits, and sensitive operations.
+Estimated Price Allocation:
+USD 4,500 - 7,000
+ETB 675,000 - 1,050,000
+
+2. Staff Management & System Settings
+Technical Description:
+Super Admins can create staff accounts, deactivate accounts, reset passwords, change staff roles, manage permission-related settings, edit organization profile data, and view structured audit logs. Under the hood, this uses Staff, RolePermission, Session, PasswordHistory, Settings, and AuditLog records with protected admin-only endpoints.
+Operational Value:
+FENAID can safely manage staff turnover, password resets, and internal access without developer intervention. This is essential for operational control, donor confidence, and protecting beneficiary information when staff roles change.
+Estimated Price Allocation:
+USD 4,000 - 7,000
+ETB 600,000 - 1,050,000
+
+3. Parent / Guardian Registry with Automatic Financial Tiering
+Technical Description:
+Case workers and Super Admins register parent or guardian records with demographic, contact, address, marital, employment, income, education, dependent, referral, assignment, status, and internal-note fields. The backend stores relational Parent records linked to assigned staff and classifies financial bracket values that drive eligibility suggestions and reporting filters.
+Operational Value:
+This gives FENAID a structured, searchable guardian registry and makes financial vulnerability visible during intake. It helps staff prioritize low-income families, document socioeconomic context, and support donor or government reporting.
+Estimated Price Allocation:
+USD 4,000 - 6,500
+ETB 600,000 - 975,000
+
+4. Child / Beneficiary Registry with Linked Parent Architecture
+Technical Description:
+Staff register children as beneficiary records that must link to an existing parent or guardian. The module stores disability type, category, severity, medical history, medications, school status, communication ability, case-worker assignment, current status, documents, appointments, progress, services, and family context through relational Child, Parent, Staff, and related service tables.
+Operational Value:
+This creates a single reliable profile for each child and prevents disconnected beneficiary records. It helps case workers understand family context, disability needs, and service history from one operational profile.
+Estimated Price Allocation:
+USD 4,500 - 7,500
+ETB 675,000 - 1,125,000
+
+5. Service Catalog & Service Assignment Module
+Technical Description:
+Super Admins manage the service catalog, while case workers assign services to parents or children with target type, dates, frequency, delivery method, responsible staff, status, and notes. The system validates whether a service is assigned to a parent or child, stores Service and ServiceAssignment records, and supports filtering by target, staff, status, parent, or child.
+Operational Value:
+FENAID can track who is receiving physiotherapy, counseling, financial aid, legal support, awareness training, referrals, and other interventions. This improves service coordination and gives managers visibility into pending, active, completed, or cancelled services.
+Estimated Price Allocation:
+USD 4,500 - 7,500
+ETB 675,000 - 1,125,000
+
+6. Smart Service Eligibility Suggestions Engine
+Technical Description:
+After parent or child registration, the backend runs rule-based eligibility checks and returns suggested services for staff review. Rules can flag financial aid and workshops for low-income parents, psychosocial counseling for widowed or divorced guardians, physiotherapy for physical disability, special education for intellectual disability, and intensive therapy notes for severe cases.
+Operational Value:
+This reduces missed support opportunities during intake and helps case workers act consistently. It gives FENAID a lightweight decision-support layer without replacing staff judgment.
+Estimated Price Allocation:
+USD 2,500 - 4,500
+ETB 375,000 - 675,000
+
+7. Progress Tracking Module with Vertical Milestone Timeline & Case Notes
+Technical Description:
+Case workers create progress notes, milestones, and goals for each child, with milestone statuses moving through Not Started, In Progress, Achieved, or Regressed. The frontend presents a chronological progress timeline, while the backend stores notes, milestones, goals, achieved dates, staff authorship, and audit records.
+Operational Value:
+This turns FENAID's work from informal follow-up into documented developmental evidence. It helps case workers monitor regression or improvement, supervisors review case quality, and donors see measurable beneficiary outcomes.
+Estimated Price Allocation:
+USD 5,500 - 9,000
+ETB 825,000 - 1,350,000
+
+8. Appointments & Scheduling Module with Immutable Attendance Tracking
+Technical Description:
+Staff schedule therapy sessions, assessments, workshops, fund-disbursement meetings, and other appointments with calendar and list views. Attendance is logged per parent or child and becomes immutable after creation, with audit entries and no edit/delete path for attendance records.
+Operational Value:
+FENAID can coordinate staff calendars, reduce missed appointments, and prove service attendance. Immutable attendance is important when services, funds, or therapy participation must be verified later.
+Estimated Price Allocation:
+USD 5,000 - 8,500
+ETB 750,000 - 1,275,000
+
+9. Fund Allocation & Donations Module
+Technical Description:
+The fund allocation side records parent-linked aid, disbursement status, receipts, acknowledgement timestamps, and immutable locked records after disbursement plus acknowledgement. The donations side records donor details, donation type, amount, restricted donation links, receipt numbers, summaries, and audit logs.
+Operational Value:
+This gives FENAID traceability for aid distribution and donation stewardship. It supports financial accountability, reduces disputes, and improves board, donor, and government reporting.
+Estimated Price Allocation:
+USD 6,000 - 10,000
+ETB 900,000 - 1,500,000
+
+10. Dashboard & Standard Reports Module
+Technical Description:
+The dashboard aggregates parent, child, service, fund, donation, appointment, workload, recent activity, and overdue progress metrics. Standard reports include member directory, service utilization, progress summary, fund allocation log, donation log, and staff activity, returned as JSON and formatted by the frontend for preview, PDF, or Excel.
+Operational Value:
+FENAID leadership gets a real operational command center instead of scattered spreadsheets. This directly supports management review, grant reporting, board updates, and workload balancing.
+Estimated Price Allocation:
+USD 6,500 - 11,000
+ETB 975,000 - 1,650,000
+
+11. Advanced Data Extraction, Filtering & Cohort Query Engine
+Technical Description:
+This is the custom research/reporting layer for building cohorts across child disability data, parent financial/social data, location, service history, appointment attendance, progress outcomes, case-worker assignment, and fund information. It includes saved queries, export permission controls, anonymized exports, cohort summaries, data export logs, and advanced filters that query multiple related database tables.
+Operational Value:
+This is one of the highest-value research features for FENAID because it converts beneficiary records into evidence. It can support donor proposals, government submissions, impact measurement, targeted outreach, and anonymized research without exposing unnecessary personal data.
+Estimated Price Allocation:
+USD 9,000 - 15,000
+ETB 1,350,000 - 2,250,000
+
+12. Internal System Notifications & Automated Daily Scheduled Jobs
+Technical Description:
+The system creates internal staff notifications and runs scheduled jobs using NestJS scheduling. Daily and weekly jobs detect children without progress notes for 30 days, services expiring within 7 days, documents expiring within 7 days, fund allocations stuck for 14 days, tomorrow's appointments, and weekly donation summaries.
+Operational Value:
+This keeps case workers from missing critical follow-ups and gives supervisors early warning on neglected records. It turns the system into an active operational assistant instead of a passive database.
+Estimated Price Allocation:
+USD 3,500 - 6,000
+ETB 525,000 - 900,000
+
+13. Notifications UI
+Technical Description:
+The frontend topbar includes a notification bell, unread badge, polling every 60 seconds, grouped notification dropdown, mark-as-read actions, mark-all-read action, and navigation to related records. Notification types use distinct icons, colors, and visual unread states.
+Operational Value:
+Staff can see urgent follow-ups without searching through reports. This improves daily usability and makes automated alerts visible inside normal case-worker workflows.
+Estimated Price Allocation:
+USD 2,500 - 4,000
+ETB 375,000 - 600,000
+
+14. Document Management with ID Storage & Expiration Tracking
+Technical Description:
+Staff upload or register document metadata for parents and children, including file URL, name, category, expiry date, and owning record. The module supports parent and child document lists, document access based on staff permissions, Super Admin deletion, and expiry checks through scheduled jobs.
+Operational Value:
+FENAID can store IDs, medical certificates, consent forms, referral letters, school assessments, and support evidence in one controlled place. Expiration tracking helps staff renew sensitive or time-bound documents before they become invalid.
+Estimated Price Allocation:
+USD 4,000 - 7,000
+ETB 600,000 - 1,050,000
+
+15. Bilingual Localization Toggle: English & Amharic
+Technical Description:
+The frontend includes a language toggle and structured translation dictionaries for common navigation, forms, buttons, table labels, statuses, validation text, and operational UI content. The implementation keeps the backend data model language-neutral while rendering staff-facing text in English or Amharic.
+Operational Value:
+This improves adoption for staff who are more comfortable in Amharic while still supporting English reporting and donor-facing workflows. It reduces training friction and makes the system more practical for local Ethiopian operations.
+Estimated Price Allocation:
+USD 2,500 - 4,500
+ETB 375,000 - 675,000
+
+16. Frontend Foundation & Protected Dashboard Shell
+Technical Description:
+This includes the Next.js dashboard layout, protected routing, sidebar, topbar, breadcrumbs, role-aware navigation, profile display, responsive structure, toast system, shared UI components, forms, tables, drawers, loading states, empty states, and API client integration. It is the foundation used by all operational modules.
+Operational Value:
+This gives FENAID a consistent internal tool rather than isolated screens. A strong dashboard shell improves staff productivity, reduces training time, and makes the system feel coherent across case management, reports, settings, and notifications.
+Estimated Price Allocation:
+USD 5,500 - 9,500
+ETB 825,000 - 1,425,000
+
+17. Deployment, Database Migration, Seed Data & Production Readiness
+Technical Description:
+This includes Docker/PostgreSQL setup, Prisma migrations, realistic seed data, environment configuration, secure secrets handling guidance, build verification, deployment documentation, and production readiness checks. It also covers the initial operational setup required for FENAID staff to start using the system.
+Operational Value:
+This prevents the system from being only a development prototype. It gives FENAID a deployable, maintainable platform with a reliable database foundation and clear startup procedures.
+Estimated Price Allocation:
+USD 4,000 - 7,000
+ETB 600,000 - 1,050,000
+
+Summary Pricing
+
+Requested core menu total:
+Includes: Auth/RBAC, Parent Registry, Child Registry, Eligibility Engine, Progress Tracking, Appointments, Advanced Data Query Engine, Notifications/Scheduled Jobs, Document Management, Bilingual Localization.
+USD 43,500 - 72,500
+ETB 6,525,000 - 10,875,000
+
+Full system total:
+Includes all 17 modules listed above.
+USD 80,000 - 136,000
+ETB 12,000,000 - 20,400,000
+
+Recommended negotiation strategy:
+1. Keep the system foundation, Auth/RBAC, Parent Registry, Child Registry, and Audit Logs as non-removable baseline modules. Removing these weakens security, data integrity, and the basic case-management workflow.
+2. Treat Advanced Data Query, Dashboard/Reports, Notifications, Documents, Bilingual Localization, and Fund/Donations as menu items that can be phased if budget is constrained.
+3. If the client removes a feature, reduce both price and timeline only when the feature is truly independent. Do not remove shared backend, database, role, audit, or dashboard foundation work from the baseline.
+4. If the client adds new requirements, price them as change requests with a written scope, acceptance criteria, and separate estimate before implementation.
+5. For contract clarity, convert the final selected menu into milestones: Foundation, Core Registry, Service Delivery, Reporting/Research, Automation/Polish, and Deployment.

@@ -12,6 +12,7 @@ import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { formatEnum } from '@/lib/export';
+import { useLocale } from '@/components/providers/locale-provider';
 import { 
   ParentStatus, 
   FinancialBracket, 
@@ -31,13 +32,6 @@ const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 const maritalOptions: MaritalStatus[] = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'];
 const employmentOptions: EmploymentStatus[] = ['EMPLOYED', 'UNEMPLOYED', 'SELF_EMPLOYED'];
 
-const steps = [
-  'Personal Info',
-  'Location & Background',
-  'Financial & Social',
-  'Assignment & Notes',
-];
-
 interface ParentDrawerProps {
   open: boolean;
   parentId?: string;
@@ -55,12 +49,20 @@ export function ParentDrawer({
   onClose,
   onSaved,
 }: ParentDrawerProps) {
+  const { t } = useLocale();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ParentFormData>(emptyParentForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const steps = [
+    t('parentDrawer.personalInfo', 'Personal Info'),
+    t('parentDrawer.locationBackground', 'Location & Background'),
+    t('parentDrawer.financialSocial', 'Financial & Social'),
+    t('parentDrawer.assignmentNotes', 'Assignment & Notes'),
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -108,14 +110,14 @@ export function ParentDrawer({
   }
 
   function nextStep() {
-    const validationErrors = validateStep(step, form);
+    const validationErrors = validateStep(step, form, t);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length) return;
     setStep((current) => Math.min(steps.length - 1, current + 1));
   }
 
   async function save() {
-    const validationErrors = validateStep(step, form);
+    const validationErrors = validateStep(step, form, t);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length) return;
 
@@ -131,7 +133,7 @@ export function ParentDrawer({
         onSaved(res.data.suggestedServices || []);
       }
     } catch (err: unknown) {
-      setServerError(getErrorMessage(err, 'Failed to save parent.'));
+      setServerError(getErrorMessage(err, t('parentDrawer.error.saveFailed', 'Failed to save parent.')));
     } finally {
       setSaving(false);
     }
@@ -148,7 +150,7 @@ export function ParentDrawer({
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold">
-              {parentId ? 'Edit Parent Profile' : 'Register New Parent'}
+              {parentId ? t('parentDrawer.editTitle', 'Edit Parent Profile') : t('parentDrawer.registerTitle', 'Register New Parent')}
             </h2>
             <p className="text-sm text-muted-foreground">{steps[step]}</p>
           </div>
@@ -191,21 +193,21 @@ export function ParentDrawer({
               )}
               {step === 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label="Full Name" error={errors.fullName}>
+                  <FormField label={t('parentDrawer.fullName', 'Full Name')} error={errors.fullName}>
                     <Input
                       value={form.fullName}
                       onChange={(event) => updateField('fullName', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Photo Upload" error={errors.photoUrl}>
+                  <FormField label={t('parentDrawer.photoUpload', 'Photo Upload')} error={errors.photoUrl}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || 'Parent'} />
-                        <AvatarFallback>{initials(form.fullName || 'Parent')}</AvatarFallback>
+                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || t('parentDrawer.parent', 'Parent')} />
+                        <AvatarFallback>{initials(form.fullName || t('parentDrawer.parent', 'Parent'))}</AvatarFallback>
                       </Avatar>
                       <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                         <Upload className="h-4 w-4" />
-                        Upload
+                        {t('parentDrawer.upload', 'Upload')}
                         <input
                           type="file"
                           accept="image/*"
@@ -214,7 +216,7 @@ export function ParentDrawer({
                             handlePhotoUpload(event, (value) => updateField('photoUrl', value)).catch((error: unknown) => {
                               setErrors((current) => ({
                                 ...current,
-                                photoUrl: error instanceof Error ? error.message : 'Could not process photo.',
+                                photoUrl: error instanceof Error ? error.message : t('parentDrawer.error.photoProcess', 'Could not process photo.'),
                               }));
                             });
                           }}
@@ -222,7 +224,7 @@ export function ParentDrawer({
                       </label>
                     </div>
                   </FormField>
-                  <FormField label="Date of Birth" error={errors.dateOfBirth}>
+                  <FormField label={t('parentDrawer.dateOfBirth', 'Date of Birth')} error={errors.dateOfBirth}>
                     <CalendarDatePicker
                       value={form.dateOfBirth}
                       onChange={(value) => updateField('dateOfBirth', value)}
@@ -230,31 +232,31 @@ export function ParentDrawer({
                       maxYear={new Date().getUTCFullYear()}
                     />
                   </FormField>
-                  <FormField label="Gender" error={errors.gender}>
+                  <FormField label={t('parentDrawer.gender', 'Gender')} error={errors.gender}>
                     <select
                       className={selectClassName}
                       value={form.gender}
                       onChange={(event) => updateField('gender', event.target.value)}
                     >
-                      <option value="">Select gender</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
+                      <option value="">{t('parentDrawer.selectGender', 'Select gender')}</option>
+                      <option value="Female">{t('parentDrawer.female', 'Female')}</option>
+                      <option value="Male">{t('parentDrawer.male', 'Male')}</option>
                     </select>
                   </FormField>
-                  <FormField label="National ID" error={errors.nationalId}>
+                  <FormField label={t('parentDrawer.nationalId', 'National ID')} error={errors.nationalId}>
                     <Input
                       value={form.nationalId}
                       onChange={(event) => updateField('nationalId', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Phone Number" error={errors.phone}>
+                  <FormField label={t('parentDrawer.phoneNumber', 'Phone Number')} error={errors.phone}>
                     <Input
                       type="tel"
                       value={form.phone}
                       onChange={(event) => updateField('phone', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Email Address (Optional)" error={errors.email} className="md:col-span-2">
+                  <FormField label={t('parentDrawer.emailOptional', 'Email Address (Optional)')} error={errors.email} className="md:col-span-2">
                     <Input
                       type="email"
                       value={form.email}
@@ -266,28 +268,28 @@ export function ParentDrawer({
 
               {step === 1 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label="Address" error={errors.address} className="md:col-span-2">
+                  <FormField label={t('parentDrawer.address', 'Address')} error={errors.address} className="md:col-span-2">
                     <Input
                       value={form.address}
                       onChange={(event) => updateField('address', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="City" error={errors.city}>
+                  <FormField label={t('parentDrawer.city', 'City')} error={errors.city}>
                     <Input value={form.city} onChange={(event) => updateField('city', event.target.value)} />
                   </FormField>
-                  <FormField label="Subcity" error={errors.subcity}>
+                  <FormField label={t('parentDrawer.subcity', 'Subcity')} error={errors.subcity}>
                     <Input
                       value={form.subcity}
                       onChange={(event) => updateField('subcity', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Woreda" error={errors.woreda}>
+                  <FormField label={t('parentDrawer.woreda', 'Woreda')} error={errors.woreda}>
                     <Input
                       value={form.woreda}
                       onChange={(event) => updateField('woreda', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Marital Status" error={errors.maritalStatus}>
+                  <FormField label={t('parentDrawer.maritalStatus', 'Marital Status')} error={errors.maritalStatus}>
                     <select
                       className={selectClassName}
                       value={form.maritalStatus}
@@ -300,13 +302,13 @@ export function ParentDrawer({
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Education Level" error={errors.educationLevel}>
+                  <FormField label={t('parentDrawer.educationLevel', 'Education Level')} error={errors.educationLevel}>
                     <Input
                       value={form.educationLevel}
                       onChange={(event) => updateField('educationLevel', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Referral Source" error={errors.referralSource}>
+                  <FormField label={t('parentDrawer.referralSource', 'Referral Source')} error={errors.referralSource}>
                     <Input
                       value={form.referralSource}
                       onChange={(event) => updateField('referralSource', event.target.value)}
@@ -317,7 +319,7 @@ export function ParentDrawer({
 
               {step === 2 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label="Employment Status" error={errors.employmentStatus}>
+                  <FormField label={t('parentDrawer.employmentStatus', 'Employment Status')} error={errors.employmentStatus}>
                     <select
                       className={selectClassName}
                       value={form.employmentStatus}
@@ -332,7 +334,7 @@ export function ParentDrawer({
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Financial Bracket" error={errors.financialBracket}>
+                  <FormField label={t('parentDrawer.financialBracket', 'Financial Bracket')} error={errors.financialBracket}>
                     <select
                       className={selectClassName}
                       value={form.financialBracket}
@@ -347,14 +349,14 @@ export function ParentDrawer({
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Monthly Income Range" error={errors.monthlyIncomeRange}>
+                  <FormField label={t('parentDrawer.monthlyIncome', 'Monthly Income Range')} error={errors.monthlyIncomeRange}>
                     <Input
-                      placeholder="e.g. 5,000 - 10,000 ETB"
+                      placeholder={t('parentDrawer.monthlyIncomePlaceholder', 'e.g. 5,000 - 10,000 ETB')}
                       value={form.monthlyIncomeRange}
                       onChange={(event) => updateField('monthlyIncomeRange', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Number of Dependents" error={errors.numberOfDependents}>
+                  <FormField label={t('parentDrawer.dependents', 'Number of Dependents')} error={errors.numberOfDependents}>
                     <Input
                       type="number"
                       min="0"
@@ -367,13 +369,13 @@ export function ParentDrawer({
 
               {step === 3 && (
                 <div className="grid gap-4">
-                  <FormField label="Assign Case Worker" error={errors.assignedStaffId}>
+                  <FormField label={t('parentDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
                     <select
                       className={selectClassName}
                       value={form.assignedStaffId}
                       onChange={(event) => updateField('assignedStaffId', event.target.value)}
                     >
-                      <option value="">Select staff</option>
+                      <option value="">{t('parentDrawer.selectStaff', 'Select staff')}</option>
                       {staffOptions.map((worker) => (
                         <option key={worker.id} value={worker.id}>
                           {worker.fullName}
@@ -381,14 +383,14 @@ export function ParentDrawer({
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Internal Notes">
+                  <FormField label={t('parentDrawer.internalNotes', 'Internal Notes')}>
                     <textarea
                       className={textareaClassName}
                       value={form.internalNotes}
                       onChange={(event) => updateField('internalNotes', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Status" error={errors.status}>
+                  <FormField label={t('parentDrawer.status', 'Status')} error={errors.status}>
                     <select
                       className={selectClassName}
                       value={form.status}
@@ -413,16 +415,16 @@ export function ParentDrawer({
             disabled={step === 0 || saving}
             onClick={() => setStep((current) => current - 1)}
           >
-            Back
+            {t('parentDrawer.back', 'Back')}
           </Button>
           {step < steps.length - 1 ? (
             <Button onClick={nextStep} disabled={loading}>
-              Next
+              {t('parentDrawer.next', 'Next')}
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={save} disabled={saving || loading}>
-              {saving ? 'Saving...' : parentId ? 'Save Changes' : 'Register Parent'}
+              {saving ? t('parentDrawer.saving', 'Saving...') : parentId ? t('parentDrawer.saveChanges', 'Save Changes') : t('parentDrawer.registerParent', 'Register Parent')}
             </Button>
           )}
         </div>
@@ -451,25 +453,25 @@ function FormField({
   );
 }
 
-function validateStep(step: number, form: ParentFormData) {
+function validateStep(step: number, form: ParentFormData, t: (key: string, fallback?: string) => string) {
   const errors: Record<string, string> = {};
 
   if (step === 0) {
-    if (!form.fullName.trim()) errors.fullName = 'Full name is required';
-    if (!form.dateOfBirth) errors.dateOfBirth = 'Date of birth is required';
-    if (!form.gender) errors.gender = 'Gender is required';
-    if (!form.nationalId.trim()) errors.nationalId = 'National ID is required';
-    if (!form.phone.trim()) errors.phone = 'Phone number is required';
+    if (!form.fullName.trim()) errors.fullName = t('parentDrawer.error.fullNameRequired', 'Full name is required');
+    if (!form.dateOfBirth) errors.dateOfBirth = t('parentDrawer.error.dobRequired', 'Date of birth is required');
+    if (!form.gender) errors.gender = t('parentDrawer.error.genderRequired', 'Gender is required');
+    if (!form.nationalId.trim()) errors.nationalId = t('parentDrawer.error.nationalIdRequired', 'National ID is required');
+    if (!form.phone.trim()) errors.phone = t('parentDrawer.error.phoneRequired', 'Phone number is required');
   }
 
   if (step === 1) {
-    if (!form.address.trim()) errors.address = 'Address is required';
-    if (!form.city.trim()) errors.city = 'City is required';
-    if (!form.subcity.trim()) errors.subcity = 'Subcity is required';
+    if (!form.address.trim()) errors.address = t('parentDrawer.error.addressRequired', 'Address is required');
+    if (!form.city.trim()) errors.city = t('parentDrawer.error.cityRequired', 'City is required');
+    if (!form.subcity.trim()) errors.subcity = t('parentDrawer.error.subcityRequired', 'Subcity is required');
   }
 
   if (step === 3) {
-    if (!form.assignedStaffId) errors.assignedStaffId = 'Staff assignment is required';
+    if (!form.assignedStaffId) errors.assignedStaffId = t('parentDrawer.error.staffRequired', 'Staff assignment is required');
   }
 
   return errors;

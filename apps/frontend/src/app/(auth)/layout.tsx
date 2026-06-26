@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Image from 'next/image';
+import { t } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -9,7 +10,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-primary bg-slate-200">
             <Image
               src="/fikirlogo.jpg"
-              alt="Fikir logo"
+              alt={t('auth.layout.logoAlt', 'Fikir logo')}
               fill
               sizes="112px"
               className="object-cover"
@@ -17,7 +18,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             />
           </div>
           <p className="text-center text-xs font-semibold leading-tight text-primary">
-            Ethiopia National Association on Intellectual Disability
+            {t('auth.layout.orgName', 'Ethiopia National Association on Intellectual Disability')}
           </p>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow-sm">

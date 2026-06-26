@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/components/providers/locale-provider';
 import api from '../../../lib/api';
 import { getSession } from '../../../lib/auth';
 import { format } from 'date-fns';
@@ -46,6 +47,7 @@ import Link from 'next/link';
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
 export default function AdminDashboard() {
+  const { t } = useLocale();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function AdminDashboard() {
         // eslint-disable-next-line no-console
         console.error('Failed to fetch dashboard', err);
         setError(
-          err.response?.data?.message || 'Failed to load dashboard data',
+          err.response?.data?.message || t('dashboard.failedToLoad', 'Failed to load dashboard data'),
         );
       } finally {
         setLoading(false);
@@ -77,10 +79,10 @@ export default function AdminDashboard() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm font-medium text-muted-foreground">
-          {error || 'No dashboard data available.'}
+          {error || t('dashboard.noData', 'No dashboard data available.')}
         </p>
         <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-          Retry
+          {t('dashboard.retryButton', 'Retry')}
         </Button>
       </div>
     );
@@ -94,46 +96,47 @@ export default function AdminDashboard() {
 }
 
 function AdminDashboardView({ data }: { data: any }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       {/* Row 1: Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          title="Total Parents"
+          title={t('dashboard.totalParents', 'Total Parents')}
           value={data.stats.totalParents}
-          subtitle={`${data.stats.activeParents} active`}
+          subtitle={t('dashboard.totalParentsActive', '{count} active', { count: data.stats.activeParents })}
           icon={Users}
           color="text-blue-600"
           bg="bg-blue-50"
         />
         <StatCard
-          title="Total Children"
+          title={t('dashboard.totalChildren', 'Total Children')}
           value={data.stats.totalChildren}
-          subtitle={`${data.stats.activeChildren} active`}
+          subtitle={t('dashboard.totalChildrenActive', '{count} active', { count: data.stats.activeChildren })}
           icon={Baby}
           color="text-amber-600"
           bg="bg-amber-50"
         />
         <StatCard
-          title="Allocated Funds"
+          title={t('dashboard.allocatedFunds', 'Allocated Funds')}
           value={`${Number(data.stats.totalFundsAllocated).toLocaleString()} ETB`}
-          subtitle="Total support committed"
+          subtitle={t('dashboard.allocatedFundsSubtitle', 'Total support committed')}
           icon={HandCoins}
           color="text-blue-600"
           bg="bg-blue-50"
         />
         <StatCard
-          title="Disbursed Funds"
+          title={t('dashboard.disbursedFunds', 'Disbursed Funds')}
           value={`${Number(data.stats.totalFundsDisbursed).toLocaleString()} ETB`}
-          subtitle="Total support delivered"
+          subtitle={t('dashboard.disbursedFundsSubtitle', 'Total support delivered')}
           icon={HandCoins}
           color="text-emerald-600"
           bg="bg-emerald-50"
         />
         <StatCard
-          title="Total Donations"
+          title={t('dashboard.totalDonations', 'Total Donations')}
           value={`${Number(data.stats.totalDonationsThisYear).toLocaleString()} ETB`}
-          subtitle="This year"
+          subtitle={t('dashboard.totalDonationsSubtitle', 'This year')}
           icon={HeartHandshake}
           color="text-purple-600"
           bg="bg-purple-50"
@@ -144,7 +147,7 @@ function AdminDashboardView({ data }: { data: any }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle className="text-base font-medium">Children by Disability Type</CardTitle>
+            <CardTitle className="text-base font-medium">{t('dashboard.childrenByDisability', 'Children by Disability Type')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -174,7 +177,7 @@ function AdminDashboardView({ data }: { data: any }) {
 
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle className="text-base font-medium">Case Worker Workload</CardTitle>
+            <CardTitle className="text-base font-medium">{t('dashboard.caseWorkerWorkload', 'Case Worker Workload')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -185,8 +188,8 @@ function AdminDashboardView({ data }: { data: any }) {
                   <YAxis fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip cursor={{ fill: 'transparent' }} />
                   <Legend verticalAlign="top" align="right" height={36} />
-                  <Bar dataKey="parentCount" name="Parents" stackId="a" fill="#1e3a5f" />
-                  <Bar dataKey="childCount" name="Children" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="parentCount" name={t('dashboard.parentsChart', 'Parents')} stackId="a" fill="#1e3a5f" />
+                  <Bar dataKey="childCount" name={t('dashboard.childrenChart', 'Children')} stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -199,13 +202,13 @@ function AdminDashboardView({ data }: { data: any }) {
         {/* Left: Appointments */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold">Weekly Appointments</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.weeklyAppointments', 'Weekly Appointments')}</CardTitle>
             <Badge variant="outline" className="font-mono">{data.upcomingAppointmentsThisWeek.length}</Badge>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="space-y-4">
               {data.upcomingAppointmentsThisWeek.length === 0 ? (
-                <p className="py-8 text-center text-xs text-muted-foreground">No appointments scheduled</p>
+                <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noAppointments', 'No appointments scheduled')}</p>
               ) : (
                 data.upcomingAppointmentsThisWeek.slice(0, 6).map((app: any) => (
                   <div key={app.id} className="flex items-start gap-3 rounded-lg border p-2 text-xs hover:bg-slate-50">
@@ -226,7 +229,7 @@ function AdminDashboardView({ data }: { data: any }) {
             </div>
             {data.upcomingAppointmentsThisWeek.length > 6 && (
               <Button variant="ghost" size="sm" className="mt-4 w-full text-xs text-primary" asChild>
-                <Link href="/dashboard/appointments">View all appointments <ChevronRight className="ml-1 h-3 w-3" /></Link>
+                <Link href="/dashboard/appointments">{t('dashboard.viewAllAppointments', 'View all appointments')} <ChevronRight className="ml-1 h-3 w-3" /></Link>
               </Button>
             )}
           </CardContent>
@@ -235,22 +238,22 @@ function AdminDashboardView({ data }: { data: any }) {
         {/* Middle: Overdue Progress Notes */}
         <Card className="flex flex-col border-amber-100 bg-amber-50/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold text-amber-900">Overdue Progress Notes</CardTitle>
+            <CardTitle className="text-sm font-semibold text-amber-900">{t('dashboard.overdueNotes', 'Overdue Progress Notes')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent className="flex-1">
             <div className="space-y-3">
               {data.overdueProgressNotes.length === 0 ? (
-                <p className="py-8 text-center text-xs text-muted-foreground">All reports are up to date</p>
+                <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.allReportsUpToDate', 'All reports are up to date')}</p>
               ) : (
                 data.overdueProgressNotes.slice(0, 5).map((child: any) => (
                   <div key={child.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white p-3 text-xs shadow-sm">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold text-slate-900">{child.fullName}</span>
-                      <span className="text-[10px] text-muted-foreground">Staff: {child.assignedStaff.fullName}</span>
+                      <span className="text-[10px] text-muted-foreground">{t('dashboard.staffLabel', 'Staff: {name}', { name: child.assignedStaff.fullName })}</span>
                     </div>
                     <Button size="sm" variant="outline" className="h-7 border-amber-200 bg-amber-50 px-2 text-[10px] text-amber-700 hover:bg-amber-100" asChild>
-                      <Link href={`/dashboard/children/${child.id}`}>Log Note</Link>
+                       <Link href={`/dashboard/children/${child.id}`}>{t('dashboard.logNoteButton', 'Log Note')}</Link>
                     </Button>
                   </div>
                 ))
@@ -262,13 +265,13 @@ function AdminDashboardView({ data }: { data: any }) {
         {/* Right: Pending Disbursements */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold">Pending Disbursements</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.pendingDisbursements', 'Pending Disbursements')}</CardTitle>
             <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{data.pendingFundDisbursements.length}</Badge>
           </CardHeader>
           <CardContent className="flex-1">
             <div className="space-y-3">
               {data.pendingFundDisbursements.length === 0 ? (
-                <p className="py-8 text-center text-xs text-muted-foreground">No pending disbursements</p>
+                <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noPendingDisbursements', 'No pending disbursements')}</p>
               ) : (
                 data.pendingFundDisbursements.slice(0, 5).map((alloc: any) => (
                   <div key={alloc.id} className="flex items-center justify-between rounded-lg border p-3 text-xs hover:bg-slate-50">
@@ -278,7 +281,7 @@ function AdminDashboardView({ data }: { data: any }) {
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-slate-900">{Number(alloc.amount).toLocaleString()} ETB</div>
-                      <Badge variant="ghost" className="text-[9px] text-emerald-600 px-0 h-fit">Ready</Badge>
+                      <Badge variant="ghost" className="text-[9px] text-emerald-600 px-0 h-fit">{t('dashboard.readyStatus', 'Ready')}</Badge>
                     </div>
                   </div>
                 ))
@@ -286,7 +289,7 @@ function AdminDashboardView({ data }: { data: any }) {
             </div>
             {data.pendingFundDisbursements.length > 5 && (
               <Button variant="ghost" size="sm" className="mt-4 w-full text-xs text-primary" asChild>
-                <Link href="/dashboard/funds">Manage allocations <ChevronRight className="ml-1 h-3 w-3" /></Link>
+                <Link href="/dashboard/funds">{t('dashboard.manageAllocations', 'Manage allocations')} <ChevronRight className="ml-1 h-3 w-3" /></Link>
               </Button>
             )}
           </CardContent>
@@ -297,17 +300,17 @@ function AdminDashboardView({ data }: { data: any }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Recent Parents</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.recentParents', 'Recent Parents')}</CardTitle>
             <Button variant="ghost" size="sm" className="h-8 text-xs px-2" asChild>
-               <Link href="/dashboard/parents">View All</Link>
+               <Link href="/dashboard/parents">{t('dashboard.viewAll', 'View All')}</Link>
             </Button>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase font-bold">Full Name</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Date</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold">{t('dashboard.fullName', 'Full Name')}</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold">{t('dashboard.date', 'Date')}</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -330,17 +333,17 @@ function AdminDashboardView({ data }: { data: any }) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Recent Children</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.recentChildren', 'Recent Children')}</CardTitle>
             <Button variant="ghost" size="sm" className="h-8 text-xs px-2" asChild>
-               <Link href="/dashboard/children">View All</Link>
+               <Link href="/dashboard/children">{t('dashboard.viewAll', 'View All')}</Link>
             </Button>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase font-bold">Full Name</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold">Date</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold">{t('dashboard.fullName', 'Full Name')}</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold">{t('dashboard.date', 'Date')}</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -366,29 +369,30 @@ function AdminDashboardView({ data }: { data: any }) {
 }
 
 function StaffDashboardView({ data }: { data: any }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          title="My Parents"
+          title={t('dashboard.myParents', 'My Parents')}
           value={data.myParents}
-          subtitle="Assigned to you"
+          subtitle={t('dashboard.assignedToYou', 'Assigned to you')}
           icon={Users}
           color="text-blue-600"
           bg="bg-blue-50"
         />
         <StatCard
-          title="My Children"
+          title={t('dashboard.myChildren', 'My Children')}
           value={data.myChildren}
-          subtitle="Under your care"
+          subtitle={t('dashboard.underYourCare', 'Under your care')}
           icon={Baby}
           color="text-amber-600"
           bg="bg-amber-50"
         />
         <StatCard
-          title="Overdue Notes"
+          title={t('dashboard.overdueNotesTitle', 'Overdue Notes')}
           value={data.myChildrenWithOverdueNotes.length}
-          subtitle="Need attention"
+          subtitle={t('dashboard.needAttention', 'Need attention')}
           icon={AlertCircle}
           color="text-red-600"
           bg="bg-red-50"
@@ -398,11 +402,11 @@ function StaffDashboardView({ data }: { data: any }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">My Upcoming Appointments</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.myUpcomingAppointments', 'My Upcoming Appointments')}</CardTitle>
           </CardHeader>
           <CardContent>
             {data.myUpcomingAppointments.length === 0 ? (
-              <p className="py-8 text-center text-xs text-muted-foreground">No upcoming appointments</p>
+              <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noUpcomingAppointments', 'No upcoming appointments')}</p>
             ) : (
               <div className="space-y-3">
                 {data.myUpcomingAppointments.slice(0, 6).map((app: any) => (
@@ -429,11 +433,11 @@ function StaffDashboardView({ data }: { data: any }) {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">My Pending Service Assignments</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t('dashboard.myPendingAssignments', 'My Pending Service Assignments')}</CardTitle>
           </CardHeader>
           <CardContent>
             {data.myPendingServiceAssignments.length === 0 ? (
-              <p className="py-8 text-center text-xs text-muted-foreground">No pending assignments</p>
+              <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noPendingAssignments', 'No pending assignments')}</p>
             ) : (
               <div className="space-y-3">
                 {data.myPendingServiceAssignments.slice(0, 6).map((a: any) => (

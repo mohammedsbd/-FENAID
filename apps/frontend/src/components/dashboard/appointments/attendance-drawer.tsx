@@ -17,6 +17,8 @@ import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { AttendanceStatus } from '@/types/appointments';
+import { useLocale } from '@/components/providers/locale-provider';
+import { t } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 interface AttendanceDrawerProps {
@@ -35,6 +37,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [apptStatus, setApptStatus] = useState<string>('COMPLETED');
   const { toast } = useToast();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (open && appointmentId) {
@@ -56,7 +59,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
       }
     } catch (error) {
       console.error('Failed to fetch appointment details:', error);
-      toast({ title: 'Error', description: 'Failed to load details.', variant: 'destructive' });
+      toast({ title: t('attendanceDrawer.error', 'Error'), description: t('attendanceDrawer.loadFailed', 'Failed to load details.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
       }
 
       if (records.length === 0) {
-        toast({ title: 'Info', description: 'No participants to log attendance for.' });
+        toast({ title: t('attendanceDrawer.info', 'Info'), description: t('attendanceDrawer.noParticipants', 'No participants to log attendance for.') });
         return;
       }
 
@@ -96,12 +99,12 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
         records,
         appointmentStatus: apptStatus
       });
-      toast({ title: 'Success', description: 'Attendance and status updated successfully.' });
+      toast({ title: t('attendanceDrawer.success', 'Success'), description: t('attendanceDrawer.updated', 'Attendance and status updated successfully.') });
       onSuccess();
       fetchDetails();
     } catch (error) {
       console.error('Failed to log attendance:', error);
-      toast({ title: 'Error', description: 'Failed to save records.', variant: 'destructive' });
+      toast({ title: t('attendanceDrawer.error', 'Error'), description: t('attendanceDrawer.saveFailed', 'Failed to save records.'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -116,7 +119,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-background h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Appointment Details</h2>
+          <h2 className="text-lg font-semibold">{t('attendanceDrawer.title', 'Appointment Details')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -126,7 +129,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
           {loading ? (
             <div className="flex flex-col items-center justify-center h-40 space-y-2">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading details...</p>
+              <p className="text-sm text-muted-foreground">{t('attendanceDrawer.loadingDetails', 'Loading details...')}</p>
             </div>
           ) : appointment ? (
             <>
@@ -152,11 +155,11 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
 
                 <div className="grid grid-cols-2 gap-4 py-4 border-y">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Staff Member</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">{t('attendanceDrawer.staffMember', 'Staff Member')}</p>
                     <p className="text-sm font-medium">{appointment.staff.fullName}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Time & Duration</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">{t('attendanceDrawer.timeDuration', 'Time & Duration')}</p>
                     <p className="text-sm font-medium flex items-center">
                       <Clock className="w-3 h-3 mr-1" /> 
                       {format(new Date(appointment.scheduledAt), 'h:mm a')} ({appointment.durationMinutes} min)
@@ -169,11 +172,11 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold flex items-center text-sm">
-                    <User className="w-4 h-4 mr-2" /> Participants & Attendance
+                    <User className="w-4 h-4 mr-2" /> {t('attendanceDrawer.participantsAttendance', 'Participants & Attendance')}
                   </h4>
                   {isAttendanceLogged && (
                     <div className="flex items-center text-green-600 text-[10px] font-bold uppercase tracking-wider">
-                      <Lock className="w-3 h-3 mr-1" /> Attendance Logged
+                      <Lock className="w-3 h-3 mr-1" /> {t('attendanceDrawer.attendanceLogged', 'Attendance Logged')}
                     </div>
                   )}
                 </div>
@@ -181,7 +184,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                 <div className="space-y-3">
                   {appointment.child && (
                     <ParticipantRow 
-                      label="Child"
+                      label={t('attendanceDrawer.child', 'Child')}
                       name={appointment.child.fullName}
                       photoUrl={appointment.child.photoUrl}
                       status={isAttendanceLogged ? attendance.find((a: any) => a.childId)?.status : statuses['CHILD']}
@@ -193,7 +196,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                   )}
                   {appointment.parent && (
                     <ParticipantRow 
-                      label="Parent"
+                      label={t('attendanceDrawer.parent', 'Parent')}
                       name={appointment.parent.fullName}
                       photoUrl={appointment.parent.photoUrl}
                       status={isAttendanceLogged ? attendance.find((a: any) => a.parentId)?.status : statuses['PARENT']}
@@ -204,22 +207,22 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                     />
                   )}
                   {!appointment.child && !appointment.parent && (
-                    <p className="text-sm text-muted-foreground italic text-center py-4">No linked participants.</p>
+                    <p className="text-sm text-muted-foreground italic text-center py-4">{t('attendanceDrawer.noLinkedParticipants', 'No linked participants.')}</p>
                   )}
                 </div>
 
                 {!isAttendanceLogged && (appointment.child || appointment.parent) && (
                   <div className="pt-4 space-y-4 border-t">
                     <div className="space-y-2">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase">Update Appointment Status</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">{t('attendanceDrawer.updateStatus', 'Update Appointment Status')}</p>
                       <Select value={apptStatus} onValueChange={setApptStatus}>
                         <SelectTrigger className="w-full h-9">
-                          <SelectValue placeholder="Set Status" />
+                          <SelectValue placeholder={t('attendanceDrawer.setStatus', 'Set Status')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SCHEDULED">SCHEDULED</SelectItem>
-                          <SelectItem value="COMPLETED">COMPLETED</SelectItem>
-                          <SelectItem value="CANCELLED">CANCELLED</SelectItem>
+                          <SelectItem value="SCHEDULED">{t('attendanceDrawer.scheduled', 'SCHEDULED')}</SelectItem>
+                          <SelectItem value="COMPLETED">{t('attendanceDrawer.completed', 'COMPLETED')}</SelectItem>
+                          <SelectItem value="CANCELLED">{t('attendanceDrawer.cancelled', 'CANCELLED')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -230,17 +233,17 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                       disabled={saving}
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                      Log Attendance & Update Status
+                      {t('attendanceDrawer.logAttendance', 'Log Attendance & Update Status')}
                     </Button>
                     <p className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center">
-                      <AlertCircle className="w-3 h-3 mr-1" /> Once logged, attendance records are immutable.
+                      <AlertCircle className="w-3 h-3 mr-1" /> {t('attendanceDrawer.immutableWarning', 'Once logged, attendance records are immutable.')}
                     </p>
                   </div>
                 )}
 
                 {isAttendanceLogged && (
                   <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex items-center justify-center text-green-700 text-sm font-medium">
-                    <CheckCircle2 className="w-5 h-5 mr-2" /> Attendance Logged — Immutable Record
+                    <CheckCircle2 className="w-5 h-5 mr-2" /> {t('attendanceDrawer.attendanceLoggedImmutable', 'Attendance Logged — Immutable Record')}
                   </div>
                 )}
               </div>
@@ -248,7 +251,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
               {/* Notes Display */}
               {appointment.notes && (
                 <div className="space-y-2 border-t pt-4">
-                  <h4 className="font-semibold text-sm">Appointment Notes</h4>
+                  <h4 className="font-semibold text-sm">{t('attendanceDrawer.appointmentNotes', 'Appointment Notes')}</h4>
                   <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground whitespace-pre-wrap italic">
                     {appointment.notes}
                   </div>
@@ -258,7 +261,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
           ) : (
             <div className="text-center py-20">
               <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">Appointment not found.</p>
+              <p className="text-muted-foreground">{t('attendanceDrawer.notFound', 'Appointment not found.')}</p>
             </div>
           )}
         </div>
@@ -300,7 +303,7 @@ function ParticipantRow({ label, name, photoUrl, status, onStatusChange, locked,
       
       {!locked ? (
         <Input 
-          placeholder="Attendance notes (optional)..." 
+          placeholder={t('attendanceDrawer.attendanceNotesPlaceholder', 'Attendance notes (optional)...')} 
           className="h-8 text-[11px]" 
           value={notes || ''}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onNotesChange(e.target.value)}

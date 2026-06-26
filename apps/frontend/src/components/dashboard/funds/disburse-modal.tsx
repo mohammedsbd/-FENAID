@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import { FundAllocation } from '@/types/finance';
 
@@ -20,6 +21,7 @@ export function DisburseModal({ open, allocation, onClose, onSuccess }: Disburse
   const [loading, setLoading] = useState(false);
   const [receiptUrl, setReceiptUrl] = useState('');
   const { toast } = useToast();
+  const { t } = useLocale();
 
   if (!open || !allocation) return null;
 
@@ -31,12 +33,12 @@ export function DisburseModal({ open, allocation, onClose, onSuccess }: Disburse
         status: 'DISBURSED',
         receiptUrl: receiptUrl || 'manual-disbursement', // Fallback if no URL provided
       });
-      toast({ title: 'Success', description: 'Funds marked as disbursed.' });
+      toast({ title: t('disburseModal.success', 'Success'), description: t('disburseModal.markedAsDisbursed', 'Funds marked as disbursed.') });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to disburse funds:', error);
-      toast({ title: 'Error', description: 'Failed to mark as disbursed.', variant: 'destructive' });
+      toast({ title: t('disburseModal.error', 'Error'), description: t('disburseModal.markFailed', 'Failed to mark as disbursed.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export function DisburseModal({ open, allocation, onClose, onSuccess }: Disburse
       <div className="relative w-full max-w-md bg-background rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">Confirm Disbursement</h3>
+            <h3 className="text-xl font-bold text-foreground">{t('disburseModal.title', 'Confirm Disbursement')}</h3>
             <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
               <X className="w-5 h-5" />
             </Button>
@@ -58,9 +60,9 @@ export function DisburseModal({ open, allocation, onClose, onSuccess }: Disburse
             <div className="flex items-start">
               <AlertTriangle className="w-5 h-5 text-accent mr-3 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-accent">Final Action Required</p>
+                <p className="text-sm font-medium text-accent">{t('disburseModal.finalAction', 'Final Action Required')}</p>
                 <p className="text-xs text-accent/80 mt-1">
-                  You are marking <strong>{allocation.amount.toLocaleString()} ETB</strong> as disbursed to <strong>{allocation.parent.fullName}</strong>.
+                  {t('disburseModal.markingText', 'You are marking')} <strong>{allocation.amount.toLocaleString()} ETB</strong> {t('disburseModal.asDisbursedTo', 'as disbursed to')} <strong>{allocation.parent.fullName}</strong>.
                 </p>
               </div>
             </div>
@@ -68,32 +70,32 @@ export function DisburseModal({ open, allocation, onClose, onSuccess }: Disburse
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="receipt">Receipt URL / Reference (Optional)</Label>
+              <Label htmlFor="receipt">{t('disburseModal.receiptLabel', 'Receipt URL / Reference (Optional)')}</Label>
               <div className="relative">
                 <Upload className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="receipt"
-                  placeholder="Link to scanned receipt or reference no."
+                  placeholder={t('disburseModal.receiptPlaceholder', 'Link to scanned receipt or reference no.')}
                   className="pl-9"
                   value={receiptUrl}
                   onChange={(e) => setReceiptUrl(e.target.value)}
                 />
               </div>
               <p className="text-[10px] text-muted-foreground italic">
-                Pro tip: Upload the receipt to the documents section first and paste the link here.
+                {t('disburseModal.proTip', 'Pro tip: Upload the receipt to the documents section first and paste the link here.')}
               </p>
             </div>
           </div>
 
           <div className="mt-8 flex space-x-3">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" className="flex-1" onClick={onClose}>{t('disburseModal.cancel', 'Cancel')}</Button>
             <Button 
               className="flex-1 bg-primary hover:bg-primary/90 text-white" 
               onClick={handleConfirm}
               disabled={loading}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-              Confirm Disbursement
+              {t('disburseModal.confirm', 'Confirm Disbursement')}
             </Button>
           </div>
         </div>

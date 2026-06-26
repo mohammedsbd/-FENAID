@@ -13,6 +13,7 @@ import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { formatEnum } from '@/lib/export';
 import { toIsoDateInputValue } from '@/lib/calendar';
+import { useLocale } from '@/components/providers/locale-provider';
 import { 
   ChildStatus, 
   DisabilityType, 
@@ -31,13 +32,6 @@ import {
 const statusOptions: ChildStatus[] = ['ACTIVE', 'GRADUATED', 'TRANSFERRED', 'INACTIVE', 'DECEASED'];
 const disabilityOptions: DisabilityType[] = ['PHYSICAL', 'INTELLECTUAL', 'MULTIPLE'];
 const severityOptions: SeverityLevel[] = ['MILD', 'MODERATE', 'SEVERE'];
-
-const steps = [
-  'Personal Info',
-  'Disability Details',
-  'Medical & School',
-  'Links & Assignment',
-];
 
 interface ChildDrawerProps {
   open: boolean;
@@ -61,6 +55,7 @@ export function ChildDrawer({
   onClose,
   onSaved,
 }: ChildDrawerProps) {
+  const { t } = useLocale();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ChildFormData>(emptyChildForm);
   const [parents, setParents] = useState<ParentOption[]>([]);
@@ -69,6 +64,13 @@ export function ChildDrawer({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const steps = [
+    t('childDrawer.personalInfo', 'Personal Info'),
+    t('childDrawer.disabilityDetails', 'Disability Details'),
+    t('childDrawer.medicalSchool', 'Medical & School'),
+    t('childDrawer.linksAssignment', 'Links & Assignment'),
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -132,14 +134,14 @@ export function ChildDrawer({
   }
 
   function nextStep() {
-    const validationErrors = validateStep(step, form);
+    const validationErrors = validateStep(step, form, t);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length) return;
     setStep((current) => Math.min(steps.length - 1, current + 1));
   }
 
   async function save() {
-    const validationErrors = validateStep(step, form);
+    const validationErrors = validateStep(step, form, t);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length) return;
 
@@ -155,7 +157,7 @@ export function ChildDrawer({
         onSaved(res.data.suggestedServices || []);
       }
     } catch (err: unknown) {
-      setServerError(getErrorMessage(err, 'Failed to save child.'));
+      setServerError(getErrorMessage(err, t('childDrawer.error.saveFailed', 'Failed to save child.')));
     } finally {
       setSaving(false);
     }
@@ -172,7 +174,7 @@ export function ChildDrawer({
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold">
-              {childId ? 'Edit Child' : 'Register New Child'}
+              {childId ? t('childDrawer.editTitle', 'Edit Child') : t('childDrawer.registerTitle', 'Register New Child')}
             </h2>
             <p className="text-sm text-muted-foreground">{steps[step]}</p>
           </div>
@@ -215,18 +217,18 @@ export function ChildDrawer({
               )}
               {step === 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label="Full Name" error={errors.fullName}>
+                  <FormField label={t('childDrawer.fullName', 'Full Name')} error={errors.fullName}>
                     <Input value={form.fullName} onChange={(event) => updateField('fullName', event.target.value)} />
                   </FormField>
-                  <FormField label="Photo Upload" error={errors.photoUrl}>
+                  <FormField label={t('childDrawer.photoUpload', 'Photo Upload')} error={errors.photoUrl}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || 'Child'} />
-                        <AvatarFallback>{initials(form.fullName || 'Child')}</AvatarFallback>
+                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || t('childDrawer.child', 'Child')} />
+                        <AvatarFallback>{initials(form.fullName || t('childDrawer.child', 'Child'))}</AvatarFallback>
                       </Avatar>
                       <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                         <Upload className="h-4 w-4" />
-                        Upload
+                        {t('childDrawer.upload', 'Upload')}
                         <input
                           type="file"
                           accept="image/*"
@@ -235,7 +237,7 @@ export function ChildDrawer({
                             handlePhotoUpload(event, (value) => updateField('photoUrl', value)).catch((error: unknown) => {
                               setErrors((current) => ({
                                 ...current,
-                                photoUrl: error instanceof Error ? error.message : 'Could not process photo.',
+                                photoUrl: error instanceof Error ? error.message : t('childDrawer.error.photoProcess', 'Could not process photo.'),
                               }));
                             });
                           }}
@@ -243,7 +245,7 @@ export function ChildDrawer({
                       </label>
                     </div>
                   </FormField>
-                  <FormField label="Date of Birth" error={errors.dateOfBirth}>
+                  <FormField label={t('childDrawer.dateOfBirth', 'Date of Birth')} error={errors.dateOfBirth}>
                     <CalendarDatePicker
                       value={form.dateOfBirth}
                       onChange={(value) => updateField('dateOfBirth', value)}
@@ -251,11 +253,11 @@ export function ChildDrawer({
                       maxYear={new Date().getUTCFullYear()}
                     />
                   </FormField>
-                  <FormField label="Gender" error={errors.gender}>
+                  <FormField label={t('childDrawer.gender', 'Gender')} error={errors.gender}>
                     <select className={selectClassName} value={form.gender} onChange={(event) => updateField('gender', event.target.value)}>
-                      <option value="">Select gender</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
+                      <option value="">{t('childDrawer.selectGender', 'Select gender')}</option>
+                      <option value="Female">{t('childDrawer.female', 'Female')}</option>
+                      <option value="Male">{t('childDrawer.male', 'Male')}</option>
                     </select>
                   </FormField>
                 </div>
@@ -263,24 +265,24 @@ export function ChildDrawer({
 
               {step === 1 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label="Disability Type" error={errors.disabilityType}>
+                  <FormField label={t('childDrawer.disabilityType', 'Disability Type')} error={errors.disabilityType}>
                     <select className={selectClassName} value={form.disabilityType} onChange={(event) => updateField('disabilityType', event.target.value)}>
                       {disabilityOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Disability Category" error={errors.disabilityCategory}>
-                    <Input value={form.disabilityCategory} placeholder="e.g. Cerebral Palsy, Autism" onChange={(event) => updateField('disabilityCategory', event.target.value)} />
+                  <FormField label={t('childDrawer.disabilityCategory', 'Disability Category')} error={errors.disabilityCategory}>
+                    <Input value={form.disabilityCategory} placeholder={t('childDrawer.disabilityCategoryPlaceholder', 'e.g. Cerebral Palsy, Autism')} onChange={(event) => updateField('disabilityCategory', event.target.value)} />
                   </FormField>
-                  <FormField label="Severity Level" error={errors.severityLevel}>
+                  <FormField label={t('childDrawer.severityLevel', 'Severity Level')} error={errors.severityLevel}>
                     <select className={selectClassName} value={form.severityLevel} onChange={(event) => updateField('severityLevel', event.target.value)}>
                       {severityOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Communication Ability" error={errors.communicationAbility}>
+                  <FormField label={t('childDrawer.communicationAbility', 'Communication Ability')} error={errors.communicationAbility}>
                     <select className={selectClassName} value={form.communicationAbility} onChange={(event) => updateField('communicationAbility', event.target.value)}>
-                      <option value="VERBAL">Verbal</option>
-                      <option value="NON_VERBAL">Non-Verbal</option>
-                      <option value="ASSISTED">Assisted</option>
+                      <option value="VERBAL">{t('childDrawer.verbal', 'Verbal')}</option>
+                      <option value="NON_VERBAL">{t('childDrawer.nonVerbal', 'Non-Verbal')}</option>
+                      <option value="ASSISTED">{t('childDrawer.assisted', 'Assisted')}</option>
                     </select>
                   </FormField>
                 </div>
@@ -288,25 +290,25 @@ export function ChildDrawer({
 
               {step === 2 && (
                 <div className="grid gap-4">
-                  <FormField label="Medical History">
+                  <FormField label={t('childDrawer.medicalHistory', 'Medical History')}>
                     <textarea
                       className={textareaClassName}
                       value={form.medicalHistory}
                       onChange={(event) => updateField('medicalHistory', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Current Medications">
+                  <FormField label={t('childDrawer.currentMedications', 'Current Medications')}>
                     <textarea
                       className={textareaClassName}
                       value={form.medications}
                       onChange={(event) => updateField('medications', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="School Enrollment Status" error={errors.schoolEnrollmentStatus}>
+                  <FormField label={t('childDrawer.schoolEnrollment', 'School Enrollment Status')} error={errors.schoolEnrollmentStatus}>
                     <select className={selectClassName} value={form.schoolEnrollmentStatus} onChange={(event) => updateField('schoolEnrollmentStatus', event.target.value)}>
-                      <option value="ENROLLED">Enrolled</option>
-                      <option value="NOT_ENROLLED">Not Enrolled</option>
-                      <option value="GRADUATED">Graduated</option>
+                      <option value="ENROLLED">{t('childDrawer.enrolled', 'Enrolled')}</option>
+                      <option value="NOT_ENROLLED">{t('childDrawer.notEnrolled', 'Not Enrolled')}</option>
+                      <option value="GRADUATED">{t('childDrawer.graduated', 'Graduated')}</option>
                     </select>
                   </FormField>
                 </div>
@@ -314,11 +316,11 @@ export function ChildDrawer({
 
               {step === 3 && (
                 <div className="grid gap-4">
-                  <FormField label="Parent" error={errors.parentId}>
+                  <FormField label={t('childDrawer.parent', 'Parent')} error={errors.parentId}>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Search parents..."
+                        placeholder={t('childDrawer.searchParents', 'Search parents...')}
                         value={parentSearch}
                         onChange={(e) => setParentSearch(e.target.value)}
                         className="pl-9"
@@ -335,20 +337,20 @@ export function ChildDrawer({
                       ))}
                     </select>
                   </FormField>
-                  <FormField label="Assign Case Worker" error={errors.assignedStaffId}>
+                  <FormField label={t('childDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
                     <select className={selectClassName} value={form.assignedStaffId} onChange={(event) => updateField('assignedStaffId', event.target.value)}>
-                      <option value="">Select staff</option>
+                      <option value="">{t('childDrawer.selectStaff', 'Select staff')}</option>
                       {staffOptions.map((worker) => <option key={worker.id} value={worker.id}>{worker.fullName}</option>)}
                     </select>
                   </FormField>
-                  <FormField label="Internal Notes">
+                  <FormField label={t('childDrawer.internalNotes', 'Internal Notes')}>
                     <textarea
                       className={textareaClassName}
                       value={form.internalNotes}
                       onChange={(event) => updateField('internalNotes', event.target.value)}
                     />
                   </FormField>
-                  <FormField label="Status" error={errors.status}>
+                  <FormField label={t('childDrawer.status', 'Status')} error={errors.status}>
                     <select className={selectClassName} value={form.status} onChange={(event) => updateField('status', event.target.value)}>
                       {statusOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
@@ -361,16 +363,16 @@ export function ChildDrawer({
 
         <div className="flex items-center justify-between border-t px-6 py-4">
           <Button variant="outline" disabled={step === 0 || saving} onClick={() => setStep((current) => current - 1)}>
-            Back
+            {t('childDrawer.back', 'Back')}
           </Button>
           {step < steps.length - 1 ? (
             <Button onClick={nextStep} disabled={loading}>
-              Next
+              {t('childDrawer.next', 'Next')}
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={save} disabled={saving || loading}>
-              {saving ? 'Saving...' : childId ? 'Save Changes' : 'Register Child'}
+              {saving ? t('childDrawer.saving', 'Saving...') : childId ? t('childDrawer.saveChanges', 'Save Changes') : t('childDrawer.registerChild', 'Register Child')}
             </Button>
           )}
         </div>
@@ -389,12 +391,20 @@ function FormField({ label, error, children, className }: { label: string; error
   );
 }
 
-function validateStep(step: number, form: ChildFormData) {
+function validateStep(step: number, form: ChildFormData, t: (key: string, fallback?: string) => string) {
   const errors: Record<string, string> = {};
-  const req = (f: keyof ChildFormData, l: string) => { if (!String(form[f]).trim()) errors[f] = `${l} is required.`; };
-  if (step === 0) { req('fullName', 'Full name'); req('dateOfBirth', 'Date of birth'); req('gender', 'Gender'); }
-  if (step === 1) { req('disabilityCategory', 'Category'); }
-  if (step === 3) { req('parentId', 'Parent'); req('assignedStaffId', 'Staff'); }
+  if (step === 0) {
+    if (!String(form.fullName).trim()) errors.fullName = t('childDrawer.error.fullNameRequired', 'Full name is required.');
+    if (!String(form.dateOfBirth).trim()) errors.dateOfBirth = t('childDrawer.error.dobRequired', 'Date of birth is required.');
+    if (!String(form.gender).trim()) errors.gender = t('childDrawer.error.genderRequired', 'Gender is required.');
+  }
+  if (step === 1) {
+    if (!String(form.disabilityCategory).trim()) errors.disabilityCategory = t('childDrawer.error.categoryRequired', 'Category is required.');
+  }
+  if (step === 3) {
+    if (!String(form.parentId).trim()) errors.parentId = t('childDrawer.error.parentRequired', 'Parent is required.');
+    if (!String(form.assignedStaffId).trim()) errors.assignedStaffId = t('childDrawer.error.staffRequired', 'Staff is required.');
+  }
   return errors;
 }
 

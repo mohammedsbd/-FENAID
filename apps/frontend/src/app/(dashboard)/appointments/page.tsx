@@ -40,11 +40,13 @@ import api from '@/lib/api';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { Appointment, AppointmentType, AppointmentStatus } from '@/types/appointments';
 import { cn } from '@/lib/utils';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentDrawer } from '@/components/dashboard/appointments/appointment-drawer';
 import { AttendanceDrawer } from '@/components/dashboard/appointments/attendance-drawer';
 
 export default function AppointmentsPage() {
+  const { t } = useLocale();
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -100,7 +102,7 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
-      toast({ title: 'Error', description: 'Failed to load appointments.', variant: 'destructive' });
+      toast({ title: t('appointments.error', 'Error'), description: t('appointments.errorLoad', 'Failed to load appointments.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -125,8 +127,8 @@ export default function AppointmentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
-          <p className="text-muted-foreground">Manage therapy sessions and member meetings.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('appointments.title', 'Appointments')}</h1>
+          <p className="text-muted-foreground">{t('appointments.description', 'Manage therapy sessions and member meetings.')}</p>
         </div>
         <div className="flex items-center space-x-2">
           <div className="bg-muted p-1 rounded-lg flex">
@@ -136,7 +138,7 @@ export default function AppointmentsPage() {
               onClick={() => setView('calendar')}
               className="px-3"
             >
-              <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
+              <CalendarIcon className="w-4 h-4 mr-2" /> {t('appointments.calendarView', 'Calendar')}
             </Button>
             <Button 
               variant={view === 'list' ? 'secondary' : 'ghost'} 
@@ -144,11 +146,11 @@ export default function AppointmentsPage() {
               onClick={() => setView('list')}
               className="px-3"
             >
-              <List className="w-4 h-4 mr-2" /> List
+              <List className="w-4 h-4 mr-2" /> {t('appointments.listView', 'List')}
             </Button>
           </div>
           <Button onClick={() => { setEditingAppointment(null); setDrawerOpen(true); }} className="bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" /> New Appointment
+            <Plus className="w-4 h-4 mr-2" /> {t('appointments.newAppointment', 'New Appointment')}
           </Button>
         </div>
       </div>
@@ -158,7 +160,7 @@ export default function AppointmentsPage() {
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Search title, participant, or staff..." 
+            placeholder={t('appointments.searchPlaceholder', 'Search title, participant, or staff...')} 
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -169,11 +171,11 @@ export default function AppointmentsPage() {
           <SelectTrigger className="w-[180px]">
             <div className="flex items-center">
               <Filter className="w-3 h-3 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder={t('appointments.allTypes', 'All Types')} />
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Types</SelectItem>
+            <SelectItem value="ALL">{t('appointments.allTypes', 'All Types')}</SelectItem>
             {Object.values(AppointmentType).map(t => (
               <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
             ))}
@@ -182,10 +184,10 @@ export default function AppointmentsPage() {
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder={t('appointments.allStatuses', 'All Statuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="ALL">{t('appointments.allStatuses', 'All Statuses')}</SelectItem>
             {Object.values(AppointmentStatus).map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
@@ -194,10 +196,10 @@ export default function AppointmentsPage() {
 
         <Select value={staffFilter} onValueChange={setStaffFilter}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Staff" />
+            <SelectValue placeholder={t('appointments.allStaff', 'All Staff')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All Staff</SelectItem>
+            <SelectItem value="ALL">{t('appointments.allStaff', 'All Staff')}</SelectItem>
             {staff.map(s => (
               <SelectItem key={s.id} value={s.id}>{s.fullName}</SelectItem>
             ))}
@@ -208,7 +210,7 @@ export default function AppointmentsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Loader2 className="w-10 h-10 animate-spin text-primary" />
-          <p className="text-muted-foreground animate-pulse">Loading appointments...</p>
+          <p className="text-muted-foreground animate-pulse">{t('appointments.loading', 'Loading appointments...')}</p>
         </div>
       ) : view === 'calendar' ? (
         <CalendarView 
@@ -244,6 +246,7 @@ export default function AppointmentsPage() {
 }
 
 function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick, onAppointmentClick }: any) {
+  const { t } = useLocale();
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -269,7 +272,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick,
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>Today</Button>
+          <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>{t('appointments.calendar.today', 'Today')}</Button>
           <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -277,7 +280,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick,
       </div>
       
       <div className="grid grid-cols-7 border-b bg-muted/30">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+        {[t('appointments.calendar.sun', 'Sun'), t('appointments.calendar.mon', 'Mon'), t('appointments.calendar.tue', 'Tue'), t('appointments.calendar.wed', 'Wed'), t('appointments.calendar.thu', 'Thu'), t('appointments.calendar.fri', 'Fri'), t('appointments.calendar.sat', 'Sat')].map(day => (
           <div key={day} className="py-2 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {day}
           </div>
@@ -332,7 +335,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick,
                     className="text-[9px] text-center text-muted-foreground font-semibold pt-0.5 cursor-pointer hover:text-primary"
                     onClick={() => onDayClick(day)}
                   >
-                    +{dayApps.length - 5} more
+                    {t('appointments.calendar.more', '+{count} more', { count: String(dayApps.length - 5) })}
                   </div>
                 )}
               </div>
@@ -345,6 +348,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick,
 }
 
 function ListView({ appointments, onEdit, onView }: any) {
+  const { t } = useLocale();
   const getAttendanceStatus = (app: any, type: 'CHILD' | 'PARENT') => {
     if (!app.attendanceRecords) return null;
     const record = app.attendanceRecords.find((r: any) => 
@@ -368,20 +372,20 @@ function ListView({ appointments, onEdit, onView }: any) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Participant & Attendance</TableHead>
-            <TableHead>Assigned Staff</TableHead>
-            <TableHead>Appt. Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t('appointments.list.title', 'Title')}</TableHead>
+            <TableHead>{t('appointments.list.type', 'Type')}</TableHead>
+            <TableHead>{t('appointments.list.dateTime', 'Date & Time')}</TableHead>
+            <TableHead>{t('appointments.list.participantAttendance', 'Participant & Attendance')}</TableHead>
+            <TableHead>{t('appointments.list.assignedStaff', 'Assigned Staff')}</TableHead>
+            <TableHead>{t('appointments.list.apptStatus', 'Appt. Status')}</TableHead>
+            <TableHead className="text-right">{t('appointments.list.actions', 'Actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {appointments.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-20 text-muted-foreground">
-                No appointments found for the current selection.
+                {t('appointments.list.noAppointments', 'No appointments found for the current selection.')}
               </TableCell>
             </TableRow>
           ) : appointments.map((app: any) => (
@@ -411,7 +415,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                         </Avatar>
                         <div className="text-xs">
                           <div className="font-medium">{app.child.fullName}</div>
-                          <div className="text-muted-foreground uppercase text-[8px] font-bold">Child</div>
+                          <div className="text-muted-foreground uppercase text-[8px] font-bold">{t('appointments.list.child', 'Child')}</div>
                         </div>
                       </div>
                       {getAttendanceStatus(app, 'CHILD') ? (
@@ -420,7 +424,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                         </Badge>
                       ) : (
                         <Badge variant="ghost" className="text-[8px] px-1.5 h-4 text-muted-foreground opacity-0 group-hover:opacity-100">
-                          Pending
+                          {t('appointments.list.pending', 'Pending')}
                         </Badge>
                       )}
                     </div>
@@ -434,7 +438,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                         </Avatar>
                         <div className="text-xs">
                           <div className="font-medium">{app.parent.fullName}</div>
-                          <div className="text-muted-foreground uppercase text-[8px] font-bold">Parent</div>
+                          <div className="text-muted-foreground uppercase text-[8px] font-bold">{t('appointments.list.parent', 'Parent')}</div>
                         </div>
                       </div>
                       {getAttendanceStatus(app, 'PARENT') ? (
@@ -443,13 +447,13 @@ function ListView({ appointments, onEdit, onView }: any) {
                         </Badge>
                       ) : (
                         <Badge variant="ghost" className="text-[8px] px-1.5 h-4 text-muted-foreground opacity-0 group-hover:opacity-100">
-                          Pending
+                          {t('appointments.list.pending', 'Pending')}
                         </Badge>
                       )}
                     </div>
                   )}
                   {!app.child && !app.parent && (
-                    <span className="text-muted-foreground italic text-xs">None</span>
+                    <span className="text-muted-foreground italic text-xs">{t('appointments.list.none', 'None')}</span>
                   )}
                 </div>
               </TableCell>
@@ -471,7 +475,7 @@ function ListView({ appointments, onEdit, onView }: any) {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon" title="Log Attendance" className="h-8 w-8 hover:bg-green-50" onClick={() => onView(app.id)}>
+                  <Button variant="ghost" size="icon" title={t('appointments.list.logAttendance', 'Log Attendance')} className="h-8 w-8 hover:bg-green-50" onClick={() => onView(app.id)}>
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(app)}>

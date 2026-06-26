@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '@/lib/api';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { COLUMN_GROUPS, SUBCITIES, countSectionFilters } from './constants';
 
 type DataSubject = 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
@@ -118,6 +119,7 @@ export function FilterBuilder({
   onClear,
   running,
 }: FilterBuilderProps) {
+  const { t } = useLocale();
   const [services, setServices] = useState<Array<{ id: string; name: string }>>(
     [],
   );
@@ -371,24 +373,18 @@ export function FilterBuilder({
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Registered After</Label>
-              <Input
-                type="date"
+            <div className="space-y-2">
+              <Label className="text-xs">{t('filterBuilder.registeredAfter', 'Registered After')}</Label>
+              <CalendarDatePicker
                 value={filters.child?.registeredAfter ?? ''}
-                onChange={(e) =>
-                  updateChild({ registeredAfter: e.target.value || undefined })
-                }
+                onChange={(value) => updateChild({ registeredAfter: value || undefined })}
               />
             </div>
-            <div>
-              <Label className="text-xs">Registered Before</Label>
-              <Input
-                type="date"
+            <div className="space-y-2">
+              <Label className="text-xs">{t('filterBuilder.registeredBefore', 'Registered Before')}</Label>
+              <CalendarDatePicker
                 value={filters.child?.registeredBefore ?? ''}
-                onChange={(e) =>
-                  updateChild({ registeredBefore: e.target.value || undefined })
-                }
+                onChange={(value) => updateChild({ registeredBefore: value || undefined })}
               />
             </div>
           </div>

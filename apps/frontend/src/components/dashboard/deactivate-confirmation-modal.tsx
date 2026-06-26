@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/components/providers/locale-provider';
 
 interface DeactivateConfirmationModalProps {
   name: string;
@@ -15,11 +16,14 @@ export function DeactivateConfirmationModal({
   name,
   onConfirm,
   onCancel,
-  title = "Deactivate Profile?",
+  title: titleProp,
   description,
-  confirmLabel = "Deactivate Now",
+  confirmLabel: confirmLabelProp,
 }: DeactivateConfirmationModalProps) {
-  const defaultDescription = `Are you sure you want to deactivate ${name}? This will restrict their access and mark the profile as inactive in the system.`;
+  const { t } = useLocale();
+  const title = titleProp ?? t('deactivateModal.defaultTitle', "Deactivate Profile?");
+  const confirmLabel = confirmLabelProp ?? t('deactivateModal.defaultConfirm', "Deactivate Now");
+  const defaultDescription = t('deactivateModal.defaultDescription', 'Are you sure you want to deactivate {name}? This will restrict their access and mark the profile as inactive in the system.', { name });
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
@@ -32,7 +36,7 @@ export function DeactivateConfirmationModal({
         </div>
         <div className="flex justify-end gap-3 border-t bg-slate-50/50 px-6 py-4 rounded-b-lg">
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t('deactivateModal.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
             {confirmLabel}

@@ -37,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import api from '@/lib/api';
-import { t } from '@/lib/i18n';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import {
   AccessLevel,
@@ -91,6 +91,7 @@ const modules: PermissionModule[] = [
 
 export function AccountManagementClient({ currentUser }: Props) {
   const { toast } = useToast();
+  const { t } = useLocale();
   const [tab, setTab] = useState<'accounts' | 'permissions' | 'sessions' | 'audit'>('accounts');
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -375,9 +376,9 @@ export function AccountManagementClient({ currentUser }: Props) {
               </div>
               <select className="h-10 rounded-md border px-3 text-sm" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="">{t('accounts.allRoles', 'All roles')}</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="CASE_WORKER">Staff</option>
-                <option value="VIEWER">Viewer</option>
+                <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
+                <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
+                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
               <select className="h-10 rounded-md border px-3 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="">{t('accounts.allStatus', 'All status')}</option>
@@ -440,8 +441,8 @@ export function AccountManagementClient({ currentUser }: Props) {
           <CardHeader className="space-y-3">
             <div className="flex items-center gap-3">
               <select className="h-10 rounded-md border px-3 text-sm" value={permissionRole} onChange={(e) => setPermissionRole(e.target.value as any)}>
-                <option value="CASE_WORKER">Staff</option>
-                <option value="VIEWER">Viewer</option>
+                <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
+                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
               <Button variant="outline" onClick={loadPermissions}><RefreshCcw className="h-4 w-4" />{t('accounts.reload', 'Reload')}</Button>
             </div>
@@ -460,9 +461,9 @@ export function AccountManagementClient({ currentUser }: Props) {
                     <TableCell>{module.replace('_', ' ')}</TableCell>
                     <TableCell>
                       <select className="h-9 rounded-md border px-3 text-sm" value={permissionDraft[module] || 'READ_ONLY'} onChange={(e) => setPermissionDraft((current) => ({ ...current, [module]: e.target.value as AccessLevel }))}>
-                        <option value="FULL">Full Access</option>
-                        <option value="READ_ONLY">Read Only</option>
-                        <option value="NO_ACCESS">No Access</option>
+                        <option value="FULL">{t('accounts.fullAccess', 'Full Access')}</option>
+                        <option value="READ_ONLY">{t('accounts.readOnly', 'Read Only')}</option>
+                        <option value="NO_ACCESS">{t('accounts.noAccess', 'No Access')}</option>
                       </select>
                     </TableCell>
                   </TableRow>
@@ -541,17 +542,17 @@ export function AccountManagementClient({ currentUser }: Props) {
             <Field label={t('accounts.fullName', 'Full name')}><Input value={accountForm.fullName} onChange={(e) => setAccountForm((c) => ({ ...c, fullName: e.target.value }))} /></Field>
             <Field label={t('accounts.email', 'Email')}><Input value={accountForm.email} onChange={(e) => setAccountForm((c) => ({ ...c, email: e.target.value }))} /></Field>
             <div className="space-y-2">
-              <Label>User Profile</Label>
+              <Label>{t('accounts.userProfile', 'User Profile')}</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12"><AvatarImage src={accountForm.photoUrl || undefined} /><AvatarFallback>{initials(accountForm.fullName)}</AvatarFallback></Avatar>
-                <p className="text-xs text-muted-foreground italic">Profile photo uploads are disabled.</p>
+                <p className="text-xs text-muted-foreground italic">{t('accounts.photoDisabled', 'Profile photo uploads are disabled.')}</p>
               </div>
             </div>
             <Field label={t('accounts.role', 'Role')}>
               <select className="h-10 w-full rounded-md border px-3 text-sm" value={accountForm.role} onChange={(e) => setAccountForm((c) => ({ ...c, role: e.target.value as any }))}>
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="CASE_WORKER">Staff</option>
-                <option value="VIEWER">Viewer</option>
+                <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
+                <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
+                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
             </Field>
             <Field label={t('accounts.status', 'Status')}>

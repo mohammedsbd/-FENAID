@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, HandCoins, CheckCircle2, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
+import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 import { FundAllocation } from '@/types/finance';
 
@@ -17,6 +18,7 @@ interface AcknowledgeModalProps {
 export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: AcknowledgeModalProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLocale();
 
   if (!open || !allocation) return null;
 
@@ -27,12 +29,12 @@ export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: Ackno
       await api.patch(`/fund-allocations/${allocation.id}`, {
         parentAcknowledged: true,
       });
-      toast({ title: 'Success', description: 'Parent acknowledgement recorded.' });
+      toast({ title: t('acknowledgeModal.success', 'Success'), description: t('acknowledgeModal.recorded', 'Parent acknowledgement recorded.') });
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to record acknowledgement:', error);
-      toast({ title: 'Error', description: 'Failed to record acknowledgement.', variant: 'destructive' });
+      toast({ title: t('acknowledgeModal.error', 'Error'), description: t('acknowledgeModal.recordFailed', 'Failed to record acknowledgement.'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -49,27 +51,27 @@ export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: Ackno
             </div>
           </div>
           
-          <h3 className="text-lg font-bold text-center mb-2">Record Acknowledgement</h3>
+          <h3 className="text-lg font-bold text-center mb-2">{t('acknowledgeModal.title', 'Record Acknowledgement')}</h3>
           <p className="text-sm text-muted-foreground text-center mb-6">
-            Has <strong>{allocation.parent.fullName}</strong> confirmed receiving the <strong>{allocation.amount.toLocaleString()} ETB</strong>?
+            {t('acknowledgeModal.confirmQuestion', 'Has')} <strong>{allocation.parent.fullName}</strong> {t('acknowledgeModal.confirmedReceiving', 'confirmed receiving the')} <strong>{allocation.amount.toLocaleString()} ETB</strong>?
           </p>
 
           <div className="flex items-start p-3 bg-primary/5 border border-primary/10 rounded-lg mb-6">
             <Info className="w-4 h-4 text-primary mr-2 mt-0.5 shrink-0" />
             <p className="text-[11px] text-primary leading-tight">
-              Once both <strong>Disbursement</strong> and <strong>Acknowledgement</strong> are recorded, this record will be locked and marked as <strong>Verified</strong>.
+              {t('acknowledgeModal.infoText', 'Once both Disbursement and Acknowledgement are recorded, this record will be locked and marked as Verified.')}
             </p>
           </div>
 
           <div className="flex space-x-3">
-            <Button variant="outline" className="flex-1" onClick={onClose}>No, Cancel</Button>
+            <Button variant="outline" className="flex-1" onClick={onClose}>{t('acknowledgeModal.noCancel', 'No, Cancel')}</Button>
             <Button 
               className="flex-1 bg-accent hover:bg-accent/90 text-white" 
               onClick={handleConfirm}
               disabled={loading}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-              Yes, Recorded
+              {t('acknowledgeModal.yesRecorded', 'Yes, Recorded')}
             </Button>
           </div>
         </div>

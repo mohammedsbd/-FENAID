@@ -23,6 +23,11 @@ export class AccountsController {
     return this.accountsService.findAll({ status: 'active', limit: '100' });
   }
 
+  @Get('staff')
+  findAllStaff(@Query('limit') limit = '100') {
+    return this.accountsService.findAll({ status: 'active', limit });
+  }
+
   @Get('me')
   @ModuleAccess(PermissionModule.MY_ACCOUNT)
   me(@Req() request: AuthenticatedRequest) {
