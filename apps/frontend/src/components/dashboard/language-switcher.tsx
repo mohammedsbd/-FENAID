@@ -5,10 +5,9 @@ import { Languages, Save, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocale } from '@/components/providers/locale-provider';
-import { t } from '@/lib/i18n';
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useLocale();
+  const { t, locale, setLocale } = useLocale();
   const [draftLocale, setDraftLocale] = useState(locale);
   const [saving, setSaving] = useState(false);
 
@@ -40,7 +39,7 @@ export function LanguageSwitcher() {
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <LanguageOption
             label={t('language.english', 'English')}
             description={t('language.english', 'English')}
@@ -52,6 +51,12 @@ export function LanguageSwitcher() {
             description="አማርኛ"
             checked={draftLocale === 'am'}
             onClick={() => setDraftLocale('am')}
+          />
+          <LanguageOption
+            label={t('language.oromo', 'Oromo')}
+            description="Afaan Oromoo"
+            checked={draftLocale === 'om'}
+            onClick={() => setDraftLocale('om')}
           />
         </div>
 

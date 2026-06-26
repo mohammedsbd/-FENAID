@@ -3,6 +3,7 @@
   "language.description": "Choose your preferred language for the system interface.",
   "language.english": "English",
   "language.amharic": "Amharic",
+  "language.oromo": "Oromo",
   "systemSettings.title": "System calendar",
   "systemSettings.description": "Controls date entry and display across staff pages.",
   "systemSettings.gregorian": "Gregorian",

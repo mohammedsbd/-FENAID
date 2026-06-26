@@ -34,7 +34,6 @@ const navItems = [
   { icon: HandPlatter, label: 'Services', href: '/dashboard/services' },
   { icon: BadgeDollarSign, label: 'Fund & Donations', href: '/dashboard/funds' },
   { icon: CalendarDays, label: 'Appointments', href: '/dashboard/appointments' },
-  { icon: BarChart3, label: 'Reports', href: '/dashboard/reports' },
   {
     icon: Table2,
     label: 'Data Query',
