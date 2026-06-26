@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { t as tFn, loadLocale, setDictionary } from '@/lib/i18n';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { t as tFn, loadLocale, setDictionary, subscribe } from '@/lib/i18n';
 
 type LocaleContextType = {
   t: typeof tFn;
@@ -17,6 +17,20 @@ const LocaleContext = createContext<LocaleContextType>({
 
 export function LocaleProvider({ children, initialLocale, initialDictionary }: { children: ReactNode; initialLocale: string; initialDictionary?: Record<string, string> }) {
   const [locale, setLocaleState] = useState(initialLocale);
+  const [_, forceRender] = useState(0);
+
+  useEffect(() => {
+    if (!initialDictionary) {
+      loadLocale(initialLocale);
+    }
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribe(() => {
+      forceRender((n) => n + 1);
+    });
+    return unsub;
+  }, []);
 
   if (initialDictionary) {
     setDictionary(initialDictionary);

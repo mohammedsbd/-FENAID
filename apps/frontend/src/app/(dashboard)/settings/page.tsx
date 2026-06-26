@@ -1,27 +1,70 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useState } from 'react';
+import { User, ShieldCheck, History, Activity, Globe, Settings2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { MyAccountClient } from '@/components/dashboard/my-account-client';
 import { SystemSettingsClient } from '@/components/dashboard/system-settings-client';
 import { LanguageSwitcher } from '@/components/dashboard/language-switcher';
+import { useLocale } from '@/components/providers/locale-provider';
+
+type Tab = 'profile' | 'security' | 'sessions' | 'activity' | 'language' | 'system';
+
+const TAB_ICONS: Record<Tab, typeof User> = {
+  profile: User,
+  security: ShieldCheck,
+  sessions: History,
+  activity: Activity,
+  language: Globe,
+  system: Settings2,
+};
 
 export default function SettingsPage() {
-  const cookieStore = cookies();
-  const userCookie = cookieStore.get('user')?.value;
-  if (!userCookie) {
-    redirect('/login');
-  }
+  const [tab, setTab] = useState<Tab>('profile');
+  const { t } = useLocale();
 
-  let user;
-  try {
-    user = JSON.parse(decodeURIComponent(userCookie));
-  } catch {
-    redirect('/login');
-  }
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'profile', label: t('settings.tab.profile', 'Profile') },
+    { key: 'security', label: t('settings.tab.security', 'Security') },
+    { key: 'sessions', label: t('settings.tab.sessions', 'Sessions') },
+    { key: 'activity', label: t('settings.tab.activity', 'Activity') },
+    { key: 'language', label: t('settings.tab.language', 'Language') },
+    { key: 'system', label: t('settings.tab.system', 'System') },
+  ];
+
   return (
     <div className="space-y-6">
-      <SystemSettingsClient role={user.role} />
-      <LanguageSwitcher />
-      <MyAccountClient currentUser={user} />
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">{t('settings.title', 'Settings')}</h1>
+        <p className="text-muted-foreground">{t('settings.subtitle', 'Manage your account, language, and system preferences.')}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg w-fit">
+        {tabs.map(({ key, label }) => {
+          const Icon = TAB_ICONS[key];
+          return (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
+                tab === key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {(tab === 'profile' || tab === 'security' || tab === 'sessions' || tab === 'activity') && (
+        <MyAccountClient tab={tab} />
+      )}
+      {tab === 'language' && <LanguageSwitcher />}
+      {tab === 'system' && <SystemSettingsClient />}
     </div>
   );
 }

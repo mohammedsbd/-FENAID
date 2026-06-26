@@ -992,5 +992,18 @@
   "filterBuilder.registeredAfter": "Registered After",
   "filterBuilder.registeredBefore": "Registered Before",
   "finance.fromDate": "From date",
-  "finance.toDate": "To date"
+  "finance.toDate": "To date",
+  "sidebar.orgName": "Ethiopia National Association on Intellectual Disability",
+  "settings.title": "Settings",
+  "settings.subtitle": "Manage your account, language, and system preferences.",
+  "settings.tab.account": "My Account",
+  "settings.tab.language": "Language",
+  "settings.tab.system": "System",
+  "language.save": "Save Changes",
+  "language.saving": "Saving...",
+  "language.cancel": "Cancel",
+  "settings.tab.profile": "Profile",
+  "settings.tab.security": "Security",
+  "settings.tab.sessions": "Sessions",
+  "settings.tab.activity": "Activity"
 }

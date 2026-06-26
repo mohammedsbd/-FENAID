@@ -5,18 +5,23 @@ import { CalendarDays, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { CalendarSystem, formatCalendarDate } from '@/lib/calendar';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
 import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 
-export function SystemSettingsClient({ role }: { role?: string }) {
+export function SystemSettingsClient() {
   const { calendarSystem, setCalendarSystem, refreshCalendarSettings } = useCalendarSettings();
   const { t } = useLocale();
   const [draftCalendarSystem, setDraftCalendarSystem] = useState<CalendarSystem>(calendarSystem);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const userCookie = Cookies.get('user');
+  const user = userCookie ? JSON.parse(decodeURIComponent(userCookie)) : null;
+  const role = user?.role;
 
   useEffect(() => {
     setDraftCalendarSystem(calendarSystem);

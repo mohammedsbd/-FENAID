@@ -1,12 +1,28 @@
 'use client';
 
-import { Languages } from 'lucide-react';
+import { useState } from 'react';
+import { Languages, Save, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocale } from '@/components/providers/locale-provider';
 import { t } from '@/lib/i18n';
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useLocale();
+  const [draftLocale, setDraftLocale] = useState(locale);
+  const [saving, setSaving] = useState(false);
+
+  const hasChanges = draftLocale !== locale;
+
+  async function handleSave() {
+    setSaving(true);
+    await setLocale(draftLocale);
+    setSaving(false);
+  }
+
+  function handleCancel() {
+    setDraftLocale(locale);
+  }
 
   return (
     <Card>
@@ -28,15 +44,28 @@ export function LanguageSwitcher() {
           <LanguageOption
             label={t('language.english', 'English')}
             description={t('language.english', 'English')}
-            checked={locale === 'en'}
-            onClick={() => setLocale('en')}
+            checked={draftLocale === 'en'}
+            onClick={() => setDraftLocale('en')}
           />
           <LanguageOption
             label={t('language.amharic', 'Amharic')}
             description="አማርኛ"
-            checked={locale === 'am'}
-            onClick={() => setLocale('am')}
+            checked={draftLocale === 'am'}
+            onClick={() => setDraftLocale('am')}
           />
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          <Button onClick={handleSave} disabled={!hasChanges || saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? t('language.saving', 'Saving...') : t('language.save', 'Save Changes')}
+          </Button>
+          {hasChanges && (
+            <Button variant="ghost" onClick={handleCancel}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              {t('language.cancel', 'Cancel')}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

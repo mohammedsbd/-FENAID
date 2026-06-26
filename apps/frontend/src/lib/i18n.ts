@@ -17,10 +17,11 @@ export function t(key: string, fallback?: string, params?: TranslationArgs) {
 
 export async function loadLocale(locale: string): Promise<void> {
   try {
-    const response = await fetch(`/locales/${locale}.json`);
+    const response = await fetch(`/locales/${locale}.json?t=${Date.now()}`, { cache: 'no-store' });
     dictionary = await response.json();
     currentLocale = locale;
-  } catch {
+  } catch (e) {
+    console.error('Failed to load locale', locale, e);
     dictionary = {};
   }
   listeners.forEach((fn) => fn());

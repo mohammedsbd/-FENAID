@@ -992,5 +992,18 @@
   "filterBuilder.registeredAfter": "ከተመዘገበ በኋላ",
   "filterBuilder.registeredBefore": "ከተመዘገበ በፊት",
   "finance.fromDate": "ከቀን",
-  "finance.toDate": "እስከ ቀን"
+  "finance.toDate": "እስከ ቀን",
+  "sidebar.orgName": "የኢትዮጵያ ብሔራዊ የአእምሮ ችግር ማህበር",
+  "settings.title": "ቅንብሮች",
+  "settings.subtitle": "መለያዎን፣ ቋንቋዎን እና የስርዓት ምርጫዎችዎን ያስተዳድሩ።",
+  "settings.tab.account": "መለያዬ",
+  "settings.tab.language": "ቋንቋ",
+  "settings.tab.system": "ስርዓት",
+  "language.save": "ለውጦችን አስቀምጥ",
+  "language.saving": "በማስቀመጥ ላይ...",
+  "language.cancel": "ተው",
+  "settings.tab.profile": "መገለጫ",
+  "settings.tab.security": "ደህንነት",
+  "settings.tab.sessions": "ክፍለ ጊዜዎች",
+  "settings.tab.activity": "እንቅስቃሴ"
 }

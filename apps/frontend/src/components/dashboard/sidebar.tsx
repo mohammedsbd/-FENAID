@@ -70,7 +70,7 @@ export function Sidebar({ user }: { user: any }) {
           </div>
         </Link>
         <p className="text-center text-[10px] font-semibold leading-tight text-primary">
-          Ethiopia National Association on Intellectual Disability
+          {t('sidebar.orgName', 'Ethiopia National Association on Intellectual Disability')}
         </p>
       </div>
 
