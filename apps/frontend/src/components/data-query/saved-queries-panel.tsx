@@ -66,7 +66,7 @@ export function SavedQueriesPanel({
   if (collapsed) {
     return (
       <div className="flex h-full min-h-[640px] flex-col items-center justify-start py-3">
-        <Button size="icon" variant="ghost" onClick={onToggleCollapse} title="Expand saved queries">
+        <Button size="icon" variant="ghost" onClick={onToggleCollapse} title={t('savedQueries.expand', 'Expand saved queries')}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
       </div>
@@ -81,9 +81,9 @@ export function SavedQueriesPanel({
             <h3 className="text-sm font-semibold text-primary">
               {t('dataQuery.savedQueries', 'Saved Queries')}
             </h3>
-            <p className="text-xs text-muted-foreground">Reusable query templates</p>
+            <p className="text-xs text-muted-foreground">{t('savedQueries.subtitle', 'Reusable query templates')}</p>
           </div>
-          <Button size="icon" variant="ghost" onClick={onToggleCollapse} title="Collapse panel">
+          <Button size="icon" variant="ghost" onClick={onToggleCollapse} title={t('savedQueries.collapse', 'Collapse panel')}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -110,7 +110,7 @@ export function SavedQueriesPanel({
             )}
             onClick={() => setTab('mine')}
           >
-            Mine
+            {t('savedQueries.mine', 'Mine')}
           </button>
           <button
             type="button"
@@ -122,14 +122,14 @@ export function SavedQueriesPanel({
             )}
             onClick={() => setTab('org')}
           >
-            Org
+            {t('savedQueries.org', 'Org')}
           </button>
         </div>
 
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {list.length === 0 && (
             <p className="py-8 text-center text-xs text-muted-foreground">
-              No saved queries yet
+              {t('savedQueries.empty', 'No saved queries yet')}
             </p>
           )}
           {list.map((query) => (
@@ -143,7 +143,7 @@ export function SavedQueriesPanel({
                   <Input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Description"
+                    placeholder={t('savedQueries.descriptionPlaceholder', 'Description')}
                   />
                   <div className="flex gap-2">
                     <Button
@@ -153,10 +153,10 @@ export function SavedQueriesPanel({
                         setEditingId(null);
                       }}
                     >
-                      Save
+                      {t('savedQueries.save', 'Save')}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                      Cancel
+                      {t('savedQueries.cancel', 'Cancel')}
                     </Button>
                   </div>
                 </div>
@@ -166,13 +166,13 @@ export function SavedQueriesPanel({
                   <p className="mt-1 text-xs text-muted-foreground">
                     {query.lastRunAt
                       ? formatDistanceToNow(new Date(query.lastRunAt), { addSuffix: true })
-                      : 'Never run'}
+                      : t('savedQueries.neverRun', 'Never run')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {query.lastRunCount != null ? `${query.lastRunCount} results` : '—'}
+                    {query.lastRunCount != null ? `${query.lastRunCount} ${t('savedQueries.results', 'results')}` : '—'}
                   </p>
                   <div className="mt-2 flex gap-1 opacity-100 lg:opacity-0 lg:transition lg:group-hover:opacity-100">
-                    <Button size="icon" variant="ghost" onClick={() => onRun(query)} title="Run">
+                    <Button size="icon" variant="ghost" onClick={() => onRun(query)} title={t('savedQueries.run', 'Run')}>
                       <Play className="h-4 w-4" />
                     </Button>
                     <Button
@@ -183,7 +183,7 @@ export function SavedQueriesPanel({
                         setName(query.name);
                         setDescription(query.description ?? '');
                       }}
-                      title="Edit"
+                      title={t('savedQueries.edit', 'Edit')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -191,9 +191,9 @@ export function SavedQueriesPanel({
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        if (confirm('Delete this saved query?')) onDelete(query.id);
+                        if (confirm(t('savedQueries.confirmDelete', 'Delete this saved query?'))) onDelete(query.id);
                       }}
-                      title="Delete"
+                      title={t('savedQueries.delete', 'Delete')}
                     >
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
@@ -208,27 +208,27 @@ export function SavedQueriesPanel({
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg border bg-white p-5 shadow-xl">
-            <h3 className="mb-1 text-lg font-semibold text-primary">Save Query</h3>
+            <h3 className="mb-1 text-lg font-semibold text-primary">{t('savedQueries.saveQueryTitle', 'Save Query')}</h3>
             <p className="mb-4 text-sm text-muted-foreground">
-              Store the current filters and columns for quick reuse.
+              {t('savedQueries.saveQueryDesc', 'Store the current filters and columns for quick reuse.')}
             </p>
             <div className="space-y-3">
               <div>
-                <Label>Name</Label>
+                <Label>{t('savedQueries.name', 'Name')}</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div>
-                <Label>Description</Label>
+                <Label>{t('savedQueries.description', 'Description')}</Label>
                 <Input value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={isOrgWide} onCheckedChange={(c) => setIsOrgWide(Boolean(c))} />
-                Share with organization
+                {t('savedQueries.shareWithOrg', 'Share with organization')}
               </label>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setShowModal(false)}>
-                Cancel
+                {t('savedQueries.cancel', 'Cancel')}
               </Button>
               <Button
                 disabled={!name.trim() || saving}
@@ -245,7 +245,7 @@ export function SavedQueriesPanel({
                   }
                 }}
               >
-                Save
+                {t('savedQueries.save', 'Save')}
               </Button>
             </div>
           </div>

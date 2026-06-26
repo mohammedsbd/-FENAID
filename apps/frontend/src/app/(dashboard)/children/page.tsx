@@ -40,6 +40,7 @@ import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/dashboard/export-button';
 import { exportToCSV, exportToExcelHTML, exportToWordHTML, exportToPDF, escapeHTML, formatEnum } from '@/lib/export';
+import { t as tI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { ChildDrawer } from '@/components/dashboard/child-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
@@ -369,19 +370,19 @@ export default function ChildrenPage() {
             <FilterSelect label={t('children.filter.disabilityType', 'Disability Type')} value={disabilityType} onChange={setDisabilityType}>
               <option value="">{t('children.filter.typesAll', 'All types')}</option>
               {disabilityOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{tI18n(`enum.disabilityType.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('children.filter.severity', 'Severity')} value={severityLevel} onChange={setSeverityLevel}>
               <option value="">{t('children.filter.levelsAll', 'All levels')}</option>
               {severityOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{tI18n(`enum.severity.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('children.filter.status', 'Status')} value={status} onChange={setStatus}>
               <option value="">{t('children.filter.statusesAll', 'All statuses')}</option>
               {statusOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{tI18n(`enum.childStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('children.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={setAssignedStaffId}>
@@ -461,7 +462,7 @@ export default function ChildrenPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <DisabilityIcon type={child.disabilityType} />
-                        <span className="text-sm">{formatEnum(child.disabilityType)}</span>
+                        <span className="text-sm">{tI18n(`enum.disabilityType.${child.disabilityType.toLowerCase()}`, formatEnum(child.disabilityType))}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -632,7 +633,7 @@ function SeverityBadge({ level }: { level: SeverityLevel }) {
     MODERATE: 'bg-amber-50 text-amber-700 border-amber-200',
     SEVERE: 'bg-red-50 text-red-700 border-red-200',
   };
-  return <Badge className={classes[level]}>{formatEnum(level)}</Badge>;
+  return <Badge className={classes[level]}>{tI18n(`enum.severity.${level.toLowerCase()}`, formatEnum(level))}</Badge>;
 }
 
 function StatusBadge({ status }: { status: ChildStatus }) {
@@ -643,7 +644,7 @@ function StatusBadge({ status }: { status: ChildStatus }) {
     INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200',
     DECEASED: 'bg-red-950 text-white border-red-900',
   };
-  return <Badge className={classes[status]}>{formatEnum(status)}</Badge>;
+  return <Badge className={classes[status]}>{tI18n(`enum.childStatus.${status.toLowerCase()}`, formatEnum(status))}</Badge>;
 }
 
 function FilterSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: ReactNode }) {

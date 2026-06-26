@@ -32,6 +32,52 @@ import { useLocale } from '@/components/providers/locale-provider';
 
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
+function translateCellValue(col: string, value: unknown, t: (key: string, fallback?: string) => string, dataSubject: string): string {
+  const str = String(value ?? '');
+  if (!str) return '';
+
+  const enumMap: Record<string, string> = {
+    gender: 'enum.gender',
+    disabilityType: 'enum.disabilityType',
+    severityLevel: 'enum.severity',
+    communicationAbility: 'enum.communication',
+    schoolEnrollmentStatus: 'enum.schoolStatus',
+    financialBracket: 'enum.financialBracket',
+    allocationStatus: 'enum.allocationStatus',
+    employmentStatus: 'enum.employmentStatus',
+    maritalStatus: 'enum.maritalStatus',
+  };
+
+  if (col === 'status') {
+    const prefix = dataSubject === 'PARENT' ? 'enum.parentStatus' : 'enum.childStatus';
+    return t(`${prefix}.${str.toLowerCase()}`, str);
+  }
+
+  if (col === 'disabilityCategory') {
+    const catMap: Record<string, string> = {
+      'autism': 'autism',
+      'down syndrome': 'downSyndrome',
+      'mobility impairment': 'mobilityImpairment',
+      'visual impairment': 'visualImpairment',
+      'hearing impairment': 'hearingImpairment',
+      'speech impairment': 'speechImpairment',
+      'developmental delay': 'developmentalDelay',
+      'other': 'other',
+    };
+    const catKey = catMap[str.toLowerCase()];
+    if (catKey) return t(`enum.disabilityCategory.${catKey}`, str);
+    return str;
+  }
+
+  const prefix = enumMap[col];
+  if (prefix) {
+    const key = str.replace(/[\s-]+/g, '_').toLowerCase();
+    return t(`${prefix}.${key}`, str);
+  }
+
+  return str;
+}
+
 interface ResultsPanelProps {
   dataSubject: string;
   loading: boolean;
@@ -109,18 +155,17 @@ export function ResultsPanel({
     );
   }
 
-  const subjectLabel =
-    dataSubject === 'CHILD'
-      ? 'children'
-      : dataSubject === 'PARENT'
-        ? 'parents'
-        : 'pairs';
+  const subjectLabel = dataSubject === 'CHILD'
+    ? t('dataQuery.children', 'children')
+    : dataSubject === 'PARENT'
+      ? t('dataQuery.parents', 'parents')
+      : t('dataQuery.pairs', 'pairs');
 
   const chartData = {
     disability: result.summary.byDisabilityType ?? [],
     gender: [
-      { name: 'Male', value: result.summary.byGender?.male ?? 0 },
-      { name: 'Female', value: result.summary.byGender?.female ?? 0 },
+      { name: t('enum.gender.male', 'Male'), value: result.summary.byGender?.male ?? 0 },
+      { name: t('enum.gender.female', 'Female'), value: result.summary.byGender?.female ?? 0 },
     ],
     subcity: result.summary.bySubcity ?? [],
     severity: result.summary.bySeverity ?? [],
@@ -131,22 +176,22 @@ export function ResultsPanel({
       <Card className="bg-slate-50">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="text-lg font-bold">
-            Found {result.total} {subjectLabel}
+            {t('dataQuery.found', 'Found')} {result.total} {subjectLabel}
           </p>
           <div className="flex flex-wrap gap-2">
             {result.summary.byGender && (
               <>
                 <Badge variant="outline">
-                  {result.summary.byGender.male} Male
+                  {result.summary.byGender.male} {t('enum.gender.male', 'Male')}
                 </Badge>
                 <Badge variant="outline">
-                  {result.summary.byGender.female} Female
+                  {result.summary.byGender.female} {t('enum.gender.female', 'Female')}
                 </Badge>
               </>
             )}
             {result.summary.byStatus?.slice(0, 4).map((s) => (
               <Badge key={s.status} variant="outline">
-                {s.count} {formatEnum(s.status)}
+                {s.count} {translateCellValue('status', s.status, t, dataSubject)}
               </Badge>
             ))}
           </div>
@@ -159,7 +204,7 @@ export function ResultsPanel({
         className="w-fit"
         onClick={() => setShowCharts(!showCharts)}
       >
-        {showCharts ? 'Hide charts ▲' : 'Show charts ▼'}
+        {showCharts ? t('dataQuery.hideCharts', 'Hide charts') + ' ▲' : t('dataQuery.showCharts', 'Show charts') + ' ▼'}
       </Button>
 
       {showCharts && (
@@ -244,7 +289,7 @@ export function ResultsPanel({
                   className="cursor-pointer whitespace-nowrap"
                   onClick={() => onSort(col)}
                 >
-                  {formatEnum(col)}
+                  {t('column.' + col, formatEnum(col))}
                 </TableHead>
               ))}
             </TableRow>
@@ -258,7 +303,7 @@ export function ResultsPanel({
               >
                 {columns.map((col) => (
                   <TableCell key={col} className="whitespace-nowrap text-sm">
-                    {String(row[col] ?? '')}
+                    {translateCellValue(col, row[col], t, dataSubject)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -269,7 +314,7 @@ export function ResultsPanel({
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Page {result.page} of {result.pages}
+          {t('dataQuery.page', 'Page')} {result.page} {t('dataQuery.of', 'of')} {result.pages}
         </p>
         <div className="flex gap-2">
           <Button
@@ -278,7 +323,7 @@ export function ResultsPanel({
             disabled={result.page <= 1}
             onClick={() => onPageChange(result.page - 1)}
           >
-            Previous
+            {t('dataQuery.previous', 'Previous')}
           </Button>
           <Button
             size="sm"
@@ -286,14 +331,14 @@ export function ResultsPanel({
             disabled={result.page >= result.pages}
             onClick={() => onPageChange(result.page + 1)}
           >
-            Next
+            {t('dataQuery.next', 'Next')}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-white p-3">
         <p className="text-xs text-muted-foreground">
-          Export includes all {result.total} records, not just this page
+          {t('dataQuery.exportIncludes', 'Export includes all')} {result.total} {t('dataQuery.recordsNotJustPage', 'records, not just this page')}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {(isSuperAdmin || canExportIdentified) && (
@@ -304,7 +349,7 @@ export function ResultsPanel({
                 disabled={exporting}
                 onClick={() => onExport('excel')}
               >
-                Export Excel
+                {t('export.excel', 'Export Excel')}
               </Button>
               <Button
                 size="sm"
@@ -312,7 +357,7 @@ export function ResultsPanel({
                 disabled={exporting}
                 onClick={() => onExport('pdf')}
               >
-                Export PDF
+                {t('export.pdf', 'Export PDF')}
               </Button>
             </>
           )}
@@ -321,15 +366,15 @@ export function ResultsPanel({
             disabled={exporting}
             onClick={() => onExport('anonymized_excel')}
           >
-            Export Anonymized Excel
+            {t('export.anonymizedExcel', 'Export Anonymized Excel')}
           </Button>
           {!isSuperAdmin && !canExportIdentified && (
             <span
               className="flex items-center gap-1 text-xs text-muted-foreground"
-              title="Contact your admin to enable full data exports"
+              title={t('dataQuery.contactAdmin', 'Contact your admin to enable full data exports')}
             >
               <Lock className="h-3 w-3" />
-              Identified exports locked
+              {t('dataQuery.identifiedExportsLocked', 'Identified exports locked')}
             </span>
           )}
         </div>
@@ -338,7 +383,7 @@ export function ResultsPanel({
       {selectedRow && (
         <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm border-l bg-white p-4 shadow-2xl">
           <div className="mb-4 flex items-start justify-between">
-            <h3 className="font-semibold">Member Summary</h3>
+            <h3 className="font-semibold">{t('dataQuery.memberSummary', 'Member Summary')}</h3>
             <Button
               size="icon"
               variant="ghost"
@@ -351,9 +396,9 @@ export function ResultsPanel({
             {columns.slice(0, 6).map((col) => (
               <div key={col}>
                 <p className="text-xs text-muted-foreground">
-                  {formatEnum(col)}
+                  {t('column.' + col, formatEnum(col))}
                 </p>
-                <p>{String(selectedRow[col] ?? '')}</p>
+                <p>{translateCellValue(col, selectedRow[col], t, dataSubject)}</p>
               </div>
             ))}
           </div>
@@ -362,7 +407,7 @@ export function ResultsPanel({
               href={`/dashboard/children/${selectedRow._childId}`}
               className="mt-4 inline-flex text-sm font-medium text-primary"
             >
-              View Full Profile →
+              {t('dataQuery.viewFullProfile', 'View Full Profile')} →
             </Link>
           )}
           {typeof selectedRow._parentId === 'string' &&
@@ -371,7 +416,7 @@ export function ResultsPanel({
                 href={`/dashboard/parents/${selectedRow._parentId}`}
                 className="mt-4 inline-flex text-sm font-medium text-primary"
               >
-                View Full Profile →
+                {t('dataQuery.viewFullProfile', 'View Full Profile')} →
               </Link>
             )}
         </div>

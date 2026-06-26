@@ -156,7 +156,7 @@ export function DonationDrawer({ open, onClose, onSuccess }: DonationDrawerProps
                       : "bg-background text-muted-foreground border-input hover:border-primary/20"
                   }`}
                 >
-                  {type}
+                  {t(`enum.donorType.${type.toLowerCase()}`, type)}
                 </button>
               ))}
             </div>

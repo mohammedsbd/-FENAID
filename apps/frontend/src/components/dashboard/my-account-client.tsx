@@ -175,7 +175,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
               </Avatar>
               <div className="text-center md:text-left space-y-1">
                 <h4 className="font-semibold">{t('myAccount.fullName', 'User Profile')}</h4>
-                <p className="text-xs text-muted-foreground">{profile?.role.replace(/_/g, ' ')}</p>
+                <p className="text-xs text-muted-foreground">{t(`enum.role.${profile?.role?.toLowerCase()}`, profile?.role?.replace(/_/g, ' ') || '')}</p>
               </div>
             </div>
 

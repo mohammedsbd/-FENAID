@@ -176,8 +176,8 @@ export default function AppointmentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('appointments.dashboard.allTypes', 'All Types')}</SelectItem>
-            {Object.values(AppointmentType).map(t => (
-              <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
+            {Object.values(AppointmentType).map(typeVal => (
+              <SelectItem key={typeVal} value={typeVal}>{t(`enum.appointmentType.${typeVal.toLowerCase()}`, typeVal.replace(/_/g, ' '))}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -188,8 +188,8 @@ export default function AppointmentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('appointments.dashboard.allStatuses', 'All Statuses')}</SelectItem>
-            {Object.values(AppointmentStatus).map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {Object.values(AppointmentStatus).map(statusVal => (
+              <SelectItem key={statusVal} value={statusVal}>{t(`enum.appointmentStatus.${statusVal.toLowerCase()}`, statusVal.replace(/_/g, ' '))}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -362,7 +362,7 @@ function ListView({ appointments, onEdit, onView }: any) {
               <TableCell className="font-medium">{app.title}</TableCell>
               <TableCell>
                 <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-wider">
-                  {app.type.replace(/_/g, ' ')}
+                  {t(`enum.appointmentType.${app.type.toLowerCase()}`, app.type.replace(/_/g, ' '))}
                 </Badge>
               </TableCell>
               <TableCell>

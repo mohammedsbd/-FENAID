@@ -295,7 +295,7 @@ function ParticipantRow({ label, name, photoUrl, status, onStatusChange, locked,
           </SelectTrigger>
           <SelectContent>
             {Object.values(AttendanceStatus).map(s => (
-              <SelectItem key={s} value={s} className="text-[11px]">{s}</SelectItem>
+              <SelectItem key={s} value={s} className="text-[11px]">{t(`enum.attendanceStatus.${s.toLowerCase()}`, s)}</SelectItem>
             ))}
           </SelectContent>
         </Select>

@@ -112,7 +112,7 @@ export function Sidebar({ user }: { user: any }) {
               <div className="flex flex-col overflow-hidden text-sm">
                 <span className="truncate font-medium">{user?.fullName}</span>
                 <Badge variant="secondary" className="w-fit text-[10px] uppercase">
-                  {user?.role?.replace('_', ' ')}
+                  {t(`enum.role.${user?.role?.toLowerCase()}`, user?.role?.replace('_', ' ') || '')}
                 </Badge>
               </div>
             )}

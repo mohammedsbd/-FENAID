@@ -251,7 +251,7 @@ export function FilterBuilder({
         >
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Min Age</Label>
+              <Label className="text-xs">{t('filterBuilder.minAge', 'Min Age')}</Label>
               <Input
                 type="number"
                 value={filters.child?.ageMin ?? ''}
@@ -263,7 +263,7 @@ export function FilterBuilder({
               />
             </div>
             <div>
-              <Label className="text-xs">Max Age</Label>
+              <Label className="text-xs">{t('filterBuilder.maxAge', 'Max Age')}</Label>
               <Input
                 type="number"
                 value={filters.child?.ageMax ?? ''}
@@ -276,7 +276,7 @@ export function FilterBuilder({
             </div>
           </div>
           <div>
-            <Label className="text-xs">Gender</Label>
+            <Label className="text-xs">{t('filterBuilder.gender', 'Gender')}</Label>
             <select
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
               value={filters.child?.gender ?? ''}
@@ -284,59 +284,59 @@ export function FilterBuilder({
                 updateChild({ gender: e.target.value || undefined })
               }
             >
-              <option value="">Any</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="">{t('filterBuilder.any', 'Any')}</option>
+              <option value="Male">{t('enum.gender.male', 'Male')}</option>
+              <option value="Female">{t('enum.gender.female', 'Female')}</option>
             </select>
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">Disability Type</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.disabilityType', 'Disability Type')}</p>
             <MultiCheckbox
               options={[
-                { value: 'PHYSICAL', label: 'Physical' },
-                { value: 'INTELLECTUAL', label: 'Intellectual' },
-                { value: 'MULTIPLE', label: 'Multiple' },
+                { value: 'PHYSICAL', label: t('enum.disabilityType.physical', 'Physical') },
+                { value: 'INTELLECTUAL', label: t('enum.disabilityType.intellectual', 'Intellectual') },
+                { value: 'MULTIPLE', label: t('enum.disabilityType.multiple', 'Multiple') },
               ]}
               selected={filters.child?.disabilityType ?? []}
               onChange={(values) => updateChild({ disabilityType: values })}
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">Disability Category</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.disabilityCategory', 'Disability Category')}</p>
             <MultiCheckbox
               options={[
-                { value: 'Autism', label: 'Autism' },
-                { value: 'Down Syndrome', label: 'Down Syndrome' },
-                { value: 'Mobility Impairment', label: 'Mobility Impairment' },
-                { value: 'Visual Impairment', label: 'Visual Impairment' },
-                { value: 'Hearing Impairment', label: 'Hearing Impairment' },
-                { value: 'Speech Impairment', label: 'Speech Impairment' },
-                { value: 'Developmental Delay', label: 'Developmental Delay' },
-                { value: 'Other', label: 'Other' },
+                { value: 'Autism', label: t('enum.disabilityCategory.autism', 'Autism') },
+                { value: 'Down Syndrome', label: t('enum.disabilityCategory.downSyndrome', 'Down Syndrome') },
+                { value: 'Mobility Impairment', label: t('enum.disabilityCategory.mobilityImpairment', 'Mobility Impairment') },
+                { value: 'Visual Impairment', label: t('enum.disabilityCategory.visualImpairment', 'Visual Impairment') },
+                { value: 'Hearing Impairment', label: t('enum.disabilityCategory.hearingImpairment', 'Hearing Impairment') },
+                { value: 'Speech Impairment', label: t('enum.disabilityCategory.speechImpairment', 'Speech Impairment') },
+                { value: 'Developmental Delay', label: t('enum.disabilityCategory.developmentalDelay', 'Developmental Delay') },
+                { value: 'Other', label: t('enum.disabilityCategory.other', 'Other') },
               ]}
               selected={filters.child?.disabilityCategory ?? []}
               onChange={(values) => updateChild({ disabilityCategory: values })}
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">Severity Level</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.severityLevel', 'Severity Level')}</p>
             <MultiCheckbox
               options={[
-                { value: 'MILD', label: 'Mild' },
-                { value: 'MODERATE', label: 'Moderate' },
-                { value: 'SEVERE', label: 'Severe' },
+                { value: 'MILD', label: t('enum.severity.mild', 'Mild') },
+                { value: 'MODERATE', label: t('enum.severity.moderate', 'Moderate') },
+                { value: 'SEVERE', label: t('enum.severity.severe', 'Severe') },
               ]}
               selected={filters.child?.severityLevel ?? []}
               onChange={(values) => updateChild({ severityLevel: values })}
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">Communication Ability</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.communicationAbility', 'Communication Ability')}</p>
             <MultiCheckbox
               options={[
-                { value: 'VERBAL', label: 'Verbal' },
-                { value: 'NON_VERBAL', label: 'Non-Verbal' },
-                { value: 'ASSISTED', label: 'Assisted' },
+                { value: 'VERBAL', label: t('enum.communication.verbal', 'Verbal') },
+                { value: 'NON_VERBAL', label: t('enum.communication.non_verbal', 'Non-Verbal') },
+                { value: 'ASSISTED', label: t('enum.communication.assisted', 'Assisted') },
               ]}
               selected={filters.child?.communicationAbility ?? []}
               onChange={(values) =>
@@ -345,12 +345,12 @@ export function FilterBuilder({
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">School Enrollment</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
             <MultiCheckbox
               options={[
-                { value: 'ENROLLED', label: 'Enrolled' },
-                { value: 'NOT_ENROLLED', label: 'Not Enrolled' },
-                { value: 'GRADUATED', label: 'Graduated' },
+                { value: 'ENROLLED', label: t('enum.schoolStatus.enrolled', 'Enrolled') },
+                { value: 'NOT_ENROLLED', label: t('enum.schoolStatus.not_enrolled', 'Not Enrolled') },
+                { value: 'GRADUATED', label: t('enum.schoolStatus.graduated', 'Graduated') },
               ]}
               selected={filters.child?.schoolEnrollmentStatus ?? []}
               onChange={(values) =>
@@ -359,14 +359,14 @@ export function FilterBuilder({
             />
           </div>
           <div>
-            <p className="mb-1 text-xs font-medium">Status</p>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.status', 'Status')}</p>
             <MultiCheckbox
               options={[
-                { value: 'ACTIVE', label: 'Active' },
-                { value: 'GRADUATED', label: 'Graduated' },
-                { value: 'TRANSFERRED', label: 'Transferred' },
-                { value: 'INACTIVE', label: 'Inactive' },
-                { value: 'DECEASED', label: 'Deceased' },
+                { value: 'ACTIVE', label: t('enum.childStatus.active', 'Active') },
+                { value: 'GRADUATED', label: t('enum.childStatus.graduated', 'Graduated') },
+                { value: 'TRANSFERRED', label: t('enum.childStatus.transferred', 'Transferred') },
+                { value: 'INACTIVE', label: t('enum.childStatus.inactive', 'Inactive') },
+                { value: 'DECEASED', label: t('enum.childStatus.deceased', 'Deceased') },
               ]}
               selected={filters.child?.status ?? []}
               onChange={(values) => updateChild({ status: values })}
@@ -394,24 +394,30 @@ export function FilterBuilder({
           title={t('dataQuery.parentDemo', 'Parent Demographics')}
           badge={countSectionFilters(filters.parent as Record<string, unknown>)}
         >
-          <MultiCheckbox
-            options={[
-              { value: 'LOW', label: 'Low' },
-              { value: 'MEDIUM', label: 'Medium' },
-              { value: 'HIGH', label: 'High' },
-            ]}
-            selected={filters.parent?.financialBracket ?? []}
-            onChange={(values) => updateParent({ financialBracket: values })}
-          />
-          <MultiCheckbox
-            options={[
-              { value: 'ACTIVE', label: 'Active' },
-              { value: 'INACTIVE', label: 'Inactive' },
-              { value: 'UNDER_REVIEW', label: 'Under Review' },
-            ]}
-            selected={filters.parent?.status ?? []}
-            onChange={(values) => updateParent({ status: values })}
-          />
+          <div>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.financialBracket', 'Financial Bracket')}</p>
+            <MultiCheckbox
+              options={[
+                { value: 'LOW', label: t('enum.financialBracket.low', 'Low') },
+                { value: 'MEDIUM', label: t('enum.financialBracket.medium', 'Medium') },
+                { value: 'HIGH', label: t('enum.financialBracket.high', 'High') },
+              ]}
+              selected={filters.parent?.financialBracket ?? []}
+              onChange={(values) => updateParent({ financialBracket: values })}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.parentStatus', 'Parent Status')}</p>
+            <MultiCheckbox
+              options={[
+                { value: 'ACTIVE', label: t('enum.parentStatus.active', 'Active') },
+                { value: 'INACTIVE', label: t('enum.parentStatus.inactive', 'Inactive') },
+                { value: 'UNDER_REVIEW', label: t('enum.parentStatus.underReview', 'Under Review') },
+              ]}
+              selected={filters.parent?.status ?? []}
+              onChange={(values) => updateParent({ status: values })}
+            />
+          </div>
         </Section>
 
         <Section
@@ -421,7 +427,7 @@ export function FilterBuilder({
           )}
         >
           <Input
-            placeholder="City"
+            placeholder={t('filterBuilder.city', 'City')}
             value={filters.location?.city ?? ''}
             onChange={(e) =>
               updateLocation({ city: e.target.value || undefined })
@@ -447,7 +453,7 @@ export function FilterBuilder({
                 updateServices({ hasNoService: Boolean(checked) })
               }
             />
-            Has NO service assigned
+            {t('filterBuilder.hasNoService', 'Has NO service assigned')}
           </label>
           {!filters.services?.hasNoService && (
             <MultiCheckbox
@@ -471,7 +477,7 @@ export function FilterBuilder({
                 updateTraining({ hasNeverAttended: Boolean(checked) })
               }
             />
-            Has NEVER attended
+            {t('filterBuilder.hasNeverAttended', 'Has NEVER attended')}
           </label>
           {!filters.training?.hasNeverAttended && (
             <select
@@ -483,7 +489,7 @@ export function FilterBuilder({
                 })
               }
             >
-              <option value="">Any appointment</option>
+              <option value="">{t('filterBuilder.anyAppointment', 'Any appointment')}</option>
               {appointments.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.title}
@@ -501,9 +507,9 @@ export function FilterBuilder({
         >
           <MultiCheckbox
             options={[
-              { value: 'ALLOCATED', label: 'Allocated' },
-              { value: 'DISBURSED', label: 'Disbursed' },
-              { value: 'PARTIALLY_DISBURSED', label: 'Partially Disbursed' },
+              { value: 'ALLOCATED', label: t('enum.allocationStatus.allocated', 'Allocated') },
+              { value: 'DISBURSED', label: t('enum.allocationStatus.disbursed', 'Disbursed') },
+              { value: 'PARTIALLY_DISBURSED', label: t('enum.allocationStatus.partiallyDisbursed', 'Partially Disbursed') },
             ]}
             selected={filters.financial?.allocationStatus ?? []}
             onChange={(values) => updateFinancial({ allocationStatus: values })}
@@ -517,7 +523,7 @@ export function FilterBuilder({
           )}
         >
           <div>
-            <Label className="text-xs">No note in the last N days</Label>
+            <Label className="text-xs">{t('filterBuilder.noNoteInLastNDays', 'No note in the last N days')}</Label>
             <Input
               type="number"
               value={filters.progress?.noNoteInLastDays ?? ''}
@@ -546,7 +552,7 @@ export function FilterBuilder({
               updateCaseWorker({ staffId: e.target.value || undefined })
             }
           >
-            <option value="">Any case worker</option>
+            <option value="">{t('filterBuilder.anyCaseWorker', 'Any case worker')}</option>
             {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.fullName}
@@ -563,7 +569,7 @@ export function FilterBuilder({
                 })
               }
             />
-            Unassigned
+            {t('filterBuilder.unassigned', 'Unassigned')}
           </label>
         </Section>
 
@@ -574,7 +580,7 @@ export function FilterBuilder({
           {Object.entries(COLUMN_GROUPS).map(([group, cols]) => (
             <div key={group} className="mb-3">
               <p className="mb-1 text-xs font-medium text-muted-foreground">
-                {group}
+                {t('columnGroup.' + group.toLowerCase(), group)}
               </p>
               <div className="grid grid-cols-1 gap-1">
                 {cols.map((col) => (
@@ -592,7 +598,7 @@ export function FilterBuilder({
                         );
                       }}
                     />
-                    {col.label}
+                    {t('column.' + group.toLowerCase() + '.' + col.key, col.label)}
                   </label>
                 ))}
               </div>
@@ -604,11 +610,11 @@ export function FilterBuilder({
               value={sortBy}
               onChange={(e) => onSortByChange(e.target.value)}
             >
-              {allColumnOptions.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
+                  {allColumnOptions.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {t('column.' + c.key, c.label)}
+                    </option>
+                  ))}
             </select>
             <Button
               type="button"
@@ -618,7 +624,7 @@ export function FilterBuilder({
                 onSortDirChange(sortDir === 'asc' ? 'desc' : 'asc')
               }
             >
-              {sortDir.toUpperCase()}
+              {t('dataQuery.' + sortDir, sortDir.toUpperCase())}
             </Button>
           </div>
           <label className="mt-3 flex items-center gap-2 text-sm">
@@ -633,7 +639,7 @@ export function FilterBuilder({
 
       <div className="sticky bottom-0 space-y-2 border-t bg-white pt-4">
         <Button className="w-full" onClick={onRun} disabled={running}>
-          {running ? 'Running...' : t('dataQuery.run', 'Run Query')}
+          {running ? t('dataQuery.running', 'Running...') : t('dataQuery.run', 'Run Query')}
         </Button>
         <Button
           type="button"

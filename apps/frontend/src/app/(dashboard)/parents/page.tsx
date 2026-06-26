@@ -36,6 +36,7 @@ import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { ExportButton } from '@/components/dashboard/export-button';
 import { exportToCSV, exportToExcelHTML, exportToWordHTML, exportToPDF, escapeHTML, formatEnum } from '@/lib/export';
+import { t as tI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { ParentDrawer } from '@/components/dashboard/parent-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
@@ -386,13 +387,13 @@ export default function ParentsPage() {
             <FilterSelect label={t('parents.filter.status', 'Status')} value={status} onChange={setStatus}>
               <option value="">{t('parents.filter.statusAll', 'All statuses')}</option>
               {statusOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{tI18n(`enum.parentStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={setFinancialBracket}>
               <option value="">{t('parents.filter.bracketAll', 'All brackets')}</option>
               {bracketOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{tI18n(`enum.financialBracket.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('parents.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={setAssignedStaffId}>
@@ -625,7 +626,7 @@ function StatusBadge({ status }: { status: ParentStatus }) {
     INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200',
   };
 
-  return <Badge className={classes[status]}>{formatEnum(status)}</Badge>;
+  return <Badge className={classes[status]}>{tI18n(`enum.parentStatus.${status.toLowerCase()}`, formatEnum(status))}</Badge>;
 }
 
 function BracketBadge({ bracket }: { bracket: FinancialBracket }) {
@@ -635,7 +636,7 @@ function BracketBadge({ bracket }: { bracket: FinancialBracket }) {
     HIGH: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 
-  return <Badge className={classes[bracket]}>{formatEnum(bracket)}</Badge>;
+  return <Badge className={classes[bracket]}>{tI18n(`enum.financialBracket.${bracket.toLowerCase()}`, formatEnum(bracket))}</Badge>;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

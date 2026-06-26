@@ -192,8 +192,8 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                   <SelectValue placeholder={t('appointmentDrawer.typePlaceholder', 'Select type')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(AppointmentType).map((t) => (
-                    <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
+                  {Object.values(AppointmentType).map((typeVal) => (
+                    <SelectItem key={typeVal} value={typeVal}>{t(`enum.appointmentType.${typeVal.toLowerCase()}`, typeVal.replace(/_/g, ' '))}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

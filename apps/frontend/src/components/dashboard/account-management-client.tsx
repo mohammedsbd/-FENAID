@@ -414,7 +414,7 @@ export function AccountManagementClient({ currentUser }: Props) {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline">{account.role.replace('_', ' ')}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{t(`enum.role.${account.role.toLowerCase()}`, account.role.replace('_', ' '))}</Badge></TableCell>
                       <TableCell>{account.deletedAt ? <Badge variant="destructive">{t('accounts.deleted', 'Deleted')}</Badge> : account.isActive ? <Badge className="bg-emerald-50 text-emerald-700">{t('accounts.active', 'Active')}</Badge> : <Badge variant="secondary">{t('accounts.inactive', 'Inactive')}</Badge>}</TableCell>
                       <TableCell>{account._count?.sessions || 0}</TableCell>
                       <TableCell>

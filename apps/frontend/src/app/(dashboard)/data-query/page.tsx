@@ -174,7 +174,7 @@ export default function DataQueryPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {t(
               'dataQuery.subtitle',
-              'የውሂብ መጠይቅ ማዕከል — Build custom queries and export reports',
+              'Build custom queries and export reports',
             )}
           </p>
         </div>

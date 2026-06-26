@@ -451,7 +451,7 @@ export default function FinanceClient() {
                           item.status === 'DISBURSED' && "bg-green-50 text-green-700 border-green-200"
                         )}
                       >
-                        {item.status}
+                        {t(`enum.allocationStatus.${item.status.toLowerCase()}`, item.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
@@ -513,7 +513,7 @@ export default function FinanceClient() {
                     <TableCell className="font-medium">{item.donorName}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                        {item.donorType}
+                        {t(`enum.donorType.${item.donorType.toLowerCase()}`, item.donorType)}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-semibold">{item.amount.toLocaleString()} ETB</TableCell>
