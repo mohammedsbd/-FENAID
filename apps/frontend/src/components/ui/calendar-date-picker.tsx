@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,144 +108,245 @@ export function CalendarDatePicker({
         <CalendarDays className="h-4 w-4 text-muted-foreground" />
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-12 z-[70] w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white p-3 shadow-lg">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() =>
-                setViewIso(
-                  calendarSystem === 'ETHIOPIAN'
-                    ? addEthiopianMonths(viewIso, -1)
-                    : addGregorianMonths(viewIso, -1),
-                )
-              }
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="min-w-0 text-center">
-              <p className="text-sm font-semibold">{grid.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {calendarSystem === 'ETHIOPIAN' ? 'Ethiopian calendar' : 'Gregorian calendar'}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() =>
-                setViewIso(
-                  calendarSystem === 'ETHIOPIAN'
-                    ? addEthiopianMonths(viewIso, 1)
-                    : addGregorianMonths(viewIso, 1),
-                )
-              }
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Input
-              inputMode="numeric"
-              value={grid.year}
-              onChange={(event) => {
-                const nextYear = clampYear(Number(event.target.value), minYear, maxYear);
-                setViewIso(setCalendarYearMonth(viewIso, calendarSystem, nextYear, grid.month));
-              }}
-              className="h-9"
-            />
-            <select
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-              value={grid.month}
-              onChange={(event) =>
-                setViewIso(
-                  setCalendarYearMonth(
-                    viewIso,
-                    calendarSystem,
-                    grid.year,
-                    Number(event.target.value),
-                  ),
-                )
-              }
-            >
-              {grid.months.map((monthName, index) => (
-                <option key={monthName} value={index + 1}>
-                  {monthName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-              <div key={`${day}-${index}`} className="h-6 leading-6">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-1 grid grid-cols-7 gap-1">
-            {grid.days.map((day, index) =>
-              day ? (
-                <button
-                  type="button"
-                  key={day.iso}
-                  onClick={() => {
-                    onChange(day.iso);
-                    setViewIso(day.iso);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'h-8 rounded-md text-sm transition hover:bg-muted',
-                    day.iso === selectedIso && 'bg-primary text-primary-foreground hover:bg-primary',
-                    day.iso === todayIso() && day.iso !== selectedIso && 'border border-primary text-primary',
-                  )}
-                >
-                  {day.label}
-                </button>
-              ) : (
-                <span key={`empty-${index}`} className="h-8" />
-              ),
-            )}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between border-t pt-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => {
-                onChange('');
-                setOpen(false);
-              }}
-            >
-              <X className="h-4 w-4" />
-              Clear
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => {
-                const today = todayIso();
-                onChange(today);
-                setViewIso(today);
-                setOpen(false);
-              }}
-            >
-              Today
-            </Button>
-          </div>
-        </div>
+      {open && typeof document === 'object' && createPortal(
+        <CalendarDatePickerPopup
+          grid={grid}
+          calendarSystem={calendarSystem}
+          selectedIso={selectedIso}
+          viewIso={viewIso}
+          minYear={minYear}
+          maxYear={maxYear}
+          wrapperRef={wrapperRef}
+          onSelect={(iso) => {
+            onChange(iso);
+            setViewIso(iso);
+            setOpen(false);
+          }}
+          onClear={() => {
+            onChange('');
+            setOpen(false);
+          }}
+          onToday={() => {
+            const today = todayIso();
+            onChange(today);
+            setViewIso(today);
+            setOpen(false);
+          }}
+          onPrevMonth={() =>
+            setViewIso(
+              calendarSystem === 'ETHIOPIAN'
+                ? addEthiopianMonths(viewIso, -1)
+                : addGregorianMonths(viewIso, -1),
+            )
+          }
+          onNextMonth={() =>
+            setViewIso(
+              calendarSystem === 'ETHIOPIAN'
+                ? addEthiopianMonths(viewIso, 1)
+                : addGregorianMonths(viewIso, 1),
+            )
+          }
+          onYearChange={(year) =>
+            setViewIso(setCalendarYearMonth(viewIso, calendarSystem, year, grid.month))
+          }
+          onMonthChange={(month) =>
+            setViewIso(setCalendarYearMonth(viewIso, calendarSystem, grid.year, month))
+          }
+        />,
+        document.body,
       )}
     </div>
+  );
+}
+
+function CalendarDatePickerPopup({
+  grid,
+  calendarSystem,
+  selectedIso,
+  viewIso,
+  minYear,
+  maxYear,
+  wrapperRef,
+  onSelect,
+  onClear,
+  onToday,
+  onPrevMonth,
+  onNextMonth,
+  onYearChange,
+  onMonthChange,
+}: {
+  grid: ReturnType<typeof buildMonthGrid>;
+  calendarSystem: CalendarSystem;
+  selectedIso: string;
+  viewIso: string;
+  minYear: number;
+  maxYear: number;
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
+  onSelect: (iso: string) => void;
+  onClear: () => void;
+  onToday: () => void;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onYearChange: (year: number) => void;
+  onMonthChange: (month: number) => void;
+}) {
+  const [style, setStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    setStyle({
+      position: 'fixed',
+      left: rect.left,
+      top: rect.bottom + 4,
+      zIndex: 70,
+    });
+
+    function updatePosition() {
+      if (!wrapperRef.current) return;
+      const r = wrapperRef.current.getBoundingClientRect();
+      setStyle({ position: 'fixed', left: r.left, top: r.bottom + 4, zIndex: 70 });
+    }
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, []);
+
+  return (
+    <div
+      style={style}
+      className="w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white p-3 shadow-lg"
+    >
+      <CalendarDatePickerControls
+        grid={grid}
+        calendarSystem={calendarSystem}
+        selectedIso={selectedIso}
+        viewIso={viewIso}
+        minYear={minYear}
+        maxYear={maxYear}
+        onSelect={onSelect}
+        onClear={onClear}
+        onToday={onToday}
+        onPrevMonth={onPrevMonth}
+        onNextMonth={onNextMonth}
+        onYearChange={onYearChange}
+        onMonthChange={onMonthChange}
+      />
+    </div>
+  );
+}
+
+function CalendarDatePickerControls({
+  grid,
+  calendarSystem,
+  selectedIso,
+  viewIso,
+  minYear,
+  maxYear,
+  onSelect,
+  onClear,
+  onToday,
+  onPrevMonth,
+  onNextMonth,
+  onYearChange,
+  onMonthChange,
+}: {
+  grid: ReturnType<typeof buildMonthGrid>;
+  calendarSystem: CalendarSystem;
+  selectedIso: string;
+  viewIso: string;
+  minYear: number;
+  maxYear: number;
+  onSelect: (iso: string) => void;
+  onClear: () => void;
+  onToday: () => void;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onYearChange: (year: number) => void;
+  onMonthChange: (month: number) => void;
+}) {
+  const { t } = { t: (key: string, fallback?: string) => fallback || key };
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onPrevMonth}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="min-w-0 text-center">
+          <p className="text-sm font-semibold">{grid.title}</p>
+          <p className="text-xs text-muted-foreground">
+            {calendarSystem === 'ETHIOPIAN' ? 'Ethiopian calendar' : 'Gregorian calendar'}
+          </p>
+        </div>
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onNextMonth}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Input
+          inputMode="numeric"
+          value={grid.year}
+          onChange={(event) => onYearChange(clampYear(Number(event.target.value), minYear, maxYear))}
+          className="h-9"
+        />
+        <select
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          value={grid.month}
+          onChange={(event) => onMonthChange(Number(event.target.value))}
+        >
+          {grid.months.map((monthName, index) => (
+            <option key={monthName} value={index + 1}>
+              {monthName}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+          <div key={`${day}-${index}`} className="h-6 leading-6">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {grid.days.map((day, index) =>
+          day ? (
+            <button
+              type="button"
+              key={day.iso}
+              onClick={() => onSelect(day.iso)}
+              className={cn(
+                'h-8 rounded-md text-sm transition hover:bg-muted',
+                day.iso === selectedIso && 'bg-primary text-primary-foreground hover:bg-primary',
+                day.iso === todayIso() && day.iso !== selectedIso && 'border border-primary text-primary',
+              )}
+            >
+              {day.label}
+            </button>
+          ) : (
+            <span key={`empty-${index}`} className="h-8" />
+          ),
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between border-t pt-3">
+        <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={onClear}>
+          <X className="h-4 w-4" />
+          Clear
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="h-8 px-2" onClick={onToday}>
+          Today
+        </Button>
+      </div>
+    </>
   );
 }
 

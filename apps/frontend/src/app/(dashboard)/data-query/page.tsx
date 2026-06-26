@@ -1,7 +1,7 @@
 'use client';
 
 import type { DataQueryFilters, DataQueryResponse } from '@fikir/types';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FilterBuilder } from '@/components/data-query/filter-builder';
 import { ResultsPanel } from '@/components/data-query/results-panel';
 import {
@@ -31,6 +31,8 @@ export default function DataQueryPage() {
   const session = getSession();
   const { t } = useLocale();
   const [activeTab, setActiveTab] = useState<Tab>('builder');
+  const [filterWidth, setFilterWidth] = useState(300);
+  const resizing = useRef(false);
   const [dataSubject, setDataSubject] = useState<DataSubject>('CHILD');
   const [filters, setFilters] = useState<DataQueryFilters>(emptyFilters());
   const [columns, setColumns] = useState<string[]>(DEFAULT_COLUMNS.CHILD);
@@ -199,45 +201,69 @@ export default function DataQueryPage() {
           <StatisticsOverview />
         </div>
       ) : (
-        <div
-          className={cn(
-            'grid flex-1 min-h-0 gap-4',
-            savedCollapsed
-              ? 'lg:grid-cols-[minmax(280px,320px)_1fr_40px]'
-              : 'lg:grid-cols-[minmax(280px,320px)_1fr_minmax(220px,280px)]',
-          )}
-        >
-          <Card className="flex flex-col overflow-hidden">
-            <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-              <div className="border-b bg-slate-50 px-4 py-3">
-                <h2 className="text-sm font-semibold text-primary">{t('dataQuery.filtersTitle', 'Filters')}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {t('dataQuery.filtersDesc', 'Define criteria, then run your query')}
-                </p>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                <FilterBuilder
-                  dataSubject={dataSubject}
-                  onDataSubjectChange={handleDataSubjectChange}
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  columns={columns}
-                  onColumnsChange={setColumns}
-                  sortBy={sortBy}
-                  onSortByChange={setSortBy}
-                  sortDir={sortDir}
-                  onSortDirChange={setSortDir}
-                  anonymize={anonymize}
-                  onAnonymizeChange={setAnonymize}
-                  onRun={() => void runQuery(1)}
-                  onClear={handleClear}
-                  running={loading}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-1 min-h-0 gap-0">
+          <div style={{ width: filterWidth, minWidth: 220, maxWidth: 500 }} className="shrink-0">
+            <Card className="flex flex-col h-full overflow-hidden rounded-r-none border-r-0">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                <div className="border-b bg-slate-50 px-4 py-3">
+                  <h2 className="text-sm font-semibold text-primary">{t('dataQuery.filtersTitle', 'Filters')}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {t('dataQuery.filtersDesc', 'Define criteria, then run your query')}
+                  </p>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  <FilterBuilder
+                    dataSubject={dataSubject}
+                    onDataSubjectChange={handleDataSubjectChange}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    columns={columns}
+                    onColumnsChange={setColumns}
+                    sortBy={sortBy}
+                    onSortByChange={setSortBy}
+                    sortDir={sortDir}
+                    onSortDirChange={setSortDir}
+                    anonymize={anonymize}
+                    onAnonymizeChange={setAnonymize}
+                    onRun={() => void runQuery(1)}
+                    onClear={handleClear}
+                    running={loading}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="flex min-w-0 flex-col overflow-hidden">
+          <div
+            className="w-1.5 cursor-col-resize shrink-0 bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors relative"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              resizing.current = true;
+              const startX = e.clientX;
+              const startWidth = filterWidth;
+
+              function onMouseMove(ev: MouseEvent) {
+                if (!resizing.current) return;
+                const newWidth = Math.max(220, Math.min(500, startWidth + ev.clientX - startX));
+                setFilterWidth(newWidth);
+              }
+
+              function onMouseUp() {
+                resizing.current = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+              }
+
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+              document.body.style.cursor = 'col-resize';
+              document.body.style.userSelect = 'none';
+            }}
+          />
+
+          <Card className="flex flex-1 min-w-0 flex-col overflow-hidden rounded-l-none">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
               <div className="border-b bg-slate-50 px-4 py-3">
                 <h2 className="text-sm font-semibold text-primary">{t('dataQuery.resultsTitle', 'Results')}</h2>
@@ -271,25 +297,51 @@ export default function DataQueryPage() {
             </CardContent>
           </Card>
 
-          <Card className="flex flex-col overflow-hidden p-0">
-            <SavedQueriesPanel
-              mine={savedMine}
-              orgWide={savedOrg}
-              canSave={hasRun && Boolean(result)}
-              collapsed={savedCollapsed}
-              onToggleCollapse={() => setSavedCollapsed(!savedCollapsed)}
-              onSave={handleSaveQuery}
-              onRun={handleRunSaved}
-              onDelete={async (id) => {
-                await api.delete(`/data-query/saved/${id}`);
-                await loadSaved();
-              }}
-              onUpdate={async (id, payload) => {
-                await api.put(`/data-query/saved/${id}`, payload);
-                await loadSaved();
-              }}
-            />
-          </Card>
+          {savedCollapsed ? (
+            <div className="w-10 shrink-0">
+              <Card className="flex flex-col h-full overflow-hidden p-0">
+                <SavedQueriesPanel
+                  mine={savedMine}
+                  orgWide={savedOrg}
+                  canSave={hasRun && Boolean(result)}
+                  collapsed={savedCollapsed}
+                  onToggleCollapse={() => setSavedCollapsed(!savedCollapsed)}
+                  onSave={handleSaveQuery}
+                  onRun={handleRunSaved}
+                  onDelete={async (id) => {
+                    await api.delete(`/data-query/saved/${id}`);
+                    await loadSaved();
+                  }}
+                  onUpdate={async (id, payload) => {
+                    await api.put(`/data-query/saved/${id}`, payload);
+                    await loadSaved();
+                  }}
+                />
+              </Card>
+            </div>
+          ) : (
+            <div className="w-60 shrink-0">
+              <Card className="flex flex-col h-full overflow-hidden p-0">
+                <SavedQueriesPanel
+                  mine={savedMine}
+                  orgWide={savedOrg}
+                  canSave={hasRun && Boolean(result)}
+                  collapsed={savedCollapsed}
+                  onToggleCollapse={() => setSavedCollapsed(!savedCollapsed)}
+                  onSave={handleSaveQuery}
+                  onRun={handleRunSaved}
+                  onDelete={async (id) => {
+                    await api.delete(`/data-query/saved/${id}`);
+                    await loadSaved();
+                  }}
+                  onUpdate={async (id, payload) => {
+                    await api.put(`/data-query/saved/${id}`, payload);
+                    await loadSaved();
+                  }}
+                />
+              </Card>
+            </div>
+          )}
         </div>
       )}
     </div>
