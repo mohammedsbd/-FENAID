@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { t as tFn, loadLocale, getLocale, subscribe } from '@/lib/i18n';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { t as tFn, loadLocale, setDictionary } from '@/lib/i18n';
 
 type LocaleContextType = {
   t: typeof tFn;
@@ -15,22 +15,16 @@ const LocaleContext = createContext<LocaleContextType>({
   setLocale: async () => {},
 });
 
-export function LocaleProvider({ children, initialLocale }: { children: ReactNode; initialLocale: string }) {
+export function LocaleProvider({ children, initialLocale, initialDictionary }: { children: ReactNode; initialLocale: string; initialDictionary?: Record<string, string> }) {
   const [locale, setLocaleState] = useState(initialLocale);
 
-  useEffect(() => {
-    loadLocale(initialLocale);
-  }, []);
-
-  useEffect(() => {
-    const unsub = subscribe(() => {
-      setLocaleState(getLocale());
-    });
-    return unsub;
-  }, []);
+  if (initialDictionary) {
+    setDictionary(initialDictionary);
+  }
 
   const setLocale = useCallback(async (newLocale: string) => {
     document.cookie = `locale=${newLocale};path=/;max-age=31536000`;
+    setLocaleState(newLocale);
     await loadLocale(newLocale);
   }, []);
 
