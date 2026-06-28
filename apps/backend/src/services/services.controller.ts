@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -44,5 +45,11 @@ export class ServicesController {
     @Body() dto: UpdateServiceDto,
   ) {
     return this.servicesService.update(req.user.staffId, id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(StaffRole.SUPER_ADMIN)
+  remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.servicesService.deactivate(req.user.staffId, id);
   }
 }

@@ -61,4 +61,8 @@ export class ListServicesDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

@@ -27,8 +27,14 @@ export class ServiceAssignmentsService {
     if (dto.targetType === ServiceTargetType.CHILD && !dto.childId) {
       throw new BadRequestException('childId is required for targetType CHILD');
     }
+    if (dto.targetType === ServiceTargetType.PARENT && dto.childId) {
+      throw new BadRequestException('childId must be null for targetType PARENT');
+    }
+    if (dto.targetType === ServiceTargetType.CHILD && dto.parentId) {
+      throw new BadRequestException('parentId must be null for targetType CHILD');
+    }
 
-    // Verify service exists and matches targetType
+    // Verify service exists and is active
     const service = await this.prisma.service.findUnique({
       where: { id: dto.serviceId },
     });
@@ -37,9 +43,32 @@ export class ServiceAssignmentsService {
       throw new NotFoundException('Service not found');
     }
 
+    if (!service.isActive) {
+      throw new BadRequestException('Cannot assign an inactive service');
+    }
+
     if (service.targetType !== dto.targetType) {
       throw new BadRequestException(
         `Service targetType (${service.targetType}) does not match assignment targetType (${dto.targetType})`,
+      );
+    }
+
+    // Check for duplicate active assignment
+    const targetId = dto.targetType === ServiceTargetType.PARENT ? dto.parentId : dto.childId;
+    const existingActive = await this.prisma.serviceAssignment.findFirst({
+      where: {
+        serviceId: dto.serviceId,
+        targetType: dto.targetType,
+        parentId: dto.parentId ?? null,
+        childId: dto.childId ?? null,
+        status: { in: ['PENDING', 'ACTIVE'] },
+      },
+    });
+
+    if (existingActive) {
+      throw new BadRequestException(
+        'This service is already assigned to this person with status: ' +
+          existingActive.status.toLowerCase(),
       );
     }
 
@@ -83,24 +112,46 @@ export class ServiceAssignmentsService {
   }
 
   async findAll(query: ListServiceAssignmentsDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
     const where: Prisma.ServiceAssignmentWhereInput = {
       ...(query.status && { status: query.status }),
       ...(query.targetType && { targetType: query.targetType }),
       ...(query.assignedStaffId && { assignedStaffId: query.assignedStaffId }),
       ...(query.parentId && { parentId: query.parentId }),
       ...(query.childId && { childId: query.childId }),
+      ...(query.search && {
+        OR: [
+          { parent: { fullName: { contains: query.search, mode: 'insensitive' } } },
+          { child: { fullName: { contains: query.search, mode: 'insensitive' } } },
+        ],
+      }),
     };
 
-    return this.prisma.serviceAssignment.findMany({
-      where,
-      include: {
-        service: true,
-        parent: { select: { fullName: true, photoUrl: true } },
-        child: { select: { fullName: true, photoUrl: true } },
-        assignedStaff: { select: { fullName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.serviceAssignment.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          service: true,
+          parent: { select: { fullName: true, id: true, photoUrl: true } },
+          child: { select: { fullName: true, id: true, photoUrl: true } },
+          assignedStaff: { select: { fullName: true, id: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.serviceAssignment.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findByParent(parentId: string) {
@@ -146,11 +197,27 @@ export class ServiceAssignmentsService {
   async update(staffId: string, id: string, dto: UpdateServiceAssignmentDto) {
     const existing = await this.findOne(id);
 
+    // Auto-set endDate to today if status changes to COMPLETED
+    let endDate = dto.endDate ? new Date(dto.endDate) : undefined;
+    if (dto.status === 'COMPLETED' && !endDate) {
+      endDate = new Date();
+    }
+
+    const updateData: Prisma.ServiceAssignmentUpdateInput = {};
+    if (dto.status) updateData.status = dto.status;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (endDate !== undefined) updateData.endDate = endDate;
+    if (dto.deliveryMethod) updateData.deliveryMethod = dto.deliveryMethod;
+    if (dto.frequency) updateData.frequency = dto.frequency;
+
     const updated = await this.prisma.serviceAssignment.update({
       where: { id },
-      data: {
-        status: dto.status,
-        notes: dto.notes,
+      data: updateData,
+      include: {
+        service: true,
+        parent: { select: { fullName: true, id: true, photoUrl: true } },
+        child: { select: { fullName: true, id: true, photoUrl: true } },
+        assignedStaff: { select: { fullName: true, id: true } },
       },
     });
 

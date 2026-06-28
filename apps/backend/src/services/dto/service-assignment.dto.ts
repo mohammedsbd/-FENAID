@@ -4,6 +4,7 @@ import {
   ServiceFrequency,
   ServiceTargetType,
 } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
@@ -66,6 +67,18 @@ export class UpdateServiceAssignmentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsEnum(ServiceDeliveryMethod)
+  deliveryMethod?: ServiceDeliveryMethod;
+
+  @IsOptional()
+  @IsEnum(ServiceFrequency)
+  frequency?: ServiceFrequency;
 }
 
 export class ListServiceAssignmentsDto {
@@ -88,4 +101,16 @@ export class ListServiceAssignmentsDto {
   @IsOptional()
   @IsString()
   childId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

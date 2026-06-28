@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, ServiceTargetType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -30,12 +34,36 @@ export class ServicesService {
     const where: Prisma.ServiceWhereInput = {
       ...(query.targetType && { targetType: query.targetType }),
       ...(query.isActive !== undefined && { isActive: query.isActive }),
+      ...(query.search && {
+        OR: [
+          { name: { contains: query.search, mode: 'insensitive' } },
+          { category: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }),
     };
 
-    return this.prisma.service.findMany({
+    const services = await this.prisma.service.findMany({
       where,
       orderBy: { name: 'asc' },
     });
+
+    // Get active assignment counts for each service
+    const servicesWithCounts = await Promise.all(
+      services.map(async (service) => {
+        const activeAssignments = await this.prisma.serviceAssignment.count({
+          where: {
+            serviceId: service.id,
+            status: { in: ['PENDING', 'ACTIVE'] },
+          },
+        });
+        return {
+          ...service,
+          activeAssignmentCount: activeAssignments,
+        };
+      }),
+    );
+
+    return servicesWithCounts;
   }
 
   async findOne(id: string) {
@@ -65,6 +93,32 @@ export class ServicesService {
     });
 
     await this.logAudit(staffId, 'UPDATE', id, updated, existing);
+    return updated;
+  }
+
+  async deactivate(staffId: string, id: string) {
+    const service = await this.findOne(id);
+
+    // Check if service has any active assignments
+    const activeAssignments = await this.prisma.serviceAssignment.count({
+      where: {
+        serviceId: id,
+        status: { in: ['PENDING', 'ACTIVE'] },
+      },
+    });
+
+    if (activeAssignments > 0) {
+      throw new BadRequestException(
+        'Cannot deactivate a service with active assignments',
+      );
+    }
+
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    await this.logAudit(staffId, 'DEACTIVATE', id, updated, service);
     return updated;
   }
 
