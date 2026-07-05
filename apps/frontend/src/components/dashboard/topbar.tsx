@@ -5,19 +5,34 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/providers/locale-provider';
+import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+import {
+  gregorianToEthiopian,
+  ethiopianMonths,
+  ethiopianToGregorian,
+  toIsoDateInputValue,
+  daysInGregorianMonth,
+  daysInEthiopianMonth,
+} from '@/lib/calendar';
 import {
   Activity,
   ArrowRight,
   Baby,
   Bell,
   CalendarClock,
+  CalendarDays,
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
+  Clock,
   FileText,
   HeartHandshake,
   Loader2,
+  LogOut,
   Search,
   ShieldAlert,
+  UserRound,
   Users,
   Wrench,
   X,
@@ -27,6 +42,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
+import { logout } from '@/lib/auth';
+import Link from 'next/link';
 
 type Notification = {
   id: string;
@@ -89,7 +106,15 @@ const notificationStyles: Record<
   },
 };
 
-export function Topbar() {
+const notificationGroupLabels: Record<NotificationGroup, string> = {
+  Finance: 'topbar.notifFinance',
+  Records: 'topbar.notifRecords',
+  'Follow-up': 'topbar.notifFollowUp',
+  Operations: 'topbar.notifOperations',
+  Security: 'topbar.notifSecurity',
+};
+
+export function Topbar({ user }: { user?: any }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLocale();
@@ -102,6 +127,8 @@ export function Topbar() {
   const [searchResults, setSearchResults] = useState<GlobalSearchResponse | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement | null>(null);
 
   // Helper to generate dynamic title from pathname
   const getPageTitle = () => {
@@ -144,6 +171,14 @@ export function Topbar() {
         !searchRef.current.contains(event.target)
       ) {
         setIsSearchOpen(false);
+      }
+
+      if (
+        profileRef.current &&
+        event.target instanceof Node &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setProfileOpen(false);
       }
     }
 
@@ -271,8 +306,8 @@ export function Topbar() {
         </div>
       </div>
 
-      <div className="relative hidden w-full max-w-2xl flex-1 md:block" ref={searchRef}>
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative hidden w-full flex-1 md:block" ref={searchRef}>
+        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchQuery}
           onChange={(event) => {
@@ -300,15 +335,15 @@ export function Topbar() {
             }
           }}
           placeholder={t('topbar.searchPlaceholder', 'Search parents or children by name, ID, phone...')}
-          className="h-10 pr-10 pl-9"
+          className="h-10 rounded-full pr-10 pl-10"
         />
         {isSearchLoading ? (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         ) : searchQuery ? (
           <button
             type="button"
             onClick={clearSearch}
-            className="absolute right-3 top-1/2 rounded-sm p-0.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="absolute right-4 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
             aria-label={t('topbar.clearSearch', 'Clear search')}
           >
             <X className="h-4 w-4" />
@@ -324,72 +359,125 @@ export function Topbar() {
         )}
       </div>
 
-      <div className="relative flex items-center gap-4" ref={dropdownRef}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          onClick={() => setIsOpen((value) => !value)}
-          aria-label={t('topbar.notifications', 'Notifications')}
-        >
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          {notifications.length > 0 && (
-            <Badge className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 py-0 text-[10px] text-accent-foreground">
-              {notifications.length > 9 ? '9+' : notifications.length}
-            </Badge>
-          )}
-        </Button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <LiveClock />
+        <CalendarButton />
+        <div className="relative" ref={dropdownRef}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => setIsOpen((value) => !value)}
+            aria-label={t('topbar.notifications', 'Notifications')}
+          >
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            {notifications.length > 0 && (
+              <Badge className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 py-0 text-[10px] text-accent-foreground">
+                {notifications.length > 9 ? '9+' : notifications.length}
+              </Badge>
+            )}
+          </Button>
 
-        {isOpen && (
-          <div className="absolute right-0 top-12 z-50 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-md border bg-white shadow-lg">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold">{t('topbar.notificationsTitle', 'Notifications')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('topbar.unread', '{count} unread', { count: notifications.length })}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs"
-                onClick={markAllAsRead}
-                disabled={!notifications.length}
-              >
-                <CheckCheck className="h-4 w-4" />
-                {t('topbar.markAll', 'Mark all')}
-              </Button>
-            </div>
-
-            <div className="max-h-[520px] overflow-y-auto p-3">
-              {notifications.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  {t('topbar.noUnread', 'No unread notifications')}
+          {isOpen && (
+            <div className="absolute right-0 top-12 z-50 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-md border bg-white shadow-lg">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold">{t('topbar.notificationsTitle', 'Notifications')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('topbar.unread', '{count} unread', { count: notifications.length })}
+                  </p>
                 </div>
-              ) : (
-                (Object.keys(groupedNotifications) as NotificationGroup[]).map(
-                  (group) =>
-                    groupedNotifications[group].length > 0 && (
-                      <div key={group} className="mb-3 last:mb-0">
-                        <div className="mb-2 px-1 text-xs font-semibold uppercase text-muted-foreground">
-                          {group}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={markAllAsRead}
+                  disabled={!notifications.length}
+                >
+                  <CheckCheck className="h-4 w-4" />
+                  {t('topbar.markAll', 'Mark all')}
+                </Button>
+              </div>
+
+              <div className="max-h-[520px] overflow-y-auto p-3">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    {t('topbar.noUnread', 'No unread notifications')}
+                  </div>
+                ) : (
+                  (Object.keys(groupedNotifications) as NotificationGroup[]).map(
+                    (group) =>
+                      groupedNotifications[group].length > 0 && (
+                        <div key={group} className="mb-3 last:mb-0">
+                          <div className="mb-2 px-1 text-xs font-semibold uppercase text-muted-foreground">
+                            {t(notificationGroupLabels[group], group)}
+                          </div>
+                          <div className="space-y-2">
+                            {groupedNotifications[group].map((notification) => (
+                              <NotificationRow
+                                key={notification.id}
+                                notification={notification}
+                                onClick={() => void openNotification(notification)}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          {groupedNotifications[group].map((notification) => (
-                            <NotificationRow
-                              key={notification.id}
-                              notification={notification}
-                              onClick={() => void openNotification(notification)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ),
-                )
-              )}
+                      ),
+                  )
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Profile Dropdown */}
+        <div className="relative" ref={profileRef}>
+          <button
+            type="button"
+            onClick={() => setProfileOpen((v) => !v)}
+            className="flex items-center gap-2 rounded-md p-1.5 transition hover:bg-muted"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              {user?.fullName?.[0] || '?'}
+            </div>
+            <div className="hidden text-left md:block">
+              <p className="text-sm font-medium leading-tight">{user?.fullName || t('topbar.user', 'User')}</p>
+              <p className="text-[10px] uppercase leading-tight text-muted-foreground">
+                {t(`enum.role.${user?.role?.toLowerCase()}`, user?.role?.replace('_', ' ') || '')}
+              </p>
+            </div>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-md border bg-white shadow-lg">
+              <div className="border-b px-4 py-3">
+                <p className="text-sm font-semibold">{user?.fullName || t('topbar.user', 'User')}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || ''}</p>
+              </div>
+              <div className="p-2">
+                <Link
+                  href="/settings"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  <UserRound className="h-4 w-4" />
+                  {t('topbar.myAccount', 'My Account')}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    logout();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('sidebar.logout', 'Logout')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -528,7 +616,9 @@ function SearchResultRow({
 
       <span className="flex shrink-0 items-center gap-2">
         <Badge variant="secondary" className="h-6 rounded px-2 text-[10px]">
-          {formatEnum(result.status)}
+          {result.type === 'PARENT'
+            ? t('enum.parentStatus.' + result.status.toLowerCase(), formatEnum(result.status))
+            : t('enum.childStatus.' + result.status.toLowerCase(), formatEnum(result.status))}
         </Badge>
         <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
       </span>
@@ -658,6 +748,280 @@ function getNotificationHref(notification: Notification) {
   }
 
   return '/dashboard';
+}
+
+function LiveClock() {
+  const { calendarSystem } = useCalendarSettings();
+  const [time, setTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setTime(new Date());
+    const interval = window.setInterval(() => setTime(new Date()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  if (!time) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="font-mono text-sm font-semibold tabular-nums tracking-wider text-foreground">
+          --:--:--
+        </span>
+      </div>
+    );
+  }
+
+  const westernHours = time.getHours();
+  const ethiopianHours = ((westernHours + 6) % 12 || 12).toString().padStart(2, '0');
+  const displayHours = calendarSystem === 'ETHIOPIAN'
+    ? ethiopianHours
+    : westernHours.toString().padStart(2, '0');
+  const minutes = time.getMinutes().toString().padStart(2, '0');
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
+      <Clock className="h-4 w-4 text-muted-foreground" />
+      <span className="font-mono text-sm font-semibold tabular-nums tracking-wider text-foreground">
+        {displayHours}:{minutes}
+      </span>
+    </div>
+  );
+}
+
+function CalendarButton() {
+  const { t } = useLocale();
+  const { calendarSystem } = useCalendarSettings();
+  const [isCalendarOpen, setCalendarOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!isCalendarOpen) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
+        setCalendarOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setCalendarOpen(false);
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isCalendarOpen]);
+
+  return (
+    <div className="relative" ref={calendarRef}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative h-10 w-10"
+        onClick={() => setCalendarOpen((v) => !v)}
+        aria-label={t('topbar.calendar', 'Calendar')}
+      >
+        <CalendarDays className="h-5 w-5 text-muted-foreground" />
+      </Button>
+
+      {isCalendarOpen && (
+        <WeeklyCalendarPopup now={now} calendarSystem={calendarSystem} onClose={() => setCalendarOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+function WeeklyCalendarPopup({ now, calendarSystem, onClose }: { now: Date; calendarSystem: string; onClose: () => void }) {
+  const { t } = useLocale();
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const dayLabels = useMemo(() => [
+    t('appointments.calendar.sun', 'Sun'),
+    t('appointments.calendar.mon', 'Mon'),
+    t('appointments.calendar.tue', 'Tue'),
+    t('appointments.calendar.wed', 'Wed'),
+    t('appointments.calendar.thu', 'Thu'),
+    t('appointments.calendar.fri', 'Fri'),
+    t('appointments.calendar.sat', 'Sat'),
+  ], [t]);
+
+  const ethMonthLabels = useMemo(() => {
+    return Array.from({ length: 13 }, (_, i) =>
+      t(`calendar.ethiopianMonth.${i + 1}`, ethiopianMonths[i]),
+    );
+  }, [t]);
+
+  const calendarGrid = useMemo(() => {
+    let viewYear: number;
+    let viewMonth: number; // 1-indexed
+    let daysInMonth: number;
+    let startDayOfWeek: number; // 0=Sun
+
+    if (calendarSystem === 'ETHIOPIAN') {
+      const eth = gregorianToEthiopian(now);
+      const absoluteMonth = eth.year * 13 + (eth.month - 1) + monthOffset;
+      viewYear = Math.floor(absoluteMonth / 13);
+      viewMonth = (absoluteMonth % 13) + 1;
+      daysInMonth = daysInEthiopianMonth(viewYear, viewMonth);
+      const firstDayGreg = ethiopianToGregorian({ year: viewYear, month: viewMonth, day: 1 });
+      startDayOfWeek = firstDayGreg.getUTCDay();
+    } else {
+      const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+      viewYear = d.getFullYear();
+      viewMonth = d.getMonth() + 1;
+      daysInMonth = daysInGregorianMonth(viewYear, viewMonth);
+      startDayOfWeek = d.getDay();
+    }
+
+    const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
+
+    const todayEth = calendarSystem === 'ETHIOPIAN'
+      ? gregorianToEthiopian(now)
+      : null;
+
+    interface MonthCell {
+      dayNumber: number;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+      monthLabel: string | null;
+      iso: string;
+    }
+
+    const cells: MonthCell[] = [];
+
+    if (calendarSystem === 'ETHIOPIAN') {
+      const firstDayGreg = ethiopianToGregorian({ year: viewYear, month: viewMonth, day: 1 });
+      for (let i = 0; i < totalCells; i++) {
+        const cellDate = new Date(firstDayGreg);
+        cellDate.setUTCDate(cellDate.getUTCDate() + (i - startDayOfWeek));
+        const cellEth = gregorianToEthiopian(cellDate);
+        const isCurrentMonth = cellEth.year === viewYear && cellEth.month === viewMonth;
+        const isToday = todayEth !== null &&
+          cellEth.year === todayEth.year &&
+          cellEth.month === todayEth.month &&
+          cellEth.day === todayEth.day;
+
+        cells.push({
+          dayNumber: cellEth.day,
+          isCurrentMonth,
+          isToday,
+          monthLabel: isCurrentMonth && cellEth.day === 1 ? ethMonthLabels[cellEth.month - 1] : null,
+          iso: toIsoDateInputValue(cellDate),
+        });
+      }
+    } else {
+      const today = new Date();
+      for (let i = 0; i < totalCells; i++) {
+        const cellDay = i - startDayOfWeek + 1;
+        const cellDate = new Date(viewYear, viewMonth - 1, cellDay);
+        const isCurrentMonth = cellDate.getMonth() + 1 === viewMonth;
+        const isToday = monthOffset === 0 &&
+          cellDate.getFullYear() === today.getFullYear() &&
+          cellDate.getMonth() === today.getMonth() &&
+          cellDate.getDate() === today.getDate();
+
+        cells.push({
+          dayNumber: cellDate.getDate(),
+          isCurrentMonth,
+          isToday,
+          monthLabel: isCurrentMonth && cellDay === 1
+            ? cellDate.toLocaleDateString(undefined, { month: 'short' })
+            : null,
+          iso: toIsoDateInputValue(cellDate),
+        });
+      }
+    }
+
+    return { cells, viewYear, viewMonth, daysInMonth, startDayOfWeek };
+  }, [now, monthOffset, calendarSystem, ethMonthLabels]);
+
+  const headerLabel = (() => {
+    if (calendarSystem === 'ETHIOPIAN') {
+      const ec = t('calendar.ec', 'E.C.');
+      return `${ethMonthLabels[calendarGrid.viewMonth - 1]} ${calendarGrid.viewYear} ${ec}`;
+    }
+    const d = new Date(calendarGrid.viewYear, calendarGrid.viewMonth - 1, 1);
+    return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  })();
+
+  return (
+    <div className="absolute right-0 top-12 z-50 w-[320px] overflow-hidden rounded-md border bg-white shadow-lg">
+      <div className="border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((v) => v - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-center">
+            <p className="text-sm font-semibold">{headerLabel}</p>
+            {calendarSystem === 'ETHIOPIAN' && (
+              <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                {t('calendar.ethiopian', 'Ethiopian Calendar')}
+              </span>
+            )}
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((v) => v + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="mb-2 grid grid-cols-7 gap-0 text-center text-[11px] font-semibold text-muted-foreground">
+          {dayLabels.map((day, i) => (
+            <div key={`h-${i}`} className="truncate text-[10px] leading-7">{day}</div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-0">
+          {calendarGrid.cells.map((cell) => (
+              <div
+                key={cell.iso}
+                className={`relative flex flex-col items-center rounded-md py-1 text-sm transition ${
+                  cell.isToday
+                    ? 'z-10 bg-primary font-bold text-primary-foreground shadow-sm'
+                    : cell.isCurrentMonth
+                      ? 'font-medium text-foreground hover:bg-muted'
+                      : 'text-muted-foreground/40'
+                }`}
+              >
+                <span className="flex h-7 w-7 items-center justify-center">
+                  {cell.dayNumber}
+                </span>
+                {cell.monthLabel && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[7px] font-semibold uppercase leading-none opacity-40">
+                    {cell.monthLabel}
+                  </span>
+                )}
+              </div>
+            ))}
+        </div>
+      </div>
+
+      <div className="border-t px-4 py-2">
+        <button
+          type="button"
+          onClick={() => {
+            setMonthOffset(0);
+          }}
+          className="w-full rounded-md px-3 py-1.5 text-center text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          {t('calendar.jumpToToday', 'Jump to today')}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function formatEnum(value: string) {

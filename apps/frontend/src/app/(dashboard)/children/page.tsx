@@ -586,8 +586,9 @@ export default function ChildrenPage() {
       />
 
       {showConfirmation && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/30 backdrop-blur-sm">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
             <div className="border-b p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
@@ -604,6 +605,7 @@ export default function ChildrenPage() {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {deactivatingChild && (

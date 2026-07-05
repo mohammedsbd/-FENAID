@@ -51,6 +51,8 @@ export function ParentDrawer({
 }: ParentDrawerProps) {
   const { t } = useLocale();
   const [step, setStep] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<ParentFormData>(emptyParentForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -63,6 +65,22 @@ export function ParentDrawer({
     t('parentDrawer.financialSocial', 'Financial & Social'),
     t('parentDrawer.assignmentNotes', 'Assignment & Notes'),
   ];
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -98,7 +116,7 @@ export function ParentDrawer({
     }
   }, [fallbackParent, open, parentId, staffOptions]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   function updateField(field: keyof ParentFormData, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -140,13 +158,17 @@ export function ParentDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className={`fixed inset-0 z-50 overflow-y-auto transition-opacity duration-300 ease-out ${
+      visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+    } bg-slate-950/30 backdrop-blur-sm`}>
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/40"
+        className="fixed inset-0"
         onClick={onClose}
       />
-      <aside className="absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-white shadow-xl">
+      <aside className={`absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold">

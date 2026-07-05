@@ -160,16 +160,16 @@ export default function ParentProfilePage() {
           [t('parents.detail.export.city', 'City'), parent.city || t('parents.detail.na', 'N/A')],
           [t('parents.detail.export.subcity', 'Subcity'), parent.subcity || t('parents.detail.na', 'N/A')],
           [t('parents.detail.export.woreda', 'Woreda'), parent.woreda || t('parents.detail.na', 'N/A')],
-          [t('parents.detail.export.maritalStatus', 'Marital Status'), formatEnum(parent.maritalStatus)],
+          [t('parents.detail.export.maritalStatus', 'Marital Status'), t('enum.maritalStatus.' + parent.maritalStatus.toLowerCase(), formatEnum(parent.maritalStatus))],
           [t('parents.detail.export.educationLevel', 'Education Level'), parent.educationLevel || t('parents.detail.na', 'N/A')],
-          [t('parents.detail.export.employmentStatus', 'Employment Status'), formatEnum(parent.employmentStatus)],
+          [t('parents.detail.export.employmentStatus', 'Employment Status'), t('enum.employmentStatus.' + (parent.employmentStatus || 'UNEMPLOYED').toLowerCase(), formatEnum(parent.employmentStatus || 'UNEMPLOYED'))],
         ] as [string, string][],
       },
       {
         title: t('parents.detail.export.programDetails', 'Program Details'),
         fields: [
-          [t('parents.detail.export.status', 'Status'), formatEnum(parent.status)],
-          [t('parents.detail.export.financialBracket', 'Financial Bracket'), formatEnum(parent.financialBracket)],
+          [t('parents.detail.export.status', 'Status'), t('enum.parentStatus.' + parent.status.toLowerCase(), formatEnum(parent.status))],
+          [t('parents.detail.export.financialBracket', 'Financial Bracket'), t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))],
           [t('parents.detail.export.dependents', 'Dependents'), String(parent.numberOfDependents || 0)],
           [t('parents.detail.export.referralSource', 'Referral Source'), parent.referralSource || t('parents.detail.na', 'N/A')],
           [t('parents.detail.export.caseWorker', 'Case Worker'), parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')],
@@ -297,8 +297,8 @@ export default function ParentProfilePage() {
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-8 sm:grid-cols-4">
-              <HeroMetric label={t('parents.detail.statusLabel', 'Status')} value={formatEnum(parent.status)} />
-              <HeroMetric label={t('parents.detail.bracketLabel', 'Bracket')} value={formatEnum(parent.financialBracket)} />
+              <HeroMetric label={t('parents.detail.statusLabel', 'Status')} value={t('enum.parentStatus.' + parent.status.toLowerCase(), formatEnum(parent.status))} />
+              <HeroMetric label={t('parents.detail.bracketLabel', 'Bracket')} value={t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))} />
               <HeroMetric label={t('parents.detail.childrenLabel', 'Children')} value={parent.children.length} />
               <HeroMetric label={t('parents.detail.servicesLabel', 'Services')} value={parent.serviceAssignments.length} />
             </div>
@@ -350,15 +350,15 @@ export default function ParentProfilePage() {
             <>
               <div className="grid gap-6 md:grid-cols-2">
                 <DetailCard title={t('parents.detail.backgroundInfo', 'Background Information')}>
-                  <DetailItem icon={Heart} label={t('parents.detail.maritalStatus', 'Marital Status')} value={formatEnum(parent.maritalStatus)} />
+                  <DetailItem icon={Heart} label={t('parents.detail.maritalStatus', 'Marital Status')} value={t('enum.maritalStatus.' + parent.maritalStatus.toLowerCase(), formatEnum(parent.maritalStatus))} />
                   <DetailItem icon={GraduationCap} label={t('parents.detail.education', 'Education')} value={parent.educationLevel} />
-                  <DetailItem icon={Briefcase} label={t('parents.detail.employment', 'Employment')} value={formatEnum(parent.employmentStatus)} />
+                  <DetailItem icon={Briefcase} label={t('parents.detail.employment', 'Employment')} value={t('enum.employmentStatus.' + (parent.employmentStatus || 'UNEMPLOYED').toLowerCase(), formatEnum(parent.employmentStatus || 'UNEMPLOYED'))} />
                   <DetailItem icon={Users} label={t('parents.detail.dependents', 'Dependents')} value={t('parents.detail.dependentsValue', '{count} family members', { count: String(parent.numberOfDependents) })} />
                 </DetailCard>
 
                 <DetailCard title={t('parents.detail.financialProfile', 'Financial Profile')}>
                   <DetailItem icon={Wallet} label={t('parents.detail.monthlyIncome', 'Monthly Income')} value={parseIncome(parent.internalNotes)} />
-                  <DetailItem icon={CheckCircle2} label={t('parents.detail.financialBracket', 'Financial Bracket')} value={formatEnum(parent.financialBracket)} />
+                  <DetailItem icon={CheckCircle2} label={t('parents.detail.financialBracket', 'Financial Bracket')} value={t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))} />
                   <DetailItem icon={ExternalLink} label={t('parents.detail.referralSource', 'Referral Source')} value={parent.referralSource || t('parents.detail.selfReferral', 'Self-referral')} />
                 </DetailCard>
               </div>
@@ -404,9 +404,9 @@ export default function ParentProfilePage() {
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
                           <p className="truncate font-medium text-slate-900">{child.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{formatEnum(child.disabilityType)}</p>
+                          <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
                         </div>
-                        <Badge variant="outline" className="text-[10px]">{formatEnum(child.status)}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
                       </Link>
                     ))}
                   </div>
@@ -624,6 +624,7 @@ function EmptyState({ message }: { message: string }) {
 }
 
 function StatusBadge({ status }: { status: ParentStatus }) {
+  const { t } = useLocale();
   const className =
     status === 'ACTIVE'
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -631,7 +632,7 @@ function StatusBadge({ status }: { status: ParentStatus }) {
         ? 'border-amber-200 bg-amber-50 text-amber-700'
         : 'border-slate-200 bg-slate-100 text-slate-600';
 
-  return <Badge className={className}>{formatEnum(status)}</Badge>;
+  return <Badge className={className}>{t('enum.parentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
 }
 
 function parseIncome(notes?: string | null) {

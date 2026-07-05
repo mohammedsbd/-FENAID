@@ -108,8 +108,8 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({ 
         variant: 'destructive', 
-        title: 'Passwords do not match', 
-        description: 'New password and confirmation do not match.' 
+        title: t('myAccount.passwordMismatch', 'Passwords do not match'), 
+        description: t('myAccount.passwordMismatchDesc', 'New password and confirmation do not match.') 
       });
       return;
     }
@@ -145,7 +145,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
     try {
       await api.delete(`/accounts/me/sessions/${sessionId}`);
       await load();
-      toast({ title: 'Session terminated' });
+      toast({ title: t('myAccount.sessionTerminated', 'Session terminated') });
     } catch (err: any) {
       toast({ 
         variant: 'destructive', 
@@ -281,7 +281,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
         <Card className="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>{t('myAccount.activity', 'Activity History')}</CardTitle>
-            <CardDescription>Review your recent actions and account changes from the last 90 days.</CardDescription>
+            <CardDescription>{t('myAccount.activityDesc', 'Review your recent actions and account changes from the last 90 days.')}</CardDescription>
           </CardHeader>
           <CardContent>
             {activity.length ? (
@@ -330,6 +330,7 @@ function Field({ label, icon, children }: { label: string; icon?: ReactNode; chi
 }
 
 function PasswordStrength({ password }: { password: string }) {
+  const { t } = useLocale();
   if (!password) return null;
   const score = [
     password.length >= 8,
@@ -340,7 +341,7 @@ function PasswordStrength({ password }: { password: string }) {
   ].filter(Boolean).length;
 
   const width = `${Math.min(100, score * 20)}%`;
-  const label = score < 2 ? 'Weak' : score < 4 ? 'Medium' : 'Strong';
+  const label = score < 2 ? t('myAccount.passwordWeak', 'Weak') : score < 4 ? t('myAccount.passwordMedium', 'Medium') : t('myAccount.passwordStrong', 'Strong');
   const color = score < 2 ? 'bg-rose-500' : score < 4 ? 'bg-amber-500' : 'bg-emerald-500';
 
   return (
@@ -348,7 +349,7 @@ function PasswordStrength({ password }: { password: string }) {
       <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
         <div className={cn("h-1 rounded-full transition-all duration-500", color)} style={{ width }} />
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label} Security</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('myAccount.passwordStrength', '{label} Security', { label })}</p>
     </div>
   );
 }

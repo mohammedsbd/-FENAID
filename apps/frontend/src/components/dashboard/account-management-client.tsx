@@ -458,7 +458,7 @@ export function AccountManagementClient({ currentUser }: Props) {
               <TableBody>
                 {modules.map((module) => (
                   <TableRow key={module}>
-                    <TableCell>{module.replace('_', ' ')}</TableCell>
+                    <TableCell>{t(`accounts.module.${module.toLowerCase()}`, module.replace('_', ' '))}</TableCell>
                     <TableCell>
                       <select className="h-9 rounded-md border px-3 text-sm" value={permissionDraft[module] || 'READ_ONLY'} onChange={(e) => setPermissionDraft((current) => ({ ...current, [module]: e.target.value as AccessLevel }))}>
                         <option value="FULL">{t('accounts.fullAccess', 'Full Access')}</option>
@@ -644,10 +644,12 @@ export function AccountManagementClient({ currentUser }: Props) {
 
 function Overlay({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b p-4"><h2 className="font-semibold">{title}</h2><Button variant="ghost" size="icon" onClick={onClose}>×</Button></div>
-        <div className="p-4">{children}</div>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/30 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b p-4"><h2 className="font-semibold">{title}</h2><Button variant="ghost" size="icon" onClick={onClose}>×</Button></div>
+          <div className="p-4">{children}</div>
+        </div>
       </div>
     </div>
   );

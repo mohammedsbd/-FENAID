@@ -325,7 +325,7 @@ export default function ChildProfilePage() {
                 <Badge variant="outline" className="bg-slate-50">{child.disabilityCategory}</Badge>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+                        <div className="flex flex-row flex-wrap items-center gap-2">
               <ExportButton onExport={handleExport} loading={exporting} />
               <Button size="sm">
                 <Plus className="h-4 w-4" />

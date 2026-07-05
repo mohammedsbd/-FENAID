@@ -49,11 +49,11 @@ export function StatisticsOverview() {
     const body = `
       <h2>Key Metrics</h2>
       <ul>
-        <li>Active Children: ${stats.totalActiveChildren}</li>
-        <li>Active Parents: ${stats.totalActiveParents}</li>
-        <li>Funds Disbursed This Year: ETB ${Number(stats.fundsDisbursedThisYear).toLocaleString()}</li>
-        <li>Workshop Attendance Rate: ${stats.workshopAttendanceRate}%</li>
-        <li>Milestone Achievement Rate: ${stats.milestoneAchievementRate}%</li>
+        <li>${t('stats.activeChildren', 'Active Children')}: ${stats.totalActiveChildren}</li>
+        <li>${t('stats.activeParents', 'Active Parents')}: ${stats.totalActiveParents}</li>
+        <li>${t('stats.fundsDisbursed', 'Funds Disbursed')}: ETB ${Number(stats.fundsDisbursedThisYear).toLocaleString()}</li>
+        <li>${t('stats.workshopAttendance', 'Workshop Attendance')}: ${stats.workshopAttendanceRate}%</li>
+        <li>${t('stats.milestoneAchievement', 'Milestone Achievement')}: ${stats.milestoneAchievementRate}%</li>
       </ul>
     `;
     exportToPDF('Organizational Snapshot', body);
@@ -72,12 +72,12 @@ export function StatisticsOverview() {
   if (!data) return null;
 
   const genderChildren = [
-    { name: 'Male', value: data.genderBreakdownChildren?.male ?? 0 },
-    { name: 'Female', value: data.genderBreakdownChildren?.female ?? 0 },
+    { name: t('stats.male', 'Male'), value: data.genderBreakdownChildren?.male ?? 0 },
+    { name: t('stats.female', 'Female'), value: data.genderBreakdownChildren?.female ?? 0 },
   ];
   const genderParents = [
-    { name: 'Male', value: data.genderBreakdownParents?.male ?? 0 },
-    { name: 'Female', value: data.genderBreakdownParents?.female ?? 0 },
+    { name: t('stats.male', 'Male'), value: data.genderBreakdownParents?.male ?? 0 },
+    { name: t('stats.female', 'Female'), value: data.genderBreakdownParents?.female ?? 0 },
   ];
 
   return (
@@ -85,7 +85,7 @@ export function StatisticsOverview() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Children</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.activeChildren', 'Active Children')}</CardTitle>
             <Baby className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent>
@@ -94,7 +94,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Parents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.activeParents', 'Active Parents')}</CardTitle>
             <Users className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
@@ -103,7 +103,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Funds Disbursed (YTD)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.fundsDisbursed', 'Funds Disbursed (YTD)')}</CardTitle>
             <HandCoins className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
@@ -114,7 +114,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Workshop Attendance</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.workshopAttendance', 'Workshop Attendance')}</CardTitle>
             <GraduationCap className="h-4 w-4 text-violet-600" />
           </CardHeader>
           <CardContent>
@@ -126,7 +126,7 @@ export function StatisticsOverview() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Children by Disability Type</CardTitle>
+            <CardTitle className="text-sm">{t('stats.childrenByDisability', 'Children by Disability Type')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +142,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Children by Severity</CardTitle>
+            <CardTitle className="text-sm">{t('stats.childrenBySeverity', 'Children by Severity')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -160,7 +160,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Children by Age Group</CardTitle>
+            <CardTitle className="text-sm">{t('stats.childrenByAge', 'Children by Age Group')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -179,7 +179,7 @@ export function StatisticsOverview() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Members by Sub-city (Top 10)</CardTitle>
+            <CardTitle className="text-sm">{t('stats.membersBySubcity', 'Members by Sub-city (Top 10)')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -197,7 +197,7 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">New Registrations (12 months)</CardTitle>
+            <CardTitle className="text-sm">{t('stats.newRegistrations', 'New Registrations (12 months)')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -218,11 +218,11 @@ export function StatisticsOverview() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Gender Breakdown</CardTitle>
+            <CardTitle className="text-sm">{t('stats.genderBreakdown', 'Gender Breakdown')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">
             <div className="h-[140px]">
-              <p className="mb-1 text-center text-xs text-muted-foreground">Children</p>
+              <p className="mb-1 text-center text-xs text-muted-foreground">{t('stats.children', 'Children')}</p>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={genderChildren} dataKey="value" nameKey="name" innerRadius={30} outerRadius={50}>
@@ -234,7 +234,7 @@ export function StatisticsOverview() {
               </ResponsiveContainer>
             </div>
             <div className="h-[140px]">
-              <p className="mb-1 text-center text-xs text-muted-foreground">Parents</p>
+              <p className="mb-1 text-center text-xs text-muted-foreground">{t('stats.parents', 'Parents')}</p>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={genderParents} dataKey="value" nameKey="name" innerRadius={30} outerRadius={50}>
@@ -249,24 +249,24 @@ export function StatisticsOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Services Delivered</CardTitle>
+            <CardTitle className="text-sm">{t('stats.servicesDelivered', 'Services Delivered')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-around py-8">
             <div className="text-center">
               <p className="text-3xl font-bold">{data.servicesDeliveredThisYear}</p>
-              <p className="text-xs text-muted-foreground">This year</p>
+              <p className="text-xs text-muted-foreground">{t('stats.thisYear', 'This year')}</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold text-muted-foreground">
                 {data.servicesDeliveredLastYear}
               </p>
-              <p className="text-xs text-muted-foreground">Last year</p>
+              <p className="text-xs text-muted-foreground">{t('stats.lastYear', 'Last year')}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Milestone Achievement</CardTitle>
+            <CardTitle className="text-sm">{t('stats.milestoneAchievement', 'Milestone Achievement')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-6">
             <div
