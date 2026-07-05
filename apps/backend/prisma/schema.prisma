@@ -187,41 +187,6 @@ enum NotificationType {
   GENERAL
 }
 
-model Staff {
-  id                 String    @id @default(cuid())
-  fullName           String
-  email              String    @unique
-  passwordHash       String
-  phone              String?
-  photoUrl           String?
-  role               StaffRole
-  isActive           Boolean   @default(true)
-  canExportIdentified Boolean  @default(false)
-  mustChangePassword Boolean   @default(true)
-  deletedAt          DateTime?
-  lastLoginAt        DateTime?
-  passwordUpdatedAt  DateTime?
-  notificationPreferences Json?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  assignedParents          Parent[]            @relation("ParentAssignedStaff")
-  assignedChildren         Child[]             @relation("ChildAssignedStaff")
-  serviceAssignments       ServiceAssignment[] @relation("ServiceAssignmentAssignedStaff")
-  allocatedFundAllocations FundAllocation[]    @relation("FundAllocationAllocatedBy")
-  receivedDonations        Donation[]          @relation("DonationReceivedBy")
-  progressNotes            ProgressNote[]
-  goals                    Goal[]
-  appointments             Appointment[]
-  uploadedDocuments        Document[]          @relation("DocumentUploadedBy")
-  notifications            Notification[]
-  auditLogs                AuditLog[]
-  sessions                 Session[]
-  passwordHistories        PasswordHistory[]
-  savedQueries             SavedQuery[]      @relation("SavedQueryCreator")
-  dataExportLogs           DataExportLog[]   @relation("DataExportLogStaff")
-}
-
 model Parent {
   id                 String           @id @default(cuid())
   idTag              String?          @unique
@@ -259,6 +224,9 @@ model Parent {
   @@index([assignedStaffId])
   @@index([status])
   @@index([fullName])
+  @@index([createdAt])
+  @@index([assignedStaffId, status])
+  @@index([financialBracket])
 }
 
 model Child {
@@ -296,6 +264,11 @@ model Child {
   @@index([parentId])
   @@index([assignedStaffId])
   @@index([status])
+  @@index([createdAt])
+  @@index([assignedStaffId, status])
+  @@index([disabilityType])
+  @@index([severityLevel])
+  @@index([dateOfBirth])
 }
 
 model Service {
@@ -313,6 +286,7 @@ model Service {
 
   @@index([targetType])
   @@index([isActive])
+  @@index([name])
 }
 
 model ServiceAssignment {
@@ -341,6 +315,9 @@ model ServiceAssignment {
   @@index([childId])
   @@index([assignedStaffId])
   @@index([status])
+  @@index([assignedStaffId, status])
+  @@index([status, endDate])
+  @@index([createdAt])
 }
 
 model FundAllocation {
@@ -365,6 +342,9 @@ model FundAllocation {
   @@index([parentId])
   @@index([allocatedById])
   @@index([status])
+  @@index([status, createdAt])
+  @@index([status, allocationDate])
+  @@index([allocationDate])
 }
 
 model Donation {
@@ -392,6 +372,8 @@ model Donation {
   @@index([restrictedToChildId])
   @@index([restrictedToServiceId])
   @@index([receivedById])
+  @@index([donationDate])
+  @@index([donorType])
 }
 
 model ProgressNote {
@@ -407,6 +389,7 @@ model ProgressNote {
 
   @@index([childId])
   @@index([staffId])
+  @@index([childId, createdAt])
 }
 
 model Milestone {
@@ -422,6 +405,7 @@ model Milestone {
 
   @@index([childId])
   @@index([status])
+  @@index([childId, createdAt])
 }
 
 model Goal {
@@ -441,6 +425,7 @@ model Goal {
   @@index([childId])
   @@index([staffId])
   @@index([type])
+  @@index([childId, createdAt])
 }
 
 model Appointment {
@@ -468,6 +453,8 @@ model Appointment {
   @@index([parentId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([staffId, scheduledAt])
+  @@index([status, scheduledAt])
 }
 
 model AttendanceRecord {
@@ -509,6 +496,7 @@ model Document {
   @@index([parentId])
   @@index([childId])
   @@index([expiresAt])
+  @@index([createdAt])
 }
 
 model Notification {
@@ -526,6 +514,8 @@ model Notification {
   @@index([staffId])
   @@index([isRead])
   @@index([type])
+  @@index([staffId, isRead, createdAt])
+  @@index([staffId, type, entityType, entityId, isRead])
 }
 
 model AuditLog {
@@ -544,6 +534,8 @@ model AuditLog {
   @@index([staffId])
   @@index([entity, entityId])
   @@index([createdAt])
+  @@index([staffId, createdAt])
+  @@index([action, createdAt])
 }
 
 model Session {
@@ -563,6 +555,7 @@ model Session {
   @@index([tokenId])
   @@index([expiresAt])
   @@index([revokedAt])
+  @@index([staffId, revokedAt])
 }
 
 model PasswordHistory {
@@ -610,6 +603,7 @@ model SavedQuery {
 
   @@index([createdById])
   @@index([isOrgWide])
+  @@index([dataSubject])
 }
 
 model DataExportLog {
@@ -627,5 +621,43 @@ model DataExportLog {
 
   @@index([staffId])
   @@index([savedQueryId])
+  @@index([createdAt])
+}
+
+model Staff {
+  id                 String    @id @default(cuid())
+  fullName           String
+  email              String    @unique
+  passwordHash       String
+  phone              String?
+  photoUrl           String?
+  role               StaffRole
+  isActive           Boolean   @default(true)
+  canExportIdentified Boolean  @default(false)
+  mustChangePassword Boolean   @default(true)
+  deletedAt          DateTime?
+  lastLoginAt        DateTime?
+  passwordUpdatedAt  DateTime?
+  notificationPreferences Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  assignedParents          Parent[]            @relation("ParentAssignedStaff")
+  assignedChildren         Child[]             @relation("ChildAssignedStaff")
+  serviceAssignments       ServiceAssignment[] @relation("ServiceAssignmentAssignedStaff")
+  allocatedFundAllocations FundAllocation[]    @relation("FundAllocationAllocatedBy")
+  receivedDonations        Donation[]          @relation("DonationReceivedBy")
+  progressNotes            ProgressNote[]
+  goals                    Goal[]
+  appointments             Appointment[]
+  uploadedDocuments        Document[]          @relation("DocumentUploadedBy")
+  notifications            Notification[]
+  auditLogs                AuditLog[]
+  sessions                 Session[]
+  passwordHistories        PasswordHistory[]
+  savedQueries             SavedQuery[]      @relation("SavedQueryCreator")
+  dataExportLogs           DataExportLog[]   @relation("DataExportLogStaff")
+
+  @@index([role, isActive])
   @@index([createdAt])
 }

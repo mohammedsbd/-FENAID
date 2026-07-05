@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   ChildStatus,
   FundAllocationStatus,
@@ -11,6 +11,8 @@ import { ReportQueryDto, ReportType } from './dto/report-query.dto';
 
 @Injectable()
 export class DashboardReportsService {
+  private readonly logger = new Logger(DashboardReportsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getAdminDashboard() {
@@ -21,131 +23,218 @@ export class DashboardReportsService {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
-    const [
-      totalParents,
-      totalChildren,
-      activeParents,
-      activeChildren,
-      fundsAllocated,
-      fundsDisbursed,
-      donationsThisYear,
-      childrenByDisabilityType,
-      childrenBySeverity,
-      servicesByStatus,
-      staffWorkload,
-      upcomingAppointmentsCount,
-      recentParents,
-      recentChildren,
-      pendingDisbursements,
-      donationSummary,
-    ] = await Promise.all([
-      this.prisma.parent.count(),
-      this.prisma.child.count(),
-      this.prisma.parent.count({ where: { status: ParentStatus.ACTIVE } }),
-      this.prisma.child.count({ where: { status: ChildStatus.ACTIVE } }),
-      this.prisma.fundAllocation.aggregate({ _sum: { amount: true } }),
-      this.prisma.fundAllocation.aggregate({
-        where: { status: FundAllocationStatus.DISBURSED },
-        _sum: { amount: true },
-      }),
-      this.prisma.donation.aggregate({
-        where: { donationDate: { gte: new Date(now.getFullYear(), 0, 1) } },
-        _sum: { amount: true },
-      }),
-      this.prisma.child.groupBy({ by: ['disabilityType'], _count: true }),
-      this.prisma.child.groupBy({ by: ['severityLevel'], _count: true }),
-      this.prisma.serviceAssignment.groupBy({ by: ['status'], _count: true }),
-      this.prisma.staff.findMany({
-        where: { role: { in: ['CASE_WORKER', 'SUPER_ADMIN'] } },
+    // Wrap the heavy parallel query in try/catch to prevent a single query failure from
+    // taking down the entire dashboard page.
+    const results = await this.safeParallelQueries(now, startOfWeek, endOfWeek);
+
+    // Overdue progress notes: children with no note in 30 days
+    let overdueNotes: Array<{ id: string; fullName: string; photoUrl: string | null; assignedStaff: { fullName: string } | null }> = [];
+    try {
+      overdueNotes = await this.prisma.child.findMany({
+        where: {
+          status: ChildStatus.ACTIVE,
+          progressNotes: {
+            none: {
+              createdAt: { gte: thirtyDaysAgo },
+            },
+          },
+        },
         select: {
           id: true,
           fullName: true,
-          _count: {
-            select: { assignedParents: true, assignedChildren: true },
-          },
+          photoUrl: true,
+          assignedStaff: { select: { fullName: true } },
         },
-      }),
-      this.prisma.appointment.findMany({
-        where: { scheduledAt: { gte: startOfWeek, lte: endOfWeek } },
-        include: {
-          child: { select: { fullName: true, photoUrl: true } },
-          parent: { select: { fullName: true, photoUrl: true } },
-        },
-        orderBy: { scheduledAt: 'asc' },
-      }),
-      this.prisma.parent.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, fullName: true, photoUrl: true, createdAt: true },
-      }),
-      this.prisma.child.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, fullName: true, photoUrl: true, createdAt: true },
-      }),
-      this.prisma.fundAllocation.findMany({
-        where: { status: { in: [FundAllocationStatus.ALLOCATED, FundAllocationStatus.PARTIALLY_DISBURSED] } },
-        include: { parent: { select: { fullName: true, photoUrl: true } } },
-        orderBy: { allocationDate: 'desc' },
-      }),
-      this.getDonationStats(),
-    ]);
-
-    // Overdue progress notes: children with no note in 30 days
-    const overdueNotes = await this.prisma.child.findMany({
-      where: {
-        status: ChildStatus.ACTIVE,
-        progressNotes: {
-          none: {
-            createdAt: { gte: thirtyDaysAgo },
-          },
-        },
-      },
-      select: {
-        id: true,
-        fullName: true,
-        photoUrl: true,
-        assignedStaff: { select: { fullName: true } },
-      },
-    });
+      });
+    } catch (error) {
+      this.logger.error('Failed to fetch overdue progress notes', (error as Error).stack);
+    }
 
     return {
       stats: {
+        totalParents: results.totalParents,
+        totalChildren: results.totalChildren,
+        activeParents: results.activeParents,
+        activeChildren: results.activeChildren,
+        totalFundsAllocated: results.fundsAllocated,
+        totalFundsDisbursed: results.fundsDisbursed,
+        totalDonationsThisYear: results.donationsThisYear,
+      },
+      childrenByDisabilityType: results.childrenByDisabilityType,
+      childrenBySeverity: results.childrenBySeverity,
+      servicesByStatus: results.servicesByStatus,
+      caseWorkerWorkload: results.caseWorkerWorkload,
+      upcomingAppointmentsThisWeek: results.upcomingAppointmentsCount,
+      recentRegistrations: {
+        parents: results.recentParents,
+        children: results.recentChildren,
+      },
+      overdueProgressNotes: overdueNotes,
+      pendingFundDisbursements: results.pendingDisbursements,
+      donationSummary: results.donationSummary,
+    };
+  }
+
+  private async safeParallelQueries(
+    now: Date,
+    startOfWeek: Date,
+    endOfWeek: Date,
+  ) {
+    const defaults = {
+      totalParents: 0,
+      totalChildren: 0,
+      activeParents: 0,
+      activeChildren: 0,
+      fundsAllocated: 0,
+      fundsDisbursed: 0,
+      donationsThisYear: 0,
+      childrenByDisabilityType: [] as Array<{ type: string; count: number }>,
+      childrenBySeverity: [] as Array<{ level: string; count: number }>,
+      servicesByStatus: [] as Array<{ status: string; count: number }>,
+      caseWorkerWorkload: [] as Array<{
+        staffId: string;
+        staffName: string;
+        parentCount: number;
+        childCount: number;
+      }>,
+      upcomingAppointmentsCount: [] as Array<Record<string, unknown>>,
+      recentParents: [] as Array<Record<string, unknown>>,
+      recentChildren: [] as Array<Record<string, unknown>>,
+      pendingDisbursements: [] as Array<Record<string, unknown>>,
+      donationSummary: {
+        thisMonth: 0,
+        thisYear: 0,
+        byDonorType: [] as Array<{ type: string; total: number }>,
+      },
+    };
+
+    try {
+      const [
         totalParents,
         totalChildren,
         activeParents,
         activeChildren,
-        totalFundsAllocated: fundsAllocated._sum.amount || 0,
-        totalFundsDisbursed: fundsDisbursed._sum.amount || 0,
-        totalDonationsThisYear: donationsThisYear._sum.amount || 0,
-      },
-      childrenByDisabilityType: childrenByDisabilityType.map((g) => ({
-        type: g.disabilityType,
-        count: g._count,
-      })),
-      childrenBySeverity: childrenBySeverity.map((g) => ({
-        level: g.severityLevel,
-        count: g._count,
-      })),
-      servicesByStatus: servicesByStatus.map((g) => ({
-        status: g.status,
-        count: g._count,
-      })),
-      caseWorkerWorkload: staffWorkload.map((s) => ({
-        staffId: s.id,
-        staffName: s.fullName,
-        parentCount: s._count.assignedParents,
-        childCount: s._count.assignedChildren,
-      })),
-      upcomingAppointmentsThisWeek: upcomingAppointmentsCount,
-      recentRegistrations: {
-        parents: recentParents,
-        children: recentChildren,
-      },
-      overdueProgressNotes: overdueNotes,
-      pendingFundDisbursements: pendingDisbursements,
-      donationSummary,
-    };
+        fundsAllocated,
+        fundsDisbursed,
+        donationsThisYear,
+        childrenByDisabilityType,
+        childrenBySeverity,
+        servicesByStatus,
+        staffWorkload,
+        upcomingAppointmentsCount,
+        recentParents,
+        recentChildren,
+        pendingDisbursements,
+        donationSummary,
+      ] = await Promise.all([
+        this.prisma.parent.count(),
+        this.prisma.child.count(),
+        this.prisma.parent.count({ where: { status: ParentStatus.ACTIVE } }),
+        this.prisma.child.count({ where: { status: ChildStatus.ACTIVE } }),
+        this.prisma.fundAllocation.aggregate({ _sum: { amount: true } }),
+        this.prisma.fundAllocation.aggregate({
+          where: { status: FundAllocationStatus.DISBURSED },
+          _sum: { amount: true },
+        }),
+        this.prisma.donation.aggregate({
+          where: { donationDate: { gte: new Date(now.getFullYear(), 0, 1) } },
+          _sum: { amount: true },
+        }),
+        this.prisma.child.groupBy({ by: ['disabilityType'], _count: true }),
+        this.prisma.child.groupBy({ by: ['severityLevel'], _count: true }),
+        this.prisma.serviceAssignment.groupBy({ by: ['status'], _count: true }),
+        this.prisma.staff.findMany({
+          where: { role: { in: ['CASE_WORKER', 'SUPER_ADMIN'] } },
+          select: {
+            id: true,
+            fullName: true,
+            _count: {
+              select: { assignedParents: true, assignedChildren: true },
+            },
+          },
+        }),
+        this.prisma.appointment.findMany({
+          where: { scheduledAt: { gte: startOfWeek, lte: endOfWeek } },
+          include: {
+            child: { select: { fullName: true, photoUrl: true } },
+            parent: { select: { fullName: true, photoUrl: true } },
+          },
+          orderBy: { scheduledAt: 'asc' },
+        }),
+        this.prisma.parent.findMany({
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            fullName: true,
+            photoUrl: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.child.findMany({
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            fullName: true,
+            photoUrl: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.fundAllocation.findMany({
+          where: {
+            status: {
+              in: [
+                FundAllocationStatus.ALLOCATED,
+                FundAllocationStatus.PARTIALLY_DISBURSED,
+              ],
+            },
+          },
+          include: { parent: { select: { fullName: true, photoUrl: true } } },
+          orderBy: { allocationDate: 'desc' },
+        }),
+        this.getDonationStats(),
+      ]);
+
+      return {
+        totalParents,
+        totalChildren,
+        activeParents,
+        activeChildren,
+        fundsAllocated: Number(fundsAllocated._sum.amount ?? 0),
+        fundsDisbursed: Number(fundsDisbursed._sum.amount ?? 0),
+        donationsThisYear: Number(donationsThisYear._sum.amount ?? 0),
+        childrenByDisabilityType: childrenByDisabilityType.map((g) => ({
+          type: g.disabilityType,
+          count: g._count,
+        })),
+        childrenBySeverity: childrenBySeverity.map((g) => ({
+          level: g.severityLevel,
+          count: g._count,
+        })),
+        servicesByStatus: servicesByStatus.map((g) => ({
+          status: g.status,
+          count: g._count,
+        })),
+        caseWorkerWorkload: staffWorkload.map((s) => ({
+          staffId: s.id,
+          staffName: s.fullName,
+          parentCount: s._count.assignedParents,
+          childCount: s._count.assignedChildren,
+        })),
+        upcomingAppointmentsCount,
+        recentParents,
+        recentChildren,
+        pendingDisbursements,
+        donationSummary,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Dashboard parallel queries failed',
+        (error as Error).stack,
+      );
+      return defaults;
+    }
   }
 
   async getStaffDashboard(staffId: string) {
