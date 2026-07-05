@@ -72,7 +72,7 @@ export class ServicesService {
     });
 
     if (!service) {
-      throw new NotFoundException('Service not found');
+      throw new NotFoundException('error.service.notFound');
     }
 
     return service;

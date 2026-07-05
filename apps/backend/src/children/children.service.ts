@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateChildDto } from './dto/create-child.dto';
 import { ListChildrenDto } from './dto/list-children.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 type ChildAuditSnapshot = Omit<Child, 'createdAt' | 'updatedAt'> & {
   createdAt?: Date;
@@ -29,6 +30,7 @@ export class ChildrenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateChildDto) {
@@ -86,7 +88,7 @@ export class ChildrenService {
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: `New child registered: ${child.fullName} (${child.idTag}) is assigned to ${child.assignedStaff.fullName}.`,
+      message: this.i18n.t('notification.childRegistered', { childName: child.fullName, idTag: child.idTag, staffName: child.assignedStaff.fullName }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -300,7 +302,7 @@ export class ChildrenService {
     });
 
     if (!child) {
-      throw new NotFoundException('Child not found');
+      throw new NotFoundException('error.child.notFound');
     }
 
     return child;
@@ -383,7 +385,7 @@ export class ChildrenService {
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: `Child status changed: ${existing.fullName} is now ${newStatus}.`,
+      message: this.i18n.t('notification.childStatusChanged', { childName: existing.fullName, status: newStatus }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -418,7 +420,7 @@ export class ChildrenService {
     });
 
     if (!parent) {
-      throw new BadRequestException('parentId must reference an active parent');
+      throw new BadRequestException('error.child.invalidParent');
     }
   }
 
@@ -432,7 +434,7 @@ export class ChildrenService {
     });
 
     if (!staff) {
-      throw new BadRequestException('assignedStaffId must reference active staff');
+      throw new BadRequestException('error.child.invalidStaff');
     }
   }
 
@@ -442,7 +444,7 @@ export class ChildrenService {
     });
 
     if (!child) {
-      throw new NotFoundException('Child not found');
+      throw new NotFoundException('error.child.notFound');
     }
 
     return child;

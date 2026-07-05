@@ -12,12 +12,14 @@ import {
   LogAttendanceDto,
   UpdateAppointmentDto,
 } from './dto/appointment.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateAppointmentDto) {
@@ -49,7 +51,7 @@ export class AppointmentsService {
 
     await this.notifications.createNotification({
       staffId: appointment.staffId,
-      message: `Appointment scheduled: ${appointment.title} for ${targetName} on ${appointment.scheduledAt.toLocaleString()}.`,
+      message: this.i18n.t('notification.appointmentScheduled', { title: appointment.title, targetName, date: appointment.scheduledAt.toLocaleString() }),
       type: NotificationType.GENERAL,
       entityType: 'Appointment',
       entityId: appointment.id,
@@ -91,7 +93,7 @@ export class AppointmentsService {
     // month format: YYYY-MM
     const date = new Date(`${month}-01`);
     if (isNaN(date.getTime())) {
-      throw new BadRequestException('Invalid month format. Use YYYY-MM');
+      throw new BadRequestException('error.appointment.invalidMonth');
     }
 
     const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -146,7 +148,7 @@ export class AppointmentsService {
     });
 
     if (!appointment) {
-      throw new NotFoundException('Appointment not found');
+      throw new NotFoundException('error.appointment.notFound');
     }
 
     return appointment;
@@ -176,7 +178,7 @@ export class AppointmentsService {
 
     await this.notifications.createNotification({
       staffId: updated.staffId,
-      message: `Appointment updated: ${updated.title} is now ${updated.status} and scheduled for ${updated.scheduledAt.toLocaleString()}.`,
+      message: this.i18n.t('notification.appointmentUpdated', { title: updated.title, status: updated.status, date: updated.scheduledAt.toLocaleString() }),
       type: NotificationType.GENERAL,
       entityType: 'Appointment',
       entityId: updated.id,
@@ -225,7 +227,7 @@ export class AppointmentsService {
 
     await this.notifications.createNotification({
       staffId: appointment.staff.id,
-      message: `Attendance logged: ${records.length} attendance record${records.length === 1 ? '' : 's'} for ${appointment.title}.`,
+      message: this.i18n.t('notification.attendanceLogged', { count: records.length, title: appointment.title }),
       type: NotificationType.GENERAL,
       entityType: 'Appointment',
       entityId: appointmentId,

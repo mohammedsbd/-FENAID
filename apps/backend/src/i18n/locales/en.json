@@ -1,0 +1,100 @@
+{
+  "error": {
+    "auth": {
+      "invalidCredentials": "Invalid email or password",
+      "staffInactive": "Staff account is inactive",
+      "currentPasswordIncorrect": "Current password is incorrect",
+      "passwordMismatch": "newPassword and confirmPassword must match",
+      "passwordHistory": "New password must not match any of the last 3 passwords",
+      "invalidToken": "Invalid token: missing session ID",
+      "sessionInactive": "Session is no longer active"
+    },
+    "account": {
+      "emailExists": "An account with this email already exists",
+      "notFound": "Account not found",
+      "targetNotFound": "Target account not found",
+      "cannotDeleteSelf": "You cannot delete your own account",
+      "reassignmentRequired": "Reassignment is required before deleting this account",
+      "sessionNotFound": "Session not found",
+      "reassignmentAccountNotFound": "Reassignment account not found",
+      "anotherEmailExists": "Another account already uses that email",
+      "passwordHistory": "New password must not match any of the last 3 passwords"
+    },
+    "child": {
+      "notFound": "Child not found",
+      "invalidParent": "parentId must reference an active parent",
+      "invalidStaff": "assignedStaffId must reference active staff"
+    },
+    "parent": {
+      "notFound": "Parent not found",
+      "duplicateIdTag": "Parent with this ID Tag already exists",
+      "invalidStaff": "assignedStaffId must reference active staff"
+    },
+    "appointment": {
+      "notFound": "Appointment not found",
+      "invalidMonth": "Invalid month format. Use YYYY-MM"
+    },
+    "service": {
+      "notFound": "Service not found",
+      "inactive": "Cannot assign an inactive service",
+      "parentIdRequired": "parentId is required for targetType PARENT",
+      "childIdRequired": "childId is required for targetType CHILD",
+      "childIdMustBeNull": "childId must be null for targetType PARENT",
+      "parentIdMustBeNull": "parentId must be null for targetType CHILD",
+      "assignmentNotFound": "Service assignment not found",
+      "duplicateName": "A service with this name already exists"
+    },
+    "donation": {
+      "notFound": "Donation not found"
+    },
+    "fund": {
+      "notFound": "Fund allocation not found",
+      "forbidden": "Only finance staff or higher can modify fund allocations"
+    },
+    "document": {
+      "notFound": "Document not found"
+    },
+    "progress": {
+      "milestoneNotFound": "Milestone not found",
+      "goalNotFound": "Goal not found"
+    },
+    "dataQuery": {
+      "viewerExportForbidden": "Viewers must use anonymized exports",
+      "invalidField": "Invalid field: {field} for entity {entity}",
+      "savedQueryNotFound": "Saved query not found",
+      "onlyCreatorCanUpdate": "Only the creator or super admin can update",
+      "onlyCreatorCanDelete": "Only the creator or super admin can delete"
+    },
+    "internal": "Internal server error"
+  },
+  "notification": {
+    "progressOverdue": "Overdue Progress Note: {childName} hasn't had a progress note in over 30 days.",
+    "serviceExpiring": "Expiring Service: {serviceName} assignment is ending on {endDate}.",
+    "documentExpiring": "Expiring Document: {docName} will expire on {expiryDate}.",
+    "stagnantFund": "Stagnant Fund Allocation: {parentName} has had funds allocated for over 14 days without disbursement.",
+    "appointmentReminder": "Appointment Reminder: {title} for {targetName} is scheduled tomorrow at {time}.",
+    "weeklyDonationSummary": "Weekly Donation Summary: Received {count} donations totaling {amount} ETB in the last 7 days.",
+    "childRegistered": "New child registered: {childName} ({idTag}) is assigned to {staffName}.",
+    "childUpdated": "Child updated: {childName} ({changes})",
+    "childStatusChanged": "Child status changed: {childName} is now {status}.",
+    "parentRegistered": "New parent registered: {parentName} ({idTag}) is assigned to {staffName}.",
+    "parentUpdated": "Parent updated: {parentName} ({changes})",
+    "parentStatusChanged": "Parent status changed: {parentName} is now {status}.",
+    "progressNoteAdded": "Progress note added: {childName} has a new note from {staffName}.",
+    "milestoneAdded": "Milestone added: {title} for {childName}.",
+    "milestoneUpdated": "Milestone updated: {title} for {childName} is now {status}.",
+    "goalAdded": "Goal added: {title} for {childName}.",
+    "goalUpdated": "Goal updated: {title} for {childName}{achieved}.",
+    "appointmentScheduled": "Appointment scheduled: {title} for {targetName} on {date}.",
+    "appointmentUpdated": "Appointment updated: {title} is now {status} and scheduled for {date}.",
+    "attendanceLogged": "Attendance logged: {count} record(s) for {title}.",
+    "documentUploaded": "Document uploaded: {name} for {ownerName}.",
+    "fundAllocated": "Fund allocated: {amount} ETB for {parentName} ({purpose}).",
+    "fundStatusUpdated": "Fund status updated: {parentName}'s {amount} ETB allocation is now {status}{acknowledged}.",
+    "donationReceived": "Donation received: {amount} ETB from {donorName}{target}.",
+    "serviceAssigned": "Service assigned: {serviceName} for {targetName}.",
+    "serviceAssignmentUpdated": "Service assignment updated: {serviceName} is now {status}.",
+    "welcome": "Welcome to Fikir, {staffName}.",
+    "passwordReset": "Your password has been reset."
+  }
+}

@@ -13,6 +13,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const locale = Cookies.get('locale');
+  if (locale) {
+    config.headers['Accept-Language'] = locale;
+  }
   return config;
 });
 

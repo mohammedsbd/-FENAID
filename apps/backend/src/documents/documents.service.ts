@@ -3,12 +3,14 @@ import { NotificationType } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/document.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateDocumentDto) {
@@ -38,7 +40,7 @@ export class DocumentsService {
     await this.notifications.notifyStaffAndAdmins(
       [document.child?.assignedStaffId ?? document.parent?.assignedStaffId],
       {
-        message: `Document uploaded: ${document.name} for ${ownerName}.`,
+        message: this.i18n.t('notification.documentUploaded', { name: document.name, ownerName }),
         type: NotificationType.GENERAL,
         entityType: 'Document',
         entityId: document.id,
@@ -66,7 +68,7 @@ export class DocumentsService {
 
   async remove(staffId: string, id: string) {
     const existing = await this.prisma.document.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Document not found');
+    if (!existing) throw new NotFoundException('error.document.notFound');
 
     await this.prisma.document.delete({ where: { id } });
     await this.logAudit(staffId, 'DELETE', id, null, existing);

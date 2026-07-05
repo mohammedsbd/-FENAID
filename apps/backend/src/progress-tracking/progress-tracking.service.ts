@@ -11,12 +11,14 @@ import {
   UpdateGoalDto,
   UpdateMilestoneDto,
 } from './dto/progress-tracking.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class ProgressTrackingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   // Progress Notes
@@ -36,7 +38,7 @@ export class ProgressTrackingService {
     await this.logAudit(staffId, 'CREATE', 'ProgressNote', note.id, note);
 
     await this.notifications.notifyStaffAndAdmins([note.child.assignedStaffId], {
-      message: `Progress note added: ${note.child.fullName} has a new note from ${note.staff.fullName}.`,
+      message: this.i18n.t('notification.progressNoteAdded', { childName: note.child.fullName, staffName: note.staff.fullName }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: note.childId,
@@ -91,7 +93,7 @@ export class ProgressTrackingService {
     await this.logAudit(staffId, 'CREATE', 'Milestone', milestone.id, milestone);
 
     await this.notifications.notifyStaffAndAdmins([milestone.child.assignedStaffId], {
-      message: `Milestone added: ${milestone.title} for ${milestone.child.fullName}.`,
+      message: this.i18n.t('notification.milestoneAdded', { title: milestone.title, childName: milestone.child.fullName }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: milestone.childId,
@@ -117,7 +119,7 @@ export class ProgressTrackingService {
 
   async updateMilestone(staffId: string, id: string, dto: UpdateMilestoneDto) {
     const existing = await this.prisma.milestone.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Milestone not found');
+    if (!existing) throw new NotFoundException('error.progress.milestoneNotFound');
 
     const updated = await this.prisma.milestone.update({
       where: { id },
@@ -133,7 +135,7 @@ export class ProgressTrackingService {
     await this.logAudit(staffId, 'UPDATE', 'Milestone', id, updated, existing);
 
     await this.notifications.notifyStaffAndAdmins([updated.child.assignedStaffId], {
-      message: `Milestone updated: ${updated.title} for ${updated.child.fullName} is now ${updated.status}.`,
+      message: this.i18n.t('notification.milestoneUpdated', { title: updated.title, childName: updated.child.fullName, status: updated.status }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: updated.childId,
@@ -160,7 +162,7 @@ export class ProgressTrackingService {
     await this.logAudit(staffId, 'CREATE', 'Goal', goal.id, goal);
 
     await this.notifications.notifyStaffAndAdmins([goal.child.assignedStaffId], {
-      message: `Goal added: ${goal.title} for ${goal.child.fullName}.`,
+      message: this.i18n.t('notification.goalAdded', { title: goal.title, childName: goal.child.fullName }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: goal.childId,
@@ -181,7 +183,7 @@ export class ProgressTrackingService {
 
   async updateGoal(staffId: string, id: string, dto: UpdateGoalDto) {
     const existing = await this.prisma.goal.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Goal not found');
+    if (!existing) throw new NotFoundException('error.progress.goalNotFound');
 
     const updated = await this.prisma.goal.update({
       where: { id },
@@ -200,7 +202,7 @@ export class ProgressTrackingService {
     await this.logAudit(staffId, 'UPDATE', 'Goal', id, updated, existing);
 
     await this.notifications.notifyStaffAndAdmins([updated.child.assignedStaffId], {
-      message: `Goal updated: ${updated.title} for ${updated.child.fullName}${updated.achievedAt ? ' has been achieved' : ''}.`,
+      message: this.i18n.t('notification.goalUpdated', { title: updated.title, childName: updated.child.fullName, achieved: updated.achievedAt ? ' has been achieved' : '' }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: updated.childId,
@@ -211,7 +213,7 @@ export class ProgressTrackingService {
 
   async removeGoal(staffId: string, id: string) {
     const existing = await this.prisma.goal.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Goal not found');
+    if (!existing) throw new NotFoundException('error.progress.goalNotFound');
 
     await this.prisma.goal.delete({ where: { id } });
 

@@ -11,12 +11,14 @@ import {
   ListDonationsDto,
   UpdateDonationDto,
 } from './dto/donation.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class DonationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateDonationDto) {
@@ -69,7 +71,7 @@ export class DonationsService {
     await this.notifications.notifyStaffAndAdmins(
       [donation.restrictedToChild?.assignedStaffId],
       {
-        message: `Donation received: ${donation.amount} ETB from ${donation.donorName}${restrictedTarget}.`,
+        message: this.i18n.t('notification.donationReceived', { amount: donation.amount, donorName: donation.donorName, target: restrictedTarget || '' }),
         type: NotificationType.GENERAL,
         entityType: 'Donation',
         entityId: donation.id,
@@ -124,7 +126,7 @@ export class DonationsService {
     });
 
     if (!donation) {
-      throw new NotFoundException('Donation not found');
+      throw new NotFoundException('error.donation.notFound');
     }
 
     return donation;

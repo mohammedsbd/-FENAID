@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<JwtPayload> {
     if (!payload.sessionId) {
-      throw new UnauthorizedException('Invalid token: missing session ID');
+      throw new UnauthorizedException('error.auth.invalidToken');
     }
 
     const [staff, session] = await Promise.all([
@@ -46,11 +46,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     ]);
 
     if (!staff?.isActive || staff.deletedAt) {
-      throw new UnauthorizedException('Staff account is inactive');
+      throw new UnauthorizedException('error.auth.staffInactive');
     }
 
     if (!session || session.staffId !== staff.id || session.revokedAt || session.expiresAt <= new Date()) {
-      throw new UnauthorizedException('Session is no longer active');
+      throw new UnauthorizedException('error.auth.sessionInactive');
     }
 
     await this.prisma.session.update({

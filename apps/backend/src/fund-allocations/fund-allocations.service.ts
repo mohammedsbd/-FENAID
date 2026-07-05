@@ -12,12 +12,14 @@ import {
   ListFundAllocationsDto,
   UpdateFundAllocationDto,
 } from './dto/fund-allocation.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class FundAllocationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateFundAllocationDto) {
@@ -49,7 +51,7 @@ export class FundAllocationsService {
     await this.logAudit(staffId, 'CREATE', allocation.id, allocation);
 
     await this.notifications.notifyStaffAndAdmins([allocation.parent.assignedStaffId], {
-      message: `Fund allocated: ${allocation.amount} ETB for ${allocation.parent.fullName} (${allocation.purpose}).`,
+      message: this.i18n.t('notification.fundAllocated', { amount: allocation.amount, parentName: allocation.parent.fullName, purpose: allocation.purpose }),
       type: NotificationType.FUND_REMINDER,
       entityType: 'FundAllocation',
       entityId: allocation.id,
@@ -124,7 +126,7 @@ export class FundAllocationsService {
     });
 
     if (!allocation) {
-      throw new NotFoundException('Fund allocation not found');
+      throw new NotFoundException('error.fund.notFound');
     }
 
     return allocation;
@@ -168,7 +170,7 @@ export class FundAllocationsService {
       await this.notifications.notifyStaffAndAdmins(
         [updated.parent.assignedStaffId],
         {
-          message: `Fund status updated: ${updated.parent.fullName}'s ${updated.amount} ETB allocation is now ${updated.status}${updated.parentAcknowledged ? ' and acknowledged' : ''}.`,
+          message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status, acknowledged: updated.parentAcknowledged ? ' and acknowledged' : '' }),
           type: NotificationType.FUND_REMINDER,
           entityType: 'FundAllocation',
           entityId: updated.id,

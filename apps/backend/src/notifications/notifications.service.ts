@@ -8,6 +8,7 @@ import {
   StaffRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { I18nService } from '../i18n/i18n.service';
 
 type NotificationInput = {
   staffId: string;
@@ -27,7 +28,10 @@ type NotificationOptions = {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async findMyUnread(staffId: string) {
     return this.prisma.notification.findMany({
@@ -173,7 +177,7 @@ export class NotificationsService {
     for (const child of children) {
       await this.createNotification({
         staffId: child.assignedStaffId,
-        message: `Overdue Progress Note: ${child.fullName} hasn't had a progress note in over 30 days.`,
+        message: this.i18n.t('notification.progressOverdue', { childName: child.fullName }),
         type: NotificationType.PROGRESS_OVERDUE,
         entityType: 'Child',
         entityId: child.id,
@@ -203,7 +207,10 @@ export class NotificationsService {
     for (const assignment of assignments) {
       await this.createNotification({
         staffId: assignment.assignedStaffId,
-        message: `Expiring Service: ${assignment.service.name} assignment is ending on ${assignment.endDate?.toLocaleDateString()}.`,
+        message: this.i18n.t('notification.serviceExpiring', {
+          serviceName: assignment.service.name,
+          endDate: assignment.endDate?.toLocaleDateString() ?? '',
+        }),
         type: NotificationType.SERVICE_EXPIRY,
         entityType: 'ServiceAssignment',
         entityId: assignment.id,
@@ -238,7 +245,10 @@ export class NotificationsService {
           doc.child?.assignedStaffId ??
           doc.parent?.assignedStaffId ??
           doc.uploadedById,
-        message: `Expiring Document: ${doc.name} will expire on ${doc.expiresAt?.toLocaleDateString()}.`,
+        message: this.i18n.t('notification.documentExpiring', {
+          docName: doc.name,
+          expiryDate: doc.expiresAt?.toLocaleDateString() ?? '',
+        }),
         type: NotificationType.DOCUMENT_EXPIRY,
         entityType: 'Document',
         entityId: doc.id,
@@ -264,7 +274,7 @@ export class NotificationsService {
     let created = 0;
     for (const allocation of allocations) {
       created += await this.notifyAdmins({
-        message: `Stagnant Fund Allocation: ${allocation.parent.fullName} has had funds allocated for over 14 days without disbursement.`,
+        message: this.i18n.t('notification.stagnantFund', { parentName: allocation.parent.fullName }),
         type: NotificationType.FUND_REMINDER,
         entityType: 'FundAllocation',
         entityId: allocation.id,
@@ -306,7 +316,11 @@ export class NotificationsService {
 
       await this.createNotification({
         staffId: appointment.staffId,
-        message: `Appointment Reminder: ${appointment.title} for ${targetName} is scheduled tomorrow at ${appointment.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+        message: this.i18n.t('notification.appointmentReminder', {
+          title: appointment.title,
+          targetName,
+          time: appointment.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }),
         type: NotificationType.GENERAL,
         entityType: 'Appointment',
         entityId: appointment.id,
@@ -333,7 +347,7 @@ export class NotificationsService {
     const summaryDate = new Date().toISOString().slice(0, 10);
 
     const sent = await this.notifyAdmins({
-      message: `Weekly Donation Summary: Received ${count} donations totaling ${amount} ETB in the last 7 days.`,
+      message: this.i18n.t('notification.weeklyDonationSummary', { count, amount }),
       type: NotificationType.GENERAL,
       entityType: 'DonationSummary',
       entityId: summaryDate,

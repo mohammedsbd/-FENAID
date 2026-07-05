@@ -1,0 +1,100 @@
+{
+  "error": {
+    "auth": {
+      "invalidCredentials": "Imeelii ykn jecha icciitii sirrii miti",
+      "staffInactive": "Akkaawntiin hojjetaa hin hojjetu",
+      "currentPasswordIncorrect": "Jecha icciitii ammaa sirrii miti",
+      "passwordMismatch": "Jecha icciitii haaraa fi mirkaneessituu wal fakkaachuu qabu",
+      "passwordHistory": "Jecha icciitii haaraan jecha icciitii 3 darbe waliin walsimuu hin qabu",
+      "invalidToken": "Token sirrii miti: ID tawaa hin jiru",
+      "sessionInactive": "Tawaan hin hojjetu"
+    },
+    "account": {
+      "emailExists": "Akkaawntiin imeelii kanaan duraan jira",
+      "notFound": "Akkaawntiin hin argame",
+      "targetNotFound": "Akkaawntii fe'an hin argame",
+      "cannotDeleteSelf": "Akkaawntii kee ofii balleessuu hin dandeessu",
+      "reassignmentRequired": "Akkaawntii kana balleessuuf dura jijjiirraan barbaachisa",
+      "sessionNotFound": "Tawaan hin argame",
+      "reassignmentAccountNotFound": "Akkaawntii jijjiirraatiif hin argame",
+      "anotherEmailExists": "Akkaawntiin biraa imeelii kanaan duraan jira",
+      "passwordHistory": "Jecha icciitii haaraan jecha icciitii 3 darbe waliin walsimuu hin qabu"
+    },
+    "child": {
+      "notFound": "Mucaan hin argame",
+      "invalidParent": "parentId warra hojjetuutti maxxanuu qaba",
+      "invalidStaff": "assignedStaffId hojjetaa hojjetuutti maxxanuu qaba"
+    },
+    "parent": {
+      "notFound": "Warri hin argame",
+      "duplicateIdTag": "Warri ID kanaan duraan jira",
+      "invalidStaff": "assignedStaffId hojjetaa hojjetuutti maxxanuu qaba"
+    },
+    "appointment": {
+      "notFound": "Muudamaan hin argame",
+      "invalidMonth": "Ji'a sirrii miti. Fayyadami YYYY-MM"
+    },
+    "service": {
+      "notFound": "Tajaajilli hin argame",
+      "inactive": "Tajaajila hin hojjenne ramaduu hin dandeessu",
+      "parentIdRequired": "parentId targetType PARENTf barbaachisa",
+      "childIdRequired": "childId targetType CHILDf barbaachisa",
+      "childIdMustBeNull": "childId targetType PARENTf duwwaa ta'uu qaba",
+      "parentIdMustBeNull": "parentId targetType CHILDf duwwaa ta'uu qaba",
+      "assignmentNotFound": "Ramaddiin tajaajilaa hin argame",
+      "duplicateName": "Tajaajilli maqaa kanaan duraan jira"
+    },
+    "donation": {
+      "notFound": "Arjoomiin hin argame"
+    },
+    "fund": {
+      "notFound": "Qoodni maallaqaa hin argame",
+      "forbidden": "Hojjettootni maallaqaa ykn isaan ol qofa qoodni maallaqaa jijjiirau danda'u"
+    },
+    "document": {
+      "notFound": "Dokumentiin hin argame"
+    },
+    "progress": {
+      "milestoneNotFound": "Bu'aan sadarkaa hin argame",
+      "goalNotFound": "Kaayyoon hin argame"
+    },
+    "dataQuery": {
+      "viewerExportForbidden": "Ilaaltottiin export maqaa-dhabee fayyadamuu qabu",
+      "invalidField": "Dirree sirrii miti: {field} entity {entity}f",
+      "savedQueryNotFound": "Gaaffiin hike hin argame",
+      "onlyCreatorCanUpdate": "Uumtuu ykn super admin qofa odeeffannoo haaromsuu danda'a",
+      "onlyCreatorCanDelete": "Uumtuu ykn super admin qofa balleessuu danda'a"
+    },
+    "internal": "Dogoggorri adeemsa keessaa"
+  },
+  "notification": {
+    "progressOverdue": "Hubannoon Sadarkaa aance: {childName} hubannoo sadarkaa guyyoota 30 keessatti hin qabu.",
+    "serviceExpiring": "Tajaajilli xumuramaa: {serviceName} ramaddiin {endDate} booda xumurama.",
+    "documentExpiring": "Dokumentiin xumuramaa: {docName} {expiryDate} booda xumurama.",
+    "stagnantFund": "Qoodni maallaqaa joo'ate: {parentName} guyyoota 14 oliif qoodni maallaqaa kaffaltii malee jira.",
+    "appointmentReminder": "Sammuuqa Muudamaa: {title} {targetName}f boru {time} irrati.",
+    "weeklyDonationSummary": "Gabaabni arjoomii torbanii: Guyoota 7 darban keessa arjoomii {count} fi maallaqa {amount} Birr argame.",
+    "childRegistered": "Mucaan haaraa galmaa'e: {childName} ({idTag}) {staffName} irratti ramadame.",
+    "childUpdated": "Mucaan haaromfame: {childName} ({changes})",
+    "childStatusChanged": "Haalli mucaa jijjiirame: {childName} amma {status}.",
+    "parentRegistered": "Warri haaraa galmaa'an: {parentName} ({idTag}) {staffName} irratti ramadaman.",
+    "parentUpdated": "Warri haaromfaman: {parentName} ({changes})",
+    "parentStatusChanged": "Haalli warraa jijjiirame: {parentName} amma {status}.",
+    "progressNoteAdded": "Hubannoon sadarkaa dabale: {childName} {staffName} irraa hubannoo haaraa qaba.",
+    "milestoneAdded": "Bu'aan sadarkaa dabale: {title} {childName}f.",
+    "milestoneUpdated": "Bu'aan sadarkaa haaromfame: {title} {childName}f amma {status}.",
+    "goalAdded": "Kaayyoon dabale: {title} {childName}f.",
+    "goalUpdated": "Kaayyoon haaromfame: {title} {childName} {status}.",
+    "appointmentScheduled": "Muudamaan qophaa'e: {title} {targetName}f {date}.",
+    "appointmentUpdated": "Muudamaan haaromfame: {title} amma {status} fi {date} irratti qophaa'e.",
+    "attendanceLogged": "Argamni galmaa'e: {count} galmee(wwan) {title}f.",
+    "documentUploaded": "Dokumentiin baayyate: {name} {ownerName}f.",
+    "fundAllocated": "Maallaqni qoodame: {amount} Birr {parentName}f ({purpose}).",
+    "fundStatusUpdated": "Haalli maallaqaa jijjiirame: {parentName}'s qoodni {amount} Birr amma {status}{acknowledged}.",
+    "donationReceived": "Arjoomiin argame: {amount} Birr {donorName}{target} irraa.",
+    "serviceAssigned": "Tajaajilli ramadame: {serviceName} {targetName}f.",
+    "serviceAssignmentUpdated": "Ramaddiin tajaajilaa haaromfame: {serviceName} amma {status}.",
+    "welcome": "Fikiritti bagaa nagaan dhuftan, {staffName}.",
+    "passwordReset": "Jecha icciitiin haarommeera."
+  }
+}

@@ -86,7 +86,7 @@ export class AccountsService {
     const email = dto.email.toLowerCase();
     const existing = await this.prisma.staff.findUnique({ where: { email } });
     if (existing) {
-      throw new BadRequestException('An account with this email already exists');
+      throw new BadRequestException('error.account.emailExists');
     }
 
     const plainPassword = dto.password || generateTempPassword();
@@ -143,7 +143,7 @@ export class AccountsService {
         select: { id: true },
       });
       if (duplicate) {
-        throw new BadRequestException('Another account already uses that email');
+        throw new BadRequestException('error.account.anotherEmailExists');
       }
     }
 
@@ -251,14 +251,14 @@ export class AccountsService {
     const actor = await this.mustFindStaff(actorId);
     const matches = await bcrypt.compare(dto.currentPassword, actor.passwordHash);
     if (!matches) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('error.auth.currentPasswordIncorrect');
     }
 
     const target = await this.prisma.staff.findUnique({
       where: { email: dto.targetEmail.toLowerCase() },
     });
     if (!target) {
-      throw new NotFoundException('Target account not found');
+      throw new NotFoundException('error.account.targetNotFound');
     }
 
     const updated = await this.prisma.staff.update({
@@ -292,11 +292,11 @@ export class AccountsService {
     const actor = await this.mustFindStaff(actorId);
     const matches = await bcrypt.compare(dto.currentPassword, actor.passwordHash);
     if (!matches) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('error.auth.currentPasswordIncorrect');
     }
 
     if (id === actorId) {
-      throw new BadRequestException('You cannot delete your own account');
+      throw new BadRequestException('error.account.cannotDeleteSelf');
     }
 
     const target = await this.mustFindStaff(id);
@@ -304,7 +304,7 @@ export class AccountsService {
     const assignedChildren = await this.prisma.child.count({ where: { assignedStaffId: id } });
 
     if ((assignedParents > 0 || assignedChildren > 0) && !dto.reassignToStaffId) {
-      throw new BadRequestException('Reassignment is required before deleting this account');
+      throw new BadRequestException('error.account.reassignmentRequired');
     }
 
     if (dto.reassignToStaffId) {
@@ -417,7 +417,7 @@ export class AccountsService {
   async terminateSession(actorId: string, sessionId: string, meta: AuditMeta = {}) {
     const session = await this.prisma.session.findUnique({ where: { tokenId: sessionId } });
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('error.account.sessionNotFound');
     }
 
     await this.prisma.session.update({
@@ -504,7 +504,7 @@ export class AccountsService {
   async updateMe(staffId: string, dto: UpdateMyAccountDto, meta: AuditMeta = {}) {
     const existing = await this.prisma.staff.findUnique({ where: { id: staffId } });
     if (!existing) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException('error.account.notFound');
     }
 
     if (dto.email && dto.email.toLowerCase() !== existing.email) {
@@ -513,7 +513,7 @@ export class AccountsService {
         select: { id: true },
       });
       if (duplicate) {
-        throw new BadRequestException('Another account already uses that email');
+        throw new BadRequestException('error.account.anotherEmailExists');
       }
     }
 
@@ -581,7 +581,7 @@ export class AccountsService {
   async terminateMySession(staffId: string, sessionId: string, meta: AuditMeta = {}) {
     const session = await this.prisma.session.findUnique({ where: { tokenId: sessionId } });
     if (!session || session.staffId !== staffId) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('error.account.sessionNotFound');
     }
     return this.terminateSession(staffId, sessionId, meta);
   }
@@ -589,7 +589,7 @@ export class AccountsService {
   private async mustFindStaff(id: string) {
     const staff = await this.prisma.staff.findUnique({ where: { id } });
     if (!staff) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException('error.account.notFound');
     }
     return staff;
   }
@@ -600,7 +600,7 @@ export class AccountsService {
       select: { id: true },
     });
     if (!staff) {
-      throw new NotFoundException('Reassignment account not found');
+      throw new NotFoundException('error.account.reassignmentAccountNotFound');
     }
     return staff;
   }
@@ -626,7 +626,7 @@ export class AccountsService {
 
     for (const passwordHash of [currentPasswordHash, ...history.map((item) => item.passwordHash)]) {
       if (await bcrypt.compare(candidatePassword, passwordHash)) {
-        throw new BadRequestException('New password must not match any of the last 3 passwords');
+        throw new BadRequestException('error.account.passwordHistory');
       }
     }
   }

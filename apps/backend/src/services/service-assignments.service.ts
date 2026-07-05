@@ -11,27 +11,29 @@ import {
   ListServiceAssignmentsDto,
   UpdateServiceAssignmentDto,
 } from './dto/service-assignment.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
 export class ServiceAssignmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateServiceAssignmentDto) {
     // Validate targetType consistency
     if (dto.targetType === ServiceTargetType.PARENT && !dto.parentId) {
-      throw new BadRequestException('parentId is required for targetType PARENT');
+      throw new BadRequestException('error.service.parentIdRequired');
     }
     if (dto.targetType === ServiceTargetType.CHILD && !dto.childId) {
-      throw new BadRequestException('childId is required for targetType CHILD');
+      throw new BadRequestException('error.service.childIdRequired');
     }
     if (dto.targetType === ServiceTargetType.PARENT && dto.childId) {
-      throw new BadRequestException('childId must be null for targetType PARENT');
+      throw new BadRequestException('error.service.childIdMustBeNull');
     }
     if (dto.targetType === ServiceTargetType.CHILD && dto.parentId) {
-      throw new BadRequestException('parentId must be null for targetType CHILD');
+      throw new BadRequestException('error.service.parentIdMustBeNull');
     }
 
     // Verify service exists and is active
@@ -40,11 +42,11 @@ export class ServiceAssignmentsService {
     });
 
     if (!service) {
-      throw new NotFoundException('Service not found');
+      throw new NotFoundException('error.service.notFound');
     }
 
     if (!service.isActive) {
-      throw new BadRequestException('Cannot assign an inactive service');
+      throw new BadRequestException('error.service.inactive');
     }
 
     if (service.targetType !== dto.targetType) {
@@ -102,7 +104,7 @@ export class ServiceAssignmentsService {
       assignment.targetType.toLowerCase();
 
     await this.notifications.notifyStaffAndAdmins([assignment.assignedStaffId], {
-      message: `Service assigned: ${assignment.service.name} for ${targetName}.`,
+      message: this.i18n.t('notification.serviceAssigned', { serviceName: assignment.service.name, targetName }),
       type: NotificationType.GENERAL,
       entityType: 'ServiceAssignment',
       entityId: assignment.id,
@@ -188,7 +190,7 @@ export class ServiceAssignmentsService {
     });
 
     if (!assignment) {
-      throw new NotFoundException('Service assignment not found');
+      throw new NotFoundException('error.service.assignmentNotFound');
     }
 
     return assignment;
@@ -224,7 +226,7 @@ export class ServiceAssignmentsService {
     await this.logAudit(staffId, 'UPDATE', id, updated, existing);
 
     await this.notifications.notifyStaffAndAdmins([existing.assignedStaff.id], {
-      message: `Service assignment updated: ${existing.service.name} is now ${updated.status}.`,
+      message: this.i18n.t('notification.serviceAssignmentUpdated', { serviceName: existing.service.name, status: updated.status }),
       type: NotificationType.GENERAL,
       entityType: 'ServiceAssignment',
       entityId: updated.id,

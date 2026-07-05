@@ -39,7 +39,7 @@ export class AuthService {
         ipAddress: metadata.ipAddress,
         userAgent: metadata.userAgent,
       });
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('error.auth.invalidCredentials');
     }
 
     const passwordMatches = await bcrypt.compare(
@@ -62,7 +62,7 @@ export class AuthService {
     });
 
     if (!passwordMatches) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('error.auth.invalidCredentials');
     }
 
     const sessionId = randomUUID();
@@ -111,7 +111,7 @@ export class AuthService {
 
   async changePassword(staffId: string, dto: ChangePasswordDto) {
     if (dto.newPassword !== dto.confirmPassword) {
-      throw new BadRequestException('newPassword and confirmPassword must match');
+      throw new BadRequestException('error.auth.passwordMismatch');
     }
 
     const staff = await this.prisma.staff.findUnique({
@@ -119,7 +119,7 @@ export class AuthService {
     });
 
     if (!staff?.isActive) {
-      throw new UnauthorizedException('Staff account is inactive');
+      throw new UnauthorizedException('error.auth.staffInactive');
     }
 
     const currentPasswordMatches = await bcrypt.compare(
@@ -128,7 +128,7 @@ export class AuthService {
     );
 
     if (!currentPasswordMatches) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('error.auth.currentPasswordIncorrect');
     }
 
     await this.ensurePasswordNotReused(staff.id, dto.newPassword, staff.passwordHash);
@@ -182,7 +182,7 @@ export class AuthService {
     });
 
     if (!staff?.isActive) {
-      throw new UnauthorizedException('Staff account is inactive');
+      throw new UnauthorizedException('error.auth.staffInactive');
     }
 
     return staff;
@@ -230,7 +230,7 @@ export class AuthService {
     const previousHashes = [currentPasswordHash, ...history.map((item) => item.passwordHash)];
     for (const passwordHash of previousHashes) {
       if (await bcrypt.compare(candidatePassword, passwordHash)) {
-        throw new BadRequestException('New password must not match any of the last 3 passwords');
+        throw new BadRequestException('error.auth.passwordHistory');
       }
     }
   }

@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateParentDto } from './dto/create-parent.dto';
 import { ListParentsDto } from './dto/list-parents.dto';
 import { UpdateParentDto } from './dto/update-parent.dto';
+import { I18nService } from '../i18n/i18n.service';
 
 type ParentAuditSnapshot = Omit<Parent, 'createdAt' | 'updatedAt'> & {
   createdAt?: Date;
@@ -29,6 +30,7 @@ export class ParentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(staffId: string, dto: CreateParentDto) {
@@ -74,7 +76,7 @@ export class ParentsService {
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: `New parent registered: ${parent.fullName} (${parent.idTag}) is assigned to ${parent.assignedStaff.fullName}.`,
+      message: this.i18n.t('notification.parentRegistered', { parentName: parent.fullName, idTag: parent.idTag, staffName: parent.assignedStaff.fullName }),
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -248,7 +250,7 @@ export class ParentsService {
     });
 
     if (!parent) {
-      throw new NotFoundException('Parent not found');
+      throw new NotFoundException('error.parent.notFound');
     }
 
     return parent;
@@ -331,7 +333,7 @@ export class ParentsService {
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: `Parent status changed: ${existing.fullName} is now ${newStatus}.`,
+      message: this.i18n.t('notification.parentStatusChanged', { parentName: existing.fullName, status: newStatus }),
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -362,7 +364,7 @@ export class ParentsService {
     });
 
     if (!staff) {
-      throw new BadRequestException('assignedStaffId must reference active staff');
+      throw new BadRequestException('error.parent.invalidStaff');
     }
   }
 
@@ -372,7 +374,7 @@ export class ParentsService {
     });
 
     if (!parent) {
-      throw new NotFoundException('Parent not found');
+      throw new NotFoundException('error.parent.notFound');
     }
 
     return parent;

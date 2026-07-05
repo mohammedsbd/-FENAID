@@ -146,7 +146,7 @@ export class DataQueryService {
       !anonymize &&
       !staff?.canExportIdentified
     ) {
-      throw new ForbiddenException('Viewers must use anonymized exports');
+      throw new ForbiddenException('error.dataQuery.viewerExportForbidden');
     }
 
     let columns = [...dto.columns];
@@ -487,7 +487,7 @@ export class DataQueryService {
   async getSavedQuery(id: string) {
     const query = await this.prisma.savedQuery.findUnique({ where: { id } });
     if (!query) {
-      throw new NotFoundException('Saved query not found');
+      throw new NotFoundException('error.dataQuery.savedQueryNotFound');
     }
     return query;
   }
@@ -500,7 +500,7 @@ export class DataQueryService {
   ) {
     const existing = await this.getSavedQuery(id);
     if (existing.createdById !== staffId && role !== StaffRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only the creator or super admin can update');
+      throw new ForbiddenException('error.dataQuery.onlyCreatorCanUpdate');
     }
 
     return this.prisma.savedQuery.update({
@@ -523,7 +523,7 @@ export class DataQueryService {
   async deleteSavedQuery(staffId: string, role: StaffRole, id: string) {
     const existing = await this.getSavedQuery(id);
     if (existing.createdById !== staffId && role !== StaffRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only the creator or super admin can delete');
+      throw new ForbiddenException('error.dataQuery.onlyCreatorCanDelete');
     }
 
     await this.prisma.savedQuery.delete({ where: { id } });
