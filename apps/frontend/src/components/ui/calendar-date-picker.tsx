@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   addEthiopianMonths,
   addGregorianMonths,
@@ -47,6 +46,7 @@ export function CalendarDatePicker({
   const [open, setOpen] = useState(false);
   const [viewIso, setViewIso] = useState(value || todayIso());
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   const displayValue = value
     ? formatCalendarDate(value, calendarSystem)
@@ -69,9 +69,11 @@ export function CalendarDatePicker({
     if (!open) return;
 
     function closeOnOutsideClick(event: MouseEvent) {
+      const target = event.target as Node;
       if (
         wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
+        !wrapperRef.current.contains(target) &&
+        (!popupRef.current || !popupRef.current.contains(target))
       ) {
         setOpen(false);
       }
@@ -113,10 +115,10 @@ export function CalendarDatePicker({
           grid={grid}
           calendarSystem={calendarSystem}
           selectedIso={selectedIso}
-          viewIso={viewIso}
           minYear={minYear}
           maxYear={maxYear}
           wrapperRef={wrapperRef}
+          popupRef={popupRef}
           onSelect={(iso) => {
             onChange(iso);
             setViewIso(iso);
@@ -163,10 +165,10 @@ function CalendarDatePickerPopup({
   grid,
   calendarSystem,
   selectedIso,
-  viewIso,
   minYear,
   maxYear,
   wrapperRef,
+  popupRef,
   onSelect,
   onClear,
   onToday,
@@ -178,10 +180,10 @@ function CalendarDatePickerPopup({
   grid: ReturnType<typeof buildMonthGrid>;
   calendarSystem: CalendarSystem;
   selectedIso: string;
-  viewIso: string;
   minYear: number;
   maxYear: number;
   wrapperRef: React.RefObject<HTMLDivElement | null>;
+  popupRef: React.RefObject<HTMLDivElement>;
   onSelect: (iso: string) => void;
   onClear: () => void;
   onToday: () => void;
@@ -218,6 +220,7 @@ function CalendarDatePickerPopup({
 
   return (
     <div
+      ref={popupRef}
       style={style}
       className="w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white p-3 shadow-lg"
     >
@@ -225,7 +228,6 @@ function CalendarDatePickerPopup({
         grid={grid}
         calendarSystem={calendarSystem}
         selectedIso={selectedIso}
-        viewIso={viewIso}
         minYear={minYear}
         maxYear={maxYear}
         onSelect={onSelect}
@@ -244,7 +246,6 @@ function CalendarDatePickerControls({
   grid,
   calendarSystem,
   selectedIso,
-  viewIso,
   minYear,
   maxYear,
   onSelect,
@@ -258,7 +259,6 @@ function CalendarDatePickerControls({
   grid: ReturnType<typeof buildMonthGrid>;
   calendarSystem: CalendarSystem;
   selectedIso: string;
-  viewIso: string;
   minYear: number;
   maxYear: number;
   onSelect: (iso: string) => void;
@@ -269,7 +269,24 @@ function CalendarDatePickerControls({
   onYearChange: (year: number) => void;
   onMonthChange: (month: number) => void;
 }) {
-  const { t } = { t: (key: string, fallback?: string) => fallback || key };
+
+  const { minYearAdj, maxYearAdj } = useMemo(() => {
+    if (calendarSystem === 'ETHIOPIAN') {
+      const ethMin = gregorianToEthiopian(new Date(Date.UTC(minYear, 0, 1))).year;
+      const ethMax = gregorianToEthiopian(new Date(Date.UTC(maxYear, 11, 31))).year;
+      return { minYearAdj: ethMin, maxYearAdj: ethMax };
+    }
+    return { minYearAdj: minYear, maxYearAdj: maxYear };
+  }, [calendarSystem, minYear, maxYear]);
+
+  const years = useMemo(() => {
+    let min = minYearAdj;
+    let max = maxYearAdj;
+    if (grid.year < min) min = grid.year;
+    if (grid.year > max) max = grid.year;
+
+    return Array.from({ length: max - min + 1 }, (_, index) => max - index);
+  }, [minYearAdj, maxYearAdj, grid.year]);
 
   return (
     <>
@@ -289,12 +306,17 @@ function CalendarDatePickerControls({
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Input
-          inputMode="numeric"
+        <select
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
           value={grid.year}
-          onChange={(event) => onYearChange(clampYear(Number(event.target.value), minYear, maxYear))}
-          className="h-9"
-        />
+          onChange={(event) => onYearChange(Number(event.target.value))}
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
         <select
           className="h-9 rounded-md border border-input bg-background px-2 text-sm"
           value={grid.month}
@@ -437,9 +459,4 @@ function setCalendarYearMonth(
 
 function todayIso() {
   return toIsoDateInputValue(new Date());
-}
-
-function clampYear(year: number, minYear: number, maxYear: number) {
-  if (!Number.isFinite(year)) return minYear;
-  return Math.min(maxYear, Math.max(minYear, year));
 }
