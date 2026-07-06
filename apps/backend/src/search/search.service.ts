@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, StaffRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { GlobalSearchDto } from './dto/global-search.dto';
 
 @Injectable()
 export class SearchService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async global(query: GlobalSearchDto) {
+  async global(user: JwtPayload, query: GlobalSearchDto) {
     const search = query.q.trim();
     const limit = Math.min(query.limit ?? 8, 20);
 
@@ -20,7 +21,12 @@ export class SearchService {
       };
     }
 
+    const staffFilter = user.role !== StaffRole.SUPER_ADMIN
+      ? { assignedStaffId: user.staffId }
+      : {};
+
     const parentWhere: Prisma.ParentWhereInput = {
+      ...staffFilter,
       OR: [
         { fullName: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { idTag: { contains: search, mode: Prisma.QueryMode.insensitive } },
@@ -31,6 +37,7 @@ export class SearchService {
     };
 
     const childWhere: Prisma.ChildWhereInput = {
+      ...staffFilter,
       OR: [
         { fullName: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { idTag: { contains: search, mode: Prisma.QueryMode.insensitive } },

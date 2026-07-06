@@ -53,10 +53,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error = HttpStatus[status] ?? 'Error';
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message =
-        process.env.NODE_ENV === 'production'
-          ? this.i18n.t('error.internal', {}, locale)
-          : exception.message;
+      message = this.i18n.t('error.internal', {}, locale);
       error = 'Internal Server Error';
 
       this.logger.error(

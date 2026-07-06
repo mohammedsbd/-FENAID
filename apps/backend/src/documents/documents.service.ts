@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationType } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationType, StaffRole } from '@prisma/client';
+import { URL } from 'url';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/document.dto';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
@@ -14,6 +16,8 @@ export class DocumentsService {
   ) {}
 
   async create(staffId: string, dto: CreateDocumentDto) {
+    this.validateFileUrl(dto.fileUrl);
+
     const document = await this.prisma.document.create({
       data: {
         name: dto.name,
@@ -50,17 +54,37 @@ export class DocumentsService {
     return document;
   }
 
-  async findByParent(parentId: string) {
+  async findByParent(user: JwtPayload, parentId: string) {
     return this.prisma.document.findMany({
-      where: { parentId },
+      where: {
+        parentId,
+        ...(user.role !== StaffRole.SUPER_ADMIN
+          ? {
+              OR: [
+                { parent: { assignedStaffId: user.staffId } },
+                { child: { assignedStaffId: user.staffId } },
+              ],
+            }
+          : {}),
+      },
       include: { uploadedBy: { select: { fullName: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findByChild(childId: string) {
+  async findByChild(user: JwtPayload, childId: string) {
     return this.prisma.document.findMany({
-      where: { childId },
+      where: {
+        childId,
+        ...(user.role !== StaffRole.SUPER_ADMIN
+          ? {
+              OR: [
+                { parent: { assignedStaffId: user.staffId } },
+                { child: { assignedStaffId: user.staffId } },
+              ],
+            }
+          : {}),
+      },
       include: { uploadedBy: { select: { fullName: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -73,6 +97,30 @@ export class DocumentsService {
     await this.prisma.document.delete({ where: { id } });
     await this.logAudit(staffId, 'DELETE', id, null, existing);
     return { success: true };
+  }
+
+  private validateFileUrl(url: string) {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
+
+      const blockedPatterns = [
+        /^127\./,
+        /^10\./,
+        /^172\.(1[6-9]|2[0-9]|3[01])\./,
+        /^192\.168\./,
+        /^0\./,
+        /^169\.254\./,
+        /^::1$/,
+        /^localhost$/i,
+      ];
+
+      if (blockedPatterns.some((p) => p.test(hostname))) {
+        throw new BadRequestException('error.document.invalidUrl');
+      }
+    } catch {
+      throw new BadRequestException('error.document.invalidUrl');
+    }
   }
 
   private async logAudit(

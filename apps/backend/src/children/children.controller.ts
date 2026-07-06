@@ -33,13 +33,13 @@ export class ChildrenController {
   }
 
   @Get()
-  findAll(@Query() query: ListChildrenDto) {
-    return this.childrenService.findAll(query);
+  findAll(@Req() request: AuthenticatedRequest, @Query() query: ListChildrenDto) {
+    return this.childrenService.findAll(request.user, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.childrenService.findOne(id);
+  findOne(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.childrenService.findOne(request.user, id);
   }
 
   @Patch(':id')

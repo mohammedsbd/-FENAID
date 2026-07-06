@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppointmentStatus, NotificationType, Prisma } from '@prisma/client';
+import { AppointmentStatus, NotificationType, Prisma, StaffRole } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -12,6 +12,7 @@ import {
   LogAttendanceDto,
   UpdateAppointmentDto,
 } from './dto/appointment.dto';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
@@ -60,8 +61,9 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async findAll(query: ListAppointmentsDto) {
+  async findAll(user: JwtPayload, query: ListAppointmentsDto) {
     const where: Prisma.AppointmentWhereInput = {
+      ...(user.role !== StaffRole.SUPER_ADMIN ? { staffId: user.staffId } : {}),
       ...(query.staffId && { staffId: query.staffId }),
       ...(query.childId && { childId: query.childId }),
       ...(query.parentId && { parentId: query.parentId }),
@@ -89,7 +91,7 @@ export class AppointmentsService {
     });
   }
 
-  async getCalendar(month: string, query: ListAppointmentsDto) {
+  async getCalendar(user: JwtPayload, month: string, query: ListAppointmentsDto) {
     // month format: YYYY-MM
     const date = new Date(`${month}-01`);
     if (isNaN(date.getTime())) {
@@ -109,6 +111,7 @@ export class AppointmentsService {
       ...(query.parentId && { parentId: query.parentId }),
       ...(query.status && { status: query.status }),
       ...(query.type && { type: query.type }),
+      ...(user.role !== StaffRole.SUPER_ADMIN ? { staffId: user.staffId } : {}),
     };
 
     const appointments = await this.prisma.appointment.findMany({
@@ -131,7 +134,33 @@ export class AppointmentsService {
     }, {} as Record<string, typeof appointments>);
   }
 
-  async findOne(id: string) {
+  async findOne(user: JwtPayload, id: string) {
+    const appointment = await this.prisma.appointment.findFirst({
+      where: {
+        id,
+        ...(user.role !== StaffRole.SUPER_ADMIN ? { staffId: user.staffId } : {}),
+      },
+      include: {
+        staff: { select: { fullName: true, id: true } },
+        child: { select: { fullName: true, id: true, photoUrl: true } },
+        parent: { select: { fullName: true, id: true, photoUrl: true } },
+        attendanceRecords: {
+          include: {
+            parent: { select: { fullName: true } },
+            child: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('error.appointment.notFound');
+    }
+
+    return appointment;
+  }
+
+  private async findById(id: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -155,7 +184,7 @@ export class AppointmentsService {
   }
 
   async update(staffId: string, id: string, dto: UpdateAppointmentDto) {
-    const existing = await this.findOne(id);
+    const existing = await this.findById(id);
 
     const updated = await this.prisma.appointment.update({
       where: { id },
@@ -188,7 +217,7 @@ export class AppointmentsService {
   }
 
   async remove(staffId: string, id: string) {
-    const existing = await this.findOne(id);
+    const existing = await this.findById(id);
     await this.prisma.appointment.delete({ where: { id } });
     await this.logAudit(staffId, 'DELETE', 'Appointment', id, null, existing);
     return { success: true };
@@ -196,7 +225,7 @@ export class AppointmentsService {
 
   // Attendance
   async logAttendance(staffId: string, appointmentId: string, dto: LogAttendanceDto) {
-    const appointment = await this.findOne(appointmentId); // Ensure appointment exists
+    const appointment = await this.findById(appointmentId); // Ensure appointment exists
 
     const records = await Promise.all(
       dto.records.map((record) =>
@@ -236,7 +265,7 @@ export class AppointmentsService {
     return records;
   }
 
-  async getAttendance(appointmentId: string) {
+  async getAttendance(user: JwtPayload, appointmentId: string) {
     return this.prisma.attendanceRecord.findMany({
       where: { appointmentId },
       include: {

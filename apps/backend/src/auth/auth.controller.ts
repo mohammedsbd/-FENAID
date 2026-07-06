@@ -24,6 +24,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   changePassword(
     @Req() request: AuthenticatedRequest,
     @Body() changePasswordDto: ChangePasswordDto,
@@ -37,5 +38,10 @@ export class AuthController {
   @Get('me')
   me(@Req() request: AuthenticatedRequest) {
     return this.authService.me(request.user.staffId);
+  }
+
+  @Post('logout')
+  logout(@Req() request: AuthenticatedRequest) {
+    return this.authService.logout(request.user.sessionId);
   }
 }

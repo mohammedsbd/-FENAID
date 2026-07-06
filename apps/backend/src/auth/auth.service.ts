@@ -33,9 +33,7 @@ export class AuthService {
       await this.logLoginAttempt({
         staffId: null,
         entityId: email,
-        email,
         success: false,
-        reason: 'STAFF_NOT_FOUND_OR_INACTIVE',
         ipAddress: metadata.ipAddress,
         userAgent: metadata.userAgent,
       });
@@ -50,18 +48,12 @@ export class AuthService {
     await this.logLoginAttempt({
       staffId: staff.id,
       entityId: staff.id,
-      email: staff.email,
       success: passwordMatches && staff.isActive && !staff.deletedAt,
-      reason: passwordMatches
-        ? staff.isActive && !staff.deletedAt
-          ? 'SUCCESS'
-          : 'STAFF_INACTIVE'
-        : 'INVALID_PASSWORD',
       ipAddress: metadata.ipAddress,
       userAgent: metadata.userAgent,
     });
 
-    if (!passwordMatches) {
+    if (!passwordMatches || !staff.isActive || staff.deletedAt) {
       throw new UnauthorizedException('error.auth.invalidCredentials');
     }
 
@@ -141,6 +133,12 @@ export class AuthService {
           passwordHash: staff.passwordHash,
         },
       });
+
+      await tx.session.updateMany({
+        where: { staffId: staff.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+
       return tx.staff.update({
         where: { id: staffId },
         data: {
@@ -160,6 +158,7 @@ export class AuthService {
 
     return {
       user: updatedStaff,
+      message: 'Password changed successfully. All other sessions have been revoked.',
     };
   }
 
@@ -188,12 +187,18 @@ export class AuthService {
     return staff;
   }
 
+  async logout(sessionId: string) {
+    await this.prisma.session.update({
+      where: { tokenId: sessionId },
+      data: { revokedAt: new Date() },
+    });
+    return { success: true };
+  }
+
   private async logLoginAttempt(input: {
     staffId: string | null;
     entityId: string;
-    email: string;
     success: boolean;
-    reason: string;
     ipAddress?: string;
     userAgent?: string;
   }) {
@@ -204,9 +209,7 @@ export class AuthService {
         entity: 'Staff',
         entityId: input.entityId,
         changes: {
-          email: input.email,
           success: input.success,
-          reason: input.reason,
           attemptedAt: new Date().toISOString(),
         },
         ipAddress: input.ipAddress,

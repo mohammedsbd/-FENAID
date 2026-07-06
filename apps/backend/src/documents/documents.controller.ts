@@ -26,13 +26,13 @@ export class DocumentsController {
   }
 
   @Get('parent/:parentId')
-  findByParent(@Param('parentId') parentId: string) {
-    return this.documentsService.findByParent(parentId);
+  findByParent(@Req() req: AuthenticatedRequest, @Param('parentId') parentId: string) {
+    return this.documentsService.findByParent(req.user, parentId);
   }
 
   @Get('child/:childId')
-  findByChild(@Param('childId') childId: string) {
-    return this.documentsService.findByChild(childId);
+  findByChild(@Req() req: AuthenticatedRequest, @Param('childId') childId: string) {
+    return this.documentsService.findByChild(req.user, childId);
   }
 
   @Delete(':id')

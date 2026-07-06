@@ -23,13 +23,13 @@ export class ParentsController {
   }
 
   @Get()
-  findAll(@Query() query: ListParentsDto) {
-    return this.parentsService.findAll(query);
+  findAll(@Req() request: AuthenticatedRequest, @Query() query: ListParentsDto) {
+    return this.parentsService.findAll(request.user, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.parentsService.findOne(id);
+  findOne(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.parentsService.findOne(request.user, id);
   }
 
   @Patch(':id')

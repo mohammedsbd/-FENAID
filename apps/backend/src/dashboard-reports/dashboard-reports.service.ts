@@ -5,8 +5,10 @@ import {
   ParentStatus,
   Prisma,
   ServiceAssignmentStatus,
+  StaffRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { ReportQueryDto, ReportType } from './dto/report-query.dto';
 
 @Injectable()
@@ -292,19 +294,25 @@ export class DashboardReportsService {
     };
   }
 
-  async generateReport(type: ReportType, query: ReportQueryDto) {
+  async generateReport(user: JwtPayload, type: ReportType, query: ReportQueryDto) {
     const dateFilter = {
       ...(query.startDate && { gte: new Date(query.startDate) }),
       ...(query.endDate && { lte: new Date(query.endDate) }),
     };
 
+    const staffFilter = user.role !== StaffRole.SUPER_ADMIN
+      ? { assignedStaffId: user.staffId }
+      : {};
+
     switch (type) {
       case ReportType.MEMBER_DIRECTORY:
         return {
           parents: await this.prisma.parent.findMany({
+            where: staffFilter,
             include: { children: { select: { fullName: true, photoUrl: true } } },
           }),
           children: await this.prisma.child.findMany({
+            where: staffFilter,
             include: { parent: { select: { fullName: true, photoUrl: true } } },
           }),
         };
@@ -314,6 +322,7 @@ export class DashboardReportsService {
           include: {
             _count: { select: { assignments: true } },
             assignments: {
+              where: staffFilter,
               select: { status: true },
             },
           },
@@ -321,6 +330,7 @@ export class DashboardReportsService {
 
       case ReportType.PROGRESS_SUMMARY:
         return this.prisma.child.findMany({
+          where: staffFilter,
           include: {
             milestones: true,
             goals: true,
@@ -330,7 +340,12 @@ export class DashboardReportsService {
 
       case ReportType.FUND_ALLOCATION_LOG:
         return this.prisma.fundAllocation.findMany({
-          where: { allocationDate: dateFilter },
+          where: {
+            allocationDate: dateFilter,
+            ...(user.role !== StaffRole.SUPER_ADMIN
+              ? { parent: { assignedStaffId: user.staffId } }
+              : {}),
+          },
           include: { parent: { select: { fullName: true, nationalId: true, photoUrl: true } } },
           orderBy: { allocationDate: 'desc' },
         });

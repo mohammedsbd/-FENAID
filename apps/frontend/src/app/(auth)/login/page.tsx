@@ -74,10 +74,15 @@ export default function LoginPage() {
       Cookies.remove('user');
       localStorage.removeItem('user');
 
-      // Set cookies
-      Cookies.set('token', accessToken, { expires: rememberMe ? 7 : 1, path: '/' });
-      Cookies.set('user', JSON.stringify(user), { expires: rememberMe ? 7 : 1, path: '/' });
-      localStorage.setItem('user', JSON.stringify(user));
+      // Set secure cookies
+      const cookieOptions = {
+        expires: rememberMe ? 7 : 1,
+        path: '/',
+        secure: true,
+        sameSite: 'strict' as const,
+      };
+      Cookies.set('token', accessToken, { ...cookieOptions, httpOnly: false });
+      Cookies.set('user', JSON.stringify(user), { ...cookieOptions, httpOnly: false });
 
       toast({
         title: t('auth.login.loginSuccessful', 'Login Successful'),

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FundAllocationStatus, NotificationType, Prisma } from '@prisma/client';
+import { FundAllocationStatus, NotificationType, Prisma, StaffRole } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -12,6 +12,7 @@ import {
   ListFundAllocationsDto,
   UpdateFundAllocationDto,
 } from './dto/fund-allocation.dto';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
 @Injectable()
@@ -60,7 +61,7 @@ export class FundAllocationsService {
     return allocation;
   }
 
-  async findAll(query: ListFundAllocationsDto) {
+  async findAll(user: JwtPayload, query: ListFundAllocationsDto) {
     const where: Prisma.FundAllocationWhereInput = {
       ...(query.status && { status: query.status }),
       ...(query.parentId && { parentId: query.parentId }),
@@ -79,6 +80,9 @@ export class FundAllocationsService {
           { notes: { contains: query.search, mode: 'insensitive' } },
         ],
       }),
+      ...(user.role !== StaffRole.SUPER_ADMIN
+        ? { parent: { assignedStaffId: user.staffId } }
+        : {}),
     };
 
     return this.prisma.fundAllocation.findMany({
@@ -91,9 +95,14 @@ export class FundAllocationsService {
     });
   }
 
-  async findByParent(parentId: string) {
+  async findByParent(user: JwtPayload, parentId: string) {
     return this.prisma.fundAllocation.findMany({
-      where: { parentId },
+      where: {
+        parentId,
+        ...(user.role !== StaffRole.SUPER_ADMIN
+          ? { parent: { assignedStaffId: user.staffId } }
+          : {}),
+      },
       include: {
         allocatedBy: { select: { fullName: true } },
       },
@@ -101,7 +110,43 @@ export class FundAllocationsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(user: JwtPayload, id: string) {
+    const allocation = await this.prisma.fundAllocation.findFirst({
+      where: {
+        id,
+        ...(user.role !== StaffRole.SUPER_ADMIN
+          ? { parent: { assignedStaffId: user.staffId } }
+          : {}),
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            fullName: true,
+            photoUrl: true,
+            nationalId: true,
+            phone: true,
+            assignedStaffId: true,
+          },
+        },
+        allocatedBy: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!allocation) {
+      throw new NotFoundException('error.fund.notFound');
+    }
+
+    return allocation;
+  }
+
+  private async findById(id: string) {
     const allocation = await this.prisma.fundAllocation.findUnique({
       where: { id },
       include: {
@@ -133,7 +178,7 @@ export class FundAllocationsService {
   }
 
   async update(staffId: string, id: string, dto: UpdateFundAllocationDto) {
-    const existing = await this.findOne(id);
+    const existing = await this.findById(id);
 
     // Business rule: Once a FundAllocation is marked as DISBURSED and parentAcknowledged is true, it cannot be edited or deleted.
     if (existing.status === FundAllocationStatus.DISBURSED && existing.parentAcknowledged) {

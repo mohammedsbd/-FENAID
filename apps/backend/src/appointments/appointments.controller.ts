@@ -36,18 +36,18 @@ export class AppointmentsController {
   }
 
   @Get()
-  findAll(@Query() query: ListAppointmentsDto) {
-    return this.appointmentsService.findAll(query);
+  findAll(@Req() req: AuthenticatedRequest, @Query() query: ListAppointmentsDto) {
+    return this.appointmentsService.findAll(req.user, query);
   }
 
   @Get('calendar')
-  getCalendar(@Query('month') month: string, @Query() query: ListAppointmentsDto) {
-    return this.appointmentsService.getCalendar(month, query);
+  getCalendar(@Req() req: AuthenticatedRequest, @Query('month') month: string, @Query() query: ListAppointmentsDto) {
+    return this.appointmentsService.getCalendar(req.user, month, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.appointmentsService.findOne(id);
+  findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.appointmentsService.findOne(req.user, id);
   }
 
   @Patch(':id')
@@ -78,7 +78,7 @@ export class AppointmentsController {
   }
 
   @Get(':id/attendance')
-  getAttendance(@Param('id') id: string) {
-    return this.appointmentsService.getAttendance(id);
+  getAttendance(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.appointmentsService.getAttendance(req.user, id);
   }
 }

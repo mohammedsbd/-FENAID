@@ -13,6 +13,7 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get('system')
+  @Roles(StaffRole.SUPER_ADMIN)
   getSystemSettings() {
     return this.settingsService.getSystemSettings();
   }

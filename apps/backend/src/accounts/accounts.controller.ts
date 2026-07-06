@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PermissionModule, StaffRole } from '@prisma/client';
 import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -19,11 +20,15 @@ export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
   @Get('directory')
+  @ModuleAccess(PermissionModule.ACCOUNTS)
+  @Roles(StaffRole.SUPER_ADMIN)
   findAllDirectory() {
     return this.accountsService.findAll({ status: 'active', limit: '100' });
   }
 
   @Get('staff')
+  @ModuleAccess(PermissionModule.ACCOUNTS)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   findAllStaff(@Query('limit') limit = '100') {
     return this.accountsService.findAll({ status: 'active', limit });
   }
@@ -113,6 +118,7 @@ export class AccountsController {
   }
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ModuleAccess(PermissionModule.ACCOUNTS)
   @Roles(StaffRole.SUPER_ADMIN)
   create(
@@ -150,6 +156,7 @@ export class AccountsController {
   }
 
   @Post(':id/reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ModuleAccess(PermissionModule.ACCOUNTS)
   @Roles(StaffRole.SUPER_ADMIN)
   resetPassword(

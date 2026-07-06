@@ -34,18 +34,18 @@ export class FundAllocationsController {
   }
 
   @Get()
-  findAll(@Query() query: ListFundAllocationsDto) {
-    return this.fundAllocationsService.findAll(query);
+  findAll(@Req() req: AuthenticatedRequest, @Query() query: ListFundAllocationsDto) {
+    return this.fundAllocationsService.findAll(req.user, query);
   }
 
   @Get('parent/:parentId')
-  findByParent(@Param('parentId') parentId: string) {
-    return this.fundAllocationsService.findByParent(parentId);
+  findByParent(@Req() req: AuthenticatedRequest, @Param('parentId') parentId: string) {
+    return this.fundAllocationsService.findByParent(req.user, parentId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.fundAllocationsService.findOne(id);
+  findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.fundAllocationsService.findOne(req.user, id);
   }
 
   @Patch(':id')

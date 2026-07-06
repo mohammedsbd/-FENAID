@@ -10,12 +10,14 @@ import {
   NotificationType,
   Prisma,
   SeverityLevel,
+  StaffRole,
 } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChildDto } from './dto/create-child.dto';
 import { ListChildrenDto } from './dto/list-children.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
+import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
 type ChildAuditSnapshot = Omit<Child, 'createdAt' | 'updatedAt'> & {
@@ -106,12 +108,13 @@ export class ChildrenService {
     };
   }
 
-  async findAll(query: ListChildrenDto) {
+  async findAll(user: JwtPayload, query: ListChildrenDto) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 20, 100000);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ChildWhereInput = {
+      ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       ...(query.search
         ? {
             OR: [
@@ -195,9 +198,12 @@ export class ChildrenService {
     };
   }
 
-  async findOne(id: string) {
-    const child = await this.prisma.child.findUnique({
-      where: { id },
+  async findOne(user: JwtPayload, id: string) {
+    const child = await this.prisma.child.findFirst({
+      where: {
+        id,
+        ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
+      },
       include: {
         parent: {
           include: {

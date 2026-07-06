@@ -1,50 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const PROTECTED_ROUTES = ['/dashboard', '/data-query'];
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
-  const userCookie = request.cookies.get('user')?.value;
-  
-  let user = null;
-  if (userCookie) {
-    try {
-      user = JSON.parse(decodeURIComponent(userCookie));
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
-
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/data-query')) {
+  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+
+  if (isProtected) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    if (user?.role === 'CASE_WORKER') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    if (user?.mustChangePassword && pathname !== '/change-password') {
-      return NextResponse.redirect(new URL('/change-password', request.url));
-    }
-  }
-
-  // Protect dashboard routes
-  if (pathname.startsWith('/dashboard')) {
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    if (user?.mustChangePassword && pathname !== '/change-password') {
-      return NextResponse.redirect(new URL('/change-password', request.url));
-    }
-
-    if (
-      (pathname.startsWith('/accounts') || pathname.startsWith('/audit-log')) &&
-      user?.role !== 'SUPER_ADMIN'
-    ) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

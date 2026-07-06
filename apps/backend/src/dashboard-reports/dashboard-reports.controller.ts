@@ -24,10 +24,12 @@ export class DashboardReportsController {
 
   @Get('reports/:type')
   @ModuleAccess('REPORTS' as any)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.VIEWER)
   getReport(
+    @Req() req: AuthenticatedRequest,
     @Param('type') type: ReportType,
     @Query() query: ReportQueryDto,
   ) {
-    return this.dashboardService.generateReport(type, query);
+    return this.dashboardService.generateReport(req.user, type, query);
   }
 }

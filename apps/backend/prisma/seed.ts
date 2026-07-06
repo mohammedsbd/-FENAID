@@ -1,9 +1,10 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 
-const seedPassword = 'Fikir@2024';
+const seedPassword = randomBytes(24).toString('hex');
 
 function date(value: string) {
   return new Date(value);
