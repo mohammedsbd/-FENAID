@@ -224,9 +224,13 @@ model Parent {
   @@index([assignedStaffId])
   @@index([status])
   @@index([fullName])
+  @@index([phone])
+  @@index([email])
   @@index([createdAt])
   @@index([assignedStaffId, status])
   @@index([financialBracket])
+  @@index([city, subcity, status])
+  @@index([assignedStaffId, createdAt])
 }
 
 model Child {
@@ -266,9 +270,12 @@ model Child {
   @@index([status])
   @@index([createdAt])
   @@index([assignedStaffId, status])
+  @@index([assignedStaffId, createdAt])
   @@index([disabilityType])
   @@index([severityLevel])
   @@index([dateOfBirth])
+  @@index([parentId, status])
+  @@index([disabilityType, severityLevel, status])
 }
 
 model Service {
@@ -312,12 +319,15 @@ model ServiceAssignment {
 
   @@index([serviceId])
   @@index([parentId])
+  @@index([parentId, status])
   @@index([childId])
+  @@index([childId, status])
   @@index([assignedStaffId])
   @@index([status])
   @@index([assignedStaffId, status])
   @@index([status, endDate])
   @@index([createdAt])
+  @@index([assignedStaffId, status, endDate])
 }
 
 model FundAllocation {
@@ -340,6 +350,7 @@ model FundAllocation {
   allocatedBy Staff  @relation("FundAllocationAllocatedBy", fields: [allocatedById], references: [id])
 
   @@index([parentId])
+  @@index([parentId, status])
   @@index([allocatedById])
   @@index([status])
   @@index([status, createdAt])
@@ -454,7 +465,11 @@ model Appointment {
   @@index([scheduledAt])
   @@index([status])
   @@index([staffId, scheduledAt])
+  @@index([staffId, status, scheduledAt])
   @@index([status, scheduledAt])
+  @@index([type, scheduledAt])
+  @@index([parentId, scheduledAt])
+  @@index([childId, scheduledAt])
 }
 
 model AttendanceRecord {
@@ -494,9 +509,12 @@ model Document {
 
   @@index([uploadedById])
   @@index([parentId])
+  @@index([parentId, category])
   @@index([childId])
+  @@index([childId, category])
   @@index([expiresAt])
   @@index([createdAt])
+  @@index([category])
 }
 
 model Notification {
@@ -515,7 +533,9 @@ model Notification {
   @@index([isRead])
   @@index([type])
   @@index([staffId, isRead, createdAt])
+  @@index([staffId, isRead])
   @@index([staffId, type, entityType, entityId, isRead])
+  @@index([entityType, entityId])
 }
 
 model AuditLog {
@@ -533,9 +553,11 @@ model AuditLog {
 
   @@index([staffId])
   @@index([entity, entityId])
+  @@index([entity, entityId, createdAt])
   @@index([createdAt])
   @@index([staffId, createdAt])
   @@index([action, createdAt])
+  @@index([staffId, action, createdAt])
 }
 
 model Session {
@@ -553,9 +575,11 @@ model Session {
 
   @@index([staffId])
   @@index([tokenId])
+  @@index([tokenId, revokedAt])
   @@index([expiresAt])
   @@index([revokedAt])
   @@index([staffId, revokedAt])
+  @@index([staffId, expiresAt, revokedAt])
 }
 
 model PasswordHistory {
