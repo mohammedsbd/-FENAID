@@ -1374,5 +1374,15 @@
   "datePicker.today": "Today",
   "datePicker.gregorian": "Gregorian calendar",
   "datePicker.ethiopian": "Ethiopian calendar",
-  "datePicker.dayHeaders": "S,M,T,W,T,F,S"
+  "datePicker.dayHeaders": "S,M,T,W,T,F,S",
+  "topbar.viewAll": "View All",
+  "notifications.title": "Notifications",
+  "notifications.unreadCount": "{count} unread",
+  "notifications.allRead": "All caught up!",
+  "notifications.all": "All",
+  "notifications.unread": "Unread",
+  "notifications.markAllRead": "Mark all as read",
+  "notifications.noUnread": "No unread notifications",
+  "notifications.none": "No notifications",
+  "Notifications": "Notifications"
 }

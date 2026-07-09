@@ -40,6 +40,13 @@ export class NotificationsService {
     });
   }
 
+  async findAll(staffId: string) {
+    return this.prisma.notification.findMany({
+      where: { staffId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async markAsRead(staffId: string, id: string) {
     return this.prisma.notification.updateMany({
       where: { id, staffId },

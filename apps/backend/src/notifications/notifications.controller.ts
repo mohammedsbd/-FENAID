@@ -8,6 +8,11 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Get()
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.notificationsService.findAll(req.user.staffId);
+  }
+
   @Get('mine')
   findMyUnread(@Req() req: AuthenticatedRequest) {
     return this.notificationsService.findMyUnread(req.user.staffId);

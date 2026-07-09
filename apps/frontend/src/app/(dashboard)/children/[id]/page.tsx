@@ -20,7 +20,6 @@ import {
   ClipboardList,
   Wallet,
   Clock,
-  Plus,
   Pencil,
   UserMinus,
   UserPlus,
@@ -327,10 +326,6 @@ export default function ChildProfilePage() {
             </div>
                         <div className="flex flex-row flex-wrap items-center gap-2">
               <ExportButton onExport={handleExport} loading={exporting} />
-              <Button size="sm">
-                <Plus className="h-4 w-4" />
-                {t('children.detail.addProgressNote', 'Add Progress Note')}
-              </Button>
               <Button variant="outline" size="sm" onClick={() => setDrawerOpen(true)}>
                   <Pencil className="h-4 w-4" />
                   {t('children.detail.editProfile', 'Edit Profile')}

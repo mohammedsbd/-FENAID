@@ -12,6 +12,7 @@ import {
   CalendarDays,
   BarChart3,
   Table2,
+  Bell,
   Settings,
   ShieldCheck,
   ChevronLeft,
@@ -36,6 +37,7 @@ const navItems = [
     href: '/data-query',
     roles: ['SUPER_ADMIN', 'VIEWER'],
   },
+  { icon: Bell, label: 'Notifications', href: '/notifications' },
   { icon: ShieldCheck, label: 'Accounts', href: '/accounts', superAdminOnly: true },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
@@ -64,15 +66,17 @@ export function Sidebar({ user }: { user: any }) {
             />
           </div>
         </Link>
-        <p className="text-center text-[10px] font-semibold leading-snug text-primary">
-          {t('sidebar.orgName', 'Ethiopia National Association on Intellectual Disability')}
-        </p>
+        {!isCollapsed && (
+          <p className="text-center text-[10px] font-semibold leading-snug text-primary">
+            {t('sidebar.orgName', 'Ethiopia National Association on Intellectual Disability')}
+          </p>
+        )}
       </div>
 
       <div className="mx-4 border-t border-gray-100 dark:border-neutral-800" />
 
       <ScrollArea className="flex-1 px-3">
-        <nav className="flex flex-col gap-2 py-6">
+        <nav className="flex flex-col gap-2 py-6 min-h-full justify-center">
           {navItems.map((item) => {
             if (item.superAdminOnly && user?.role !== 'SUPER_ADMIN') return null;
             if (item.roles && !item.roles.includes(user?.role)) return null;
@@ -98,7 +102,6 @@ export function Sidebar({ user }: { user: any }) {
           })}
         </nav>
       </ScrollArea>
-
       <Button
         variant="ghost"
         size="icon"

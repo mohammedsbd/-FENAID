@@ -1,29 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   CalendarDays,
-  CheckCircle2,
   ExternalLink,
+  FileUp,
+  Files,
   Mail,
   MapPin,
-  Pencil,
-  Phone,
   UserRound,
+  Phone,
   Fingerprint,
   Users,
   Briefcase,
-  GraduationCap,
-  Heart,
   Wallet,
-  FileText,
-  Trash2,
-  UserPlus,
-  UserMinus,
+  Clock,
   Plus,
+  Pencil,
+  UserMinus,
+  UserPlus,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,6 +37,7 @@ import {
 } from '@/components/ui/table';
 import { useLocale } from '@/components/providers/locale-provider';
 import { t as tI18n } from '@/lib/i18n';
+import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/dashboard/export-button';
@@ -50,12 +48,20 @@ import {
   exportProfileToExcel,
   formatEnum,
   escapeHTML,
-  formatDate,
 } from '@/lib/export';
-import { ParentDetailResponse, ParentStatus, ParentRow, StaffOption } from '@/types/parents';
+import { ParentDetailResponse, ParentStatus, StaffOption } from '@/types/parents';
 import { ParentDrawer } from '@/components/dashboard/parent-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
 import { useToast } from '@/hooks/use-toast';
+import {
+  CalendarSystem,
+  formatCalendarDate,
+  parseIsoDate,
+  gregorianToEthiopian,
+  ethiopianMonths,
+  gregorianMonths,
+  toIsoDateInputValue,
+} from '@/lib/calendar';
 
 const tabs = [
   'Profile',
@@ -71,22 +77,17 @@ export default function ParentProfilePage() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const { t } = useLocale();
+  const { calendarSystem } = useCalendarSettings();
   const [parent, setParent] = useState<ParentDetailResponse | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('Profile');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-  
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [staff, setStaff] = useState<StaffOption[]>([]);
 
-  useEffect(() => {
-    fetchParent();
-    fetchStaff();
-  }, [params.id]);
-
-  const fetchParent = async () => {
+  const fetchParent = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -97,9 +98,9 @@ export default function ParentProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, t]);
 
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       const res = await api.get('/dashboard/admin');
       const options = (res.data.caseWorkerWorkload || []).map(
@@ -112,7 +113,12 @@ export default function ParentProfilePage() {
     } catch {
       // Ignore
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchParent();
+    void fetchStaff();
+  }, [fetchParent, fetchStaff]);
 
   const handleToggleStatus = async () => {
     if (!parent) return;
@@ -123,8 +129,8 @@ export default function ParentProfilePage() {
         title: isActivating ? t('parents.detail.toastActivated', 'Profile Activated') : t('parents.detail.toastDeactivated', 'Profile Deactivated'),
         description: t('parents.detail.toastDescription', '{name} has been successfully {action}.', { name: parent.fullName, action: isActivating ? t('parents.detail.activatedAction', 'activated') : t('parents.detail.deactivatedAction', 'deactivated') }),
       });
-      fetchParent();
       setShowDeactivateModal(false);
+      await fetchParent();
     } catch (err: any) {
       toast({
         variant: 'destructive',
@@ -147,7 +153,7 @@ export default function ParentProfilePage() {
         fields: [
           [t('parents.detail.export.fullName', 'Full Name'), parent.fullName],
           [t('parents.detail.export.nationalId', 'National ID'), parent.nationalId],
-          [t('parents.detail.export.dateOfBirth', 'Date of Birth'), formatDate(parent.dateOfBirth)],
+          [t('parents.detail.export.dateOfBirth', 'Date of Birth'), formatDt(parent.dateOfBirth, calendarSystem)],
           [t('parents.detail.export.gender', 'Gender'), parent.gender || t('parents.detail.na', 'N/A')],
           [t('parents.detail.export.phone', 'Phone'), parent.phone],
           [t('parents.detail.export.email', 'Email'), parent.email || t('parents.detail.na', 'N/A')],
@@ -173,7 +179,7 @@ export default function ParentProfilePage() {
           [t('parents.detail.export.dependents', 'Dependents'), String(parent.numberOfDependents || 0)],
           [t('parents.detail.export.referralSource', 'Referral Source'), parent.referralSource || t('parents.detail.na', 'N/A')],
           [t('parents.detail.export.caseWorker', 'Case Worker'), parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')],
-          [t('parents.detail.export.registeredDate', 'Registered Date'), formatDate(parent.createdAt)],
+          [t('parents.detail.export.registeredDate', 'Registered Date'), formatDt(parent.createdAt, calendarSystem)],
         ] as [string, string][],
       },
     ];
@@ -223,312 +229,119 @@ export default function ParentProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="space-y-6">
+        <div className="h-40 animate-pulse rounded-lg bg-slate-100 dark:bg-neutral-800" />
+        <div className="h-96 animate-pulse rounded-lg bg-slate-100 dark:bg-neutral-800" />
       </div>
     );
   }
 
   if (error || !parent) {
     return (
-      <Card className="border-red-100 bg-red-50">
-        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="rounded-full bg-red-100 p-3 text-red-600">
-            <UserMinus className="h-6 w-6" />
-          </div>
-          <h2 className="mt-4 text-lg font-semibold text-red-900">{t('parents.detail.errorTitle', 'Error Loading Profile')}</h2>
-          <p className="mt-1 text-sm text-red-700">{error || t('parents.detail.parentNotFound', 'Parent not found')}</p>
-          <Button variant="outline" className="mt-6 border-red-200" asChild>
-            <Link href="/dashboard/parents">{t('parents.detail.backToList', 'Back to Parents')}</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm font-medium text-muted-foreground">{error || t('parents.detail.parentNotFound', 'Parent profile not found.')}</p>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/parents">{t('parents.detail.backToList', 'Back to Parents')}</Link>
+        </Button>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header Profile Section */}
-      <Card className="overflow-hidden border-none shadow-sm ring-1 ring-slate-200">
-        <CardContent className="p-0">
-          <div className="h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
-          <div className="px-8 pb-8">
-            <div className="relative -mt-12 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
-                <Avatar className="h-32 w-32 border-4 border-white shadow-md">
-                  <AvatarImage src={parent.photoUrl || undefined} alt={parent.fullName} />
-                  <AvatarFallback className="text-3xl font-bold">{initials(parent.fullName)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold tracking-tight">{parent.fullName}</h1>
-                    <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{parent.idTag || t('parents.detail.idTagPlaceholder', '---')}</span>
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <UserRound className="h-4 w-4" />
-                      {parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-4 w-4" />
-                      {t('parents.detail.joined', 'Joined')} {formatDate(parent.createdAt)}
-                    </span>
-                    <StatusBadge status={parent.status} />
-                  </div>
+      {/* Hero Section */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center">
+            <Avatar className="h-24 w-24 border shadow-sm">
+              <AvatarImage src={parent.photoUrl || undefined} alt={parent.fullName} />
+              <AvatarFallback className="text-2xl">{initials(parent.fullName)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-3">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight">{parent.fullName}</h1>
+                  <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{parent.idTag || t('parents.detail.idTagPlaceholder', '---')}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <UserRound className="h-4 w-4" />
+                    {parent.assignedStaff?.fullName || t('parents.detail.unassigned', 'Unassigned')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {t('parents.detail.joined', 'Joined')} {formatDt(parent.createdAt, calendarSystem)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Wallet className="h-4 w-4" />
+                    {t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))}
+                  </span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <ExportButton onExport={handleExport} loading={exporting} />
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => setDrawerOpen(true)}>
-                  <Pencil className="h-4 w-4" />
-                  {t('parents.detail.editProfile', 'Edit Profile')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={cn("gap-2", parent.status === 'INACTIVE' ? "text-emerald-600 hover:text-emerald-700" : "text-red-600 hover:text-red-700")}
-                  onClick={() => setShowDeactivateModal(true)}
-                >
-                  {parent.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
-                  {parent.status === 'INACTIVE' ? t('parents.detail.activate', 'Activate') : t('parents.detail.deactivate', 'Deactivate')}
-                </Button>
+                <Badge className={statusBadgeClass(parent.status)}>
+                  {t('enum.parentStatus.' + parent.status.toLowerCase(), formatEnum(parent.status))}
+                </Badge>
+                <Badge variant="outline" className="bg-slate-50 dark:bg-neutral-800 dark:text-neutral-400">
+                  {t('parents.detail.childrenLabel', 'Children')}: {parent.children.length}
+                </Badge>
+                <Badge variant="outline" className="bg-slate-50 dark:bg-neutral-800 dark:text-neutral-400">
+                  {t('parents.detail.servicesLabel', 'Services')}: {parent.serviceAssignments.length}
+                </Badge>
               </div>
             </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-8 sm:grid-cols-4">
-              <HeroMetric label={t('parents.detail.statusLabel', 'Status')} value={t('enum.parentStatus.' + parent.status.toLowerCase(), formatEnum(parent.status))} />
-              <HeroMetric label={t('parents.detail.bracketLabel', 'Bracket')} value={t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))} />
-              <HeroMetric label={t('parents.detail.childrenLabel', 'Children')} value={parent.children.length} />
-              <HeroMetric label={t('parents.detail.servicesLabel', 'Services')} value={parent.serviceAssignments.length} />
+            <div className="flex flex-row flex-wrap items-center gap-2">
+              <ExportButton onExport={handleExport} loading={exporting} />
+              <Button variant="outline" size="sm" onClick={() => setDrawerOpen(true)}>
+                <Pencil className="h-4 w-4" />
+                {t('parents.detail.editProfile', 'Edit Profile')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  'gap-2',
+                  parent.status === 'INACTIVE'
+                    ? 'text-emerald-600 hover:text-emerald-700'
+                    : 'text-red-600 hover:text-red-700',
+                )}
+                onClick={() => setShowDeactivateModal(true)}
+              >
+                {parent.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
+                {parent.status === 'INACTIVE' ? t('parents.detail.activate', 'Activate') : t('parents.detail.deactivate', 'Deactivate')}
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabs and Main Content */}
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="w-full space-y-6 lg:w-80">
-          <Card>
-            <CardContent className="p-2">
-              <nav className="flex flex-col gap-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      activeTab === tab
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100',
-                    )}
-                  >
-                    {t(`parents.detail.tab.${tab.toLowerCase().replace(/[\s&]+/g, '_')}`, tab)}
-                  </button>
-                ))}
-              </nav>
-            </CardContent>
-          </Card>
+      {/* Tabs Navigation */}
+      <div className="flex gap-2 overflow-x-auto border-b">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {t(`parents.detail.tab.${tab.toLowerCase().replace(/[\s&]+/g, '_')}`, tab)}
+          </button>
+        ))}
+      </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-                {t('parents.detail.contactInfo', 'Contact Info')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ContactItem icon={Phone} label={t('parents.detail.phone', 'Phone')} value={parent.phone} />
-              <ContactItem icon={Mail} label={t('parents.detail.email', 'Email')} value={parent.email || t('parents.detail.noEmail', 'No email provided')} />
-              <ContactItem icon={MapPin} label={t('parents.detail.location', 'Location')} value={`${parent.city}, ${parent.subcity}`} />
-              <ContactItem icon={Fingerprint} label={t('parents.detail.nationalId', 'National ID')} value={parent.nationalId} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex-1 space-y-6">
-          {activeTab === 'Profile' && (
-            <>
-              <div className="grid gap-6 md:grid-cols-2">
-                <DetailCard title={t('parents.detail.backgroundInfo', 'Background Information')}>
-                  <DetailItem icon={Heart} label={t('parents.detail.maritalStatus', 'Marital Status')} value={t('enum.maritalStatus.' + parent.maritalStatus.toLowerCase(), formatEnum(parent.maritalStatus))} />
-                  <DetailItem icon={GraduationCap} label={t('parents.detail.education', 'Education')} value={parent.educationLevel} />
-                  <DetailItem icon={Briefcase} label={t('parents.detail.employment', 'Employment')} value={t('enum.employmentStatus.' + (parent.employmentStatus || 'UNEMPLOYED').toLowerCase(), formatEnum(parent.employmentStatus || 'UNEMPLOYED'))} />
-                  <DetailItem icon={Users} label={t('parents.detail.dependents', 'Dependents')} value={t('parents.detail.dependentsValue', '{count} family members', { count: String(parent.numberOfDependents) })} />
-                </DetailCard>
-
-                <DetailCard title={t('parents.detail.financialProfile', 'Financial Profile')}>
-                  <DetailItem icon={Wallet} label={t('parents.detail.monthlyIncome', 'Monthly Income')} value={parseIncome(parent.internalNotes)} />
-                  <DetailItem icon={CheckCircle2} label={t('parents.detail.financialBracket', 'Financial Bracket')} value={t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))} />
-                  <DetailItem icon={ExternalLink} label={t('parents.detail.referralSource', 'Referral Source')} value={parent.referralSource || t('parents.detail.selfReferral', 'Self-referral')} />
-                </DetailCard>
-              </div>
-
-              {parent.internalNotes && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">{t('parents.detail.internalCaseNotes', 'Internal Case Notes')}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-lg bg-slate-50 dark:bg-neutral-800/50 p-4 text-sm leading-relaxed text-slate-600 dark:text-neutral-300">
-                      {parent.internalNotes}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          )}
-
-          {activeTab === 'Children' && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">{t('parents.detail.registeredChildren', 'Registered Children')}</CardTitle>
-                <Button size="sm" variant="outline" className="gap-2" asChild>
-                  <Link href={`/dashboard/children?parent=${parent.id}`}>
-                    <Plus className="h-4 w-4" />
-                    {t('parents.detail.addChild', 'Add Child')}
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {parent.children.length ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {parent.children.map((child: any) => (
-                      <Link 
-                        key={child.id} 
-                        href={`/dashboard/children/${child.id}`}
-                        className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800 dark:border-neutral-700"
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={child.photoUrl || undefined} />
-                          <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 overflow-hidden">
-                          <p className="truncate font-medium text-slate-900 dark:text-neutral-100">{child.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
-                        </div>
-                        <Badge variant="outline" className="text-[10px]">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message={t('parents.detail.noChildren', 'No children registered under this parent profile.')} />
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'Services' && (
-             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">{t('parents.detail.assignedServices', 'Assigned Services')}</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  {t('parents.detail.assignService', 'Assign Service')}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {parent.serviceAssignments.length ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('parents.detail.serviceTable.service', 'Service')}</TableHead>
-                        <TableHead>{t('parents.detail.serviceTable.frequency', 'Frequency')}</TableHead>
-                        <TableHead>{t('parents.detail.serviceTable.status', 'Status')}</TableHead>
-                        <TableHead className="text-right">{t('parents.detail.serviceTable.actions', 'Actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {parent.serviceAssignments.map((sa: any) => (
-                        <TableRow key={sa.id}>
-                          <TableCell>
-                            <div className="font-medium">{sa.service.name}</div>
-                            <div className="text-xs text-muted-foreground">{sa.service.category}</div>
-                          </TableCell>
-                          <TableCell className="text-sm">{sa.frequency}</TableCell>
-                          <TableCell><Badge variant="secondary" className="text-[10px]">{sa.status}</Badge></TableCell>
-                          <TableCell className="text-right">
-                             <Button size="icon" variant="ghost" className="h-8 w-8">
-                               <FileText className="h-4 w-4" />
-                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <EmptyState message={t('parents.detail.noServices', 'No service assignments found.')} />
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'Fund & Finance' && (
-            <Card>
-               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">{t('parents.detail.financialAllocations', 'Financial Allocations')}</CardTitle>
-                <Button size="sm" variant="outline" className="gap-2 text-primary border-primary hover:bg-primary/5">
-                  <Plus className="h-4 w-4" />
-                  {t('parents.detail.newAllocation', 'New Allocation')}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {parent.fundAllocations.length ? (
-                   <div className="space-y-4">
-                      {parent.fundAllocations.map((fund: any) => (
-                        <div key={fund.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-neutral-100">{fund.amount} ETB</p>
-                            <p className="text-xs text-muted-foreground">{formatDate(fund.allocationDate)} &middot; {fund.purpose}</p>
-                          </div>
-                          <Badge variant="outline" className={cn(
-                            fund.status === 'APPROVED' ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800" : "bg-slate-50 dark:bg-neutral-800"
-                          )}>{fund.status}</Badge>
-                        </div>
-                      ))}
-                   </div>
-                ) : (
-                  <EmptyState message={t('parents.detail.noFinanceHistory', 'No financial history for this profile.')} />
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'Documents' && (
-             <Card>
-               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-semibold">{t('parents.detail.uploadedDocuments', 'Uploaded Documents')}</CardTitle>
-                <Button size="sm" variant="outline" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  {t('parents.detail.upload', 'Upload')}
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {parent.documents.length ? (
-                   <div className="grid gap-4 sm:grid-cols-2">
-                     {parent.documents.map((doc: any) => (
-                       <div key={doc.id} className="flex items-center gap-3 rounded-lg border p-3">
-                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400">
-                           <FileText className="h-5 w-5" />
-                         </div>
-                         <div className="flex-1 overflow-hidden">
-                           <p className="truncate text-sm font-medium">{doc.title}</p>
-                           <p className="text-xs text-muted-foreground">{doc.type}</p>
-                         </div>
-                         <Button size="icon" variant="ghost" className="h-8 w-8" asChild>
-                           <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                           </a>
-                         </Button>
-                       </div>
-                     ))}
-                   </div>
-                ) : (
-                  <EmptyState message={t('parents.detail.noDocuments', 'No documents uploaded yet.')} />
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {/* Tab Contents */}
+      <div className="mt-6">
+        {activeTab === 'Profile' && <ProfileTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Children' && <ChildrenTab parent={parent} />}
+        {activeTab === 'Services' && <ServicesTab parent={parent} />}
+        {activeTab === 'Appointments' && <AppointmentsTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Fund & Finance' && <FinanceTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Documents' && <DocumentsTab parent={parent} calendarSystem={calendarSystem} />}
       </div>
 
       <ParentDrawer
@@ -539,7 +352,7 @@ export default function ParentProfilePage() {
         onClose={() => setDrawerOpen(false)}
         onSaved={() => {
           setDrawerOpen(false);
-          fetchParent();
+          void fetchParent();
           toast({
             title: t('parents.detail.profileUpdated', 'Profile Updated'),
             description: t('parents.detail.profileSaved', 'The parent profile has been saved successfully.'),
@@ -561,78 +374,385 @@ export default function ParentProfilePage() {
   );
 }
 
-// Sub-components
-function HeroMetric({ label, value }: { label: string; value: string | number }) {
+// Tab: Profile
+function ProfileTab({
+  parent,
+  calendarSystem,
+}: {
+  parent: ParentDetailResponse;
+  calendarSystem: CalendarSystem;
+}) {
+  const { t } = useLocale();
+
   return (
-    <div className="text-center sm:text-left">
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* Contact Info */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+          <UserRound className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.contactInfo', 'Contact Info')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.phone', 'Phone')}</p>
+              <p className="text-sm font-semibold flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {parent.phone}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.email', 'Email')}</p>
+              <p className="text-sm font-semibold flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> {parent.email || t('parents.detail.noEmail', 'No email')}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.location', 'Location')}</p>
+              <p className="text-sm font-semibold flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {parent.city}, {parent.subcity}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.nationalId', 'National ID')}</p>
+              <p className="text-sm font-semibold flex items-center gap-1.5"><Fingerprint className="h-3.5 w-3.5 text-muted-foreground" /> {parent.nationalId}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Background Info */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+          <Users className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.backgroundInfo', 'Background Information')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.maritalStatus', 'Marital Status')}</p>
+              <p className="text-sm font-semibold">{t('enum.maritalStatus.' + parent.maritalStatus.toLowerCase(), formatEnum(parent.maritalStatus))}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.education', 'Education')}</p>
+              <p className="text-sm font-semibold">{parent.educationLevel || t('parents.detail.notDisclosed', 'N/A')}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.employment', 'Employment')}</p>
+              <p className="text-sm font-semibold">{t('enum.employmentStatus.' + (parent.employmentStatus || 'UNEMPLOYED').toLowerCase(), formatEnum(parent.employmentStatus || 'UNEMPLOYED'))}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.dependents', 'Dependents')}</p>
+              <p className="text-sm font-semibold">{parent.numberOfDependents || 0}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Financial Profile */}
+      <Card className="lg:col-span-2">
+        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+          <Wallet className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.financialProfile', 'Financial Profile')}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.monthlyIncome', 'Monthly Income')}</p>
+            <p className="text-sm font-semibold">{parseIncome(parent.internalNotes)}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.financialBracket', 'Financial Bracket')}</p>
+            <p className="text-sm font-semibold">{t('enum.financialBracket.' + parent.financialBracket.toLowerCase(), formatEnum(parent.financialBracket))}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('parents.detail.referralSource', 'Referral Source')}</p>
+            <p className="text-sm font-semibold">{parent.referralSource || t('parents.detail.selfReferral', 'Self-referral')}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Internal Notes */}
+      {parent.internalNotes && (
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+            <FileUp className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">{t('parents.detail.internalCaseNotes', 'Internal Case Notes')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed text-slate-700 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800/50 p-4 rounded-md border italic dark:border-neutral-700">
+              {parent.internalNotes}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
-function ContactItem({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 rounded bg-slate-50 dark:bg-neutral-800 p-1.5 text-slate-400 dark:text-neutral-500">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="text-sm font-medium text-slate-900 dark:text-neutral-100">{value}</p>
-      </div>
-    </div>
-  );
-}
+// Tab: Children
+function ChildrenTab({ parent }: { parent: ParentDetailResponse }) {
+  const { t } = useLocale();
 
-function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.registeredChildren', 'Registered Children')}</CardTitle>
+        </div>
+        <Button size="sm" variant="outline" asChild>
+          <Link href={`/dashboard/children?parent=${parent.id}`}>
+            <Plus className="h-4 w-4" />
+            {t('parents.detail.addChild', 'Add Child')}
+          </Link>
+        </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {children}
+      <CardContent>
+        {parent.children.length ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {parent.children.map((child: any) => (
+              <Link
+                key={child.id}
+                href={`/dashboard/children/${child.id}`}
+                className="flex items-center gap-3 rounded-lg border p-3 transition hover:bg-muted/50 dark:border-neutral-700"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={child.photoUrl || undefined} />
+                  <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{child.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message={t('parents.detail.noChildren', 'No children registered under this parent profile.')} />
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function DetailItem({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+// Tab: Services
+function ServicesTab({ parent }: { parent: ParentDetailResponse }) {
+  const { t } = useLocale();
+
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="flex-1">
-        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold text-slate-900 dark:text-neutral-100">{value}</p>
-      </div>
-    </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.assignedServices', 'Assigned Services')}</CardTitle>
+        </div>
+        <Button size="sm">
+          <Plus className="h-4 w-4" />
+          {t('parents.detail.assignService', 'Assign Service')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {parent.serviceAssignments.length ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('parents.detail.serviceTable.service', 'Service')}</TableHead>
+                <TableHead>{t('parents.detail.serviceTable.frequency', 'Frequency')}</TableHead>
+                <TableHead>{t('parents.detail.serviceTable.status', 'Status')}</TableHead>
+                <TableHead className="text-right">{t('parents.detail.serviceTable.actions', 'Actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {parent.serviceAssignments.map((sa: any) => (
+                <TableRow key={sa.id}>
+                  <TableCell className="font-semibold">{sa.service.name}</TableCell>
+                  <TableCell>{formatEnum(sa.frequency)}</TableCell>
+                  <TableCell><GenericStatusBadge status={sa.status} /></TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" className="h-8 w-8">
+                      <FileUp className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <EmptyState message={t('parents.detail.noServices', 'No service assignments found.')} />
+        )}
+      </CardContent>
+    </Card>
   );
+}
+
+// Tab: Appointments
+function AppointmentsTab({
+  parent,
+  calendarSystem,
+}: {
+  parent: ParentDetailResponse;
+  calendarSystem: CalendarSystem;
+}) {
+  const { t } = useLocale();
+  const appointments = parent.appointments || [];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.appointments', 'Appointments')}</CardTitle>
+        </div>
+        <Button size="sm">{t('parents.detail.scheduleNew', 'Schedule New')}</Button>
+      </CardHeader>
+      <CardContent>
+        {appointments.length ? (
+          <div className="space-y-4">
+            {appointments.map((apt: any) => {
+              const dateChip = appointmentDateChip(apt.scheduledAt, calendarSystem);
+              return (
+                <div key={apt.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 flex flex-col items-center justify-center bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded text-center">
+                      <span className="text-[10px] font-bold text-primary uppercase">{dateChip.month}</span>
+                      <span className="text-lg font-bold leading-none">{dateChip.day}</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold">{apt.title}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {apt.scheduledAt ? formatDt(apt.scheduledAt, calendarSystem) : ''} / {apt.staff?.fullName}
+                      </p>
+                    </div>
+                  </div>
+                  <GenericStatusBadge status={apt.status} />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState message={t('parents.detail.noAppointments', 'No appointments found.')} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Tab: Fund & Finance
+function FinanceTab({
+  parent,
+  calendarSystem,
+}: {
+  parent: ParentDetailResponse;
+  calendarSystem: CalendarSystem;
+}) {
+  const { t } = useLocale();
+  const allocations = parent.fundAllocations || [];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.financialAllocations', 'Financial Allocations')}</CardTitle>
+        </div>
+        <Button size="sm" variant="outline">
+          <Plus className="h-4 w-4" />
+          {t('parents.detail.newAllocation', 'New Allocation')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {allocations.length ? (
+          <div className="space-y-4">
+            {allocations.map((fund: any) => (
+              <div key={fund.id} className="p-4 border rounded-lg">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-lg font-bold">{Number(fund.amount).toLocaleString()} {fund.currency}</p>
+                    <p className="text-sm text-muted-foreground">{fund.purpose}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <GenericStatusBadge status={fund.status} />
+                    {fund.parentAcknowledged ? (
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">{t('parents.detail.acknowledged', 'Acknowledged')}</Badge>
+                    ) : (
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800">{t('parents.detail.pending', 'Pending')}</Badge>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{t('parents.detail.allocatedOn', 'Allocated on')} {formatDt(fund.allocationDate, calendarSystem)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message={t('parents.detail.noFinanceHistory', 'No financial history for this profile.')} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Tab: Documents
+function DocumentsTab({
+  parent,
+  calendarSystem,
+}: {
+  parent: ParentDetailResponse;
+  calendarSystem: CalendarSystem;
+}) {
+  const { t } = useLocale();
+  const documents = parent.documents || [];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Files className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('parents.detail.uploadedDocuments', 'Uploaded Documents')}</CardTitle>
+        </div>
+        <Button size="sm"><FileUp className="h-4 w-4" /> {t('parents.detail.upload', 'Upload')}</Button>
+      </CardHeader>
+      <CardContent>
+        {documents.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {documents.map((doc: any) => (
+              <div key={doc.id} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700 flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded border dark:border-neutral-700"><Files className="h-5 w-5 text-slate-400" /></div>
+                  <Badge variant="outline">{doc.category || doc.type}</Badge>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold truncate">{doc.title || doc.name}</h4>
+                  <p className="text-xs text-muted-foreground">{t('parents.detail.uploaded', 'Uploaded')} {formatDt(doc.createdAt, calendarSystem)}</p>
+                </div>
+                <Button size="sm" variant="outline" className="w-full" asChild>
+                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                    {t('parents.detail.openDocument', 'Open Document')} <ExternalLink className="h-3 w-3 ml-2" />
+                  </a>
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message={t('parents.detail.noDocuments', 'No documents uploaded yet.')} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Helpers
+function GenericStatusBadge({ status }: { status: string }) {
+  const normalized = status.toUpperCase();
+  const className = ['ACTIVE', 'COMPLETED', 'DISBURSED', 'ACHIEVED'].includes(normalized)
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+    : ['PENDING', 'ALLOCATED', 'IN_PROGRESS', 'SCHEDULED'].includes(normalized)
+      ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+      : 'border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400';
+  return <Badge className={className}>{formatEnum(status)}</Badge>;
+}
+
+function statusBadgeClass(status: string) {
+  if (status === 'ACTIVE') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300';
+  if (status === 'UNDER_REVIEW') return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300';
+  return 'border-slate-200 bg-slate-100 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400';
 }
 
 function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-3 text-slate-300 dark:text-neutral-500">
-        <FileText className="h-6 w-6" />
-      </div>
-      <p className="mt-2 text-sm text-slate-500">{message}</p>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: ParentStatus }) {
-  const { t } = useLocale();
-  const className =
-    status === 'ACTIVE'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : status === 'UNDER_REVIEW'
-        ? 'border-amber-200 bg-amber-50 text-amber-700'
-        : 'border-slate-200 bg-slate-100 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400';
-
-  return <Badge className={className}>{t('enum.parentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
+  return <div className="flex min-h-[100px] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{message}</div>;
 }
 
 function parseIncome(notes?: string | null) {
@@ -641,4 +761,35 @@ function parseIncome(notes?: string | null) {
   return match ? match[1] : tI18n('parents.detail.notDisclosed', 'Not disclosed');
 }
 
-function initials(name: string) { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); }
+function formatDt(value: string | undefined, calendarSystem: CalendarSystem) {
+  if (!value) return tI18n('parents.detail.na', 'N/A');
+  return formatCalendarDate(value, calendarSystem) || tI18n('parents.detail.na', 'N/A');
+}
+
+function appointmentDateChip(value: string | undefined, calendarSystem: CalendarSystem) {
+  const placeholder = { month: tI18n('parents.detail.datePlaceholder', '--'), day: tI18n('parents.detail.datePlaceholder', '--') };
+  if (!value) return placeholder;
+
+  if (calendarSystem === 'ETHIOPIAN') {
+    const iso = toIsoDateInputValue(value);
+    if (!iso) return placeholder;
+
+    const date = gregorianToEthiopian(parseIsoDate(iso));
+    return {
+      month: ethiopianMonths[date.month - 1].slice(0, 3),
+      day: String(date.day).padStart(2, '0'),
+    };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return placeholder;
+
+  return {
+    month: gregorianMonths[date.getUTCMonth()].slice(0, 3),
+    day: String(date.getUTCDate()).padStart(2, '0'),
+  };
+}
+
+function initials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}

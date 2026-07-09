@@ -127,7 +127,7 @@ export function ChildDrawer({
   }, [fallbackChild, open, childId, staffOptions]);
 
   useEffect(() => {
-    if (step === 3) {
+    if (step === 3 && parentSearch.trim().length >= 2) {
       const fetchParents = async () => {
         try {
           const res = await api.get('/parents', { params: { search: parentSearch, limit: 10 } });
@@ -137,6 +137,8 @@ export function ChildDrawer({
         }
       };
       fetchParents();
+    } else if (step === 3 && parentSearch.trim().length < 2) {
+      setParents([]);
     }
   }, [step, parentSearch]);
 
@@ -341,19 +343,37 @@ export function ChildDrawer({
                         placeholder={t('childDrawer.searchParents', 'Search parents...')}
                         value={parentSearch}
                         onChange={(e) => setParentSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 h-11"
                       />
                     </div>
-                    <select
-                      className={selectClassName}
-                      size={5}
-                      value={form.parentId}
-                      onChange={(e) => updateField('parentId', e.target.value)}
-                    >
-                      {parents.map((p) => (
-                        <option key={p.id} value={p.id}>{p.fullName}</option>
-                      ))}
-                    </select>
+                    <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-input">
+                      {parents.length > 0 ? (
+                        parents.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => updateField('parentId', p.id)}
+                            className={cn(
+                              'flex w-full items-center px-3 py-2.5 text-sm text-left transition-colors hover:bg-muted',
+                              form.parentId === p.id
+                                ? 'bg-primary/10 font-medium text-primary'
+                                : 'text-foreground'
+                            )}
+                          >
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mr-3">
+                              {initials(p.fullName)}
+                            </span>
+                            {p.fullName}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                          {parentSearch.trim().length >= 1
+                            ? t('childDrawer.noParentsFound', 'No parents found')
+                            : t('childDrawer.typeToSearch', 'Type to search for parents')}
+                        </div>
+                      )}
+                    </div>
                   </FormField>
                   <FormField label={t('childDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
                     <select className={selectClassName} value={form.assignedStaffId} onChange={(event) => updateField('assignedStaffId', event.target.value)}>

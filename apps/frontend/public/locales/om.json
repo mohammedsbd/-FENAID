@@ -27,6 +27,7 @@
   "topbar.unread": "{count} hin dubbifamne",
   "topbar.markAll": "Hunda akka dubbifameetti godhi",
   "topbar.noUnread": "Beeksisni hin dubbifamne hin jiru",
+  "topbar.viewAll": "Hunda Ilaali",
   "topbar.globalSearch": "Barbaaduu waliigalaa",
   "topbar.globalSearchDesc": "Warra-ijoollee fi ijoollee sirna keessaa",
   "topbar.searching": "Galmee barbaaduu",
@@ -1266,5 +1267,14 @@
   "datePicker.today": "Har'a",
   "datePicker.gregorian": "Kalendara Giriigoriyaan",
   "datePicker.ethiopian": "Kalendara Itoophiyaa",
-  "datePicker.dayHeaders": "D,W,Q,R,K,J,S"
+  "datePicker.dayHeaders": "D,W,Q,R,K,J,S",
+  "notifications.title": "Beeksisota",
+  "notifications.unreadCount": "{count} hin dubbifamne",
+  "notifications.allRead": "Hundatuu dubbifame!",
+  "notifications.all": "Hunda",
+  "notifications.unread": "Hin dubbifamne",
+  "notifications.markAllRead": "Hunda akka dubbifameetti godhi",
+  "notifications.noUnread": "Beeksisni hin dubbifamne hin jiran",
+  "notifications.none": "Beeksisni hin jiranu",
+  "Notifications": "Beeksisota"
 }

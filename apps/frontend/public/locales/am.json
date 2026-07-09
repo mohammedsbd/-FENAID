@@ -27,6 +27,7 @@
   "topbar.unread": "{count} ያልተነበቡ",
   "topbar.markAll": "ሁሉንም እንደተነበበ ምልከት",
   "topbar.noUnread": "ምንም ያልተነበቡ ማሳወቂያዎች የሉም",
+  "topbar.viewAll": "ሁሉንም ተመልከት",
   "topbar.globalSearch": "አለም አቀፍ ፍለጋ",
   "topbar.globalSearchDesc": "ወላጆች እና ልጆች በስርዓቱ ውስጥ",
   "topbar.searching": "መዝገቦችን በመፈለግ ላይ",
@@ -1351,5 +1352,14 @@
   "datePicker.today": "ዛሬ",
   "datePicker.gregorian": "የጎሪጎሪያን ቀን መቁጠሪያ",
   "datePicker.ethiopian": "የኢትዮጵያ ቀን መቁጠሪያ",
-  "datePicker.dayHeaders": "እ,ሰ,ማ,ረ,ሐ,ዓ,ቅ"
+  "datePicker.dayHeaders": "እ,ሰ,ማ,ረ,ሐ,ዓ,ቅ",
+  "notifications.title": "ማሳወቂያዎች",
+  "notifications.unreadCount": "{count} ያልተነበቡ",
+  "notifications.allRead": "ሁሉም ተነብበዋል!",
+  "notifications.all": "ሁሉም",
+  "notifications.unread": "ያልተነበቡ",
+  "notifications.markAllRead": "ሁሉንም እንደተነበበ ምልከት",
+  "notifications.noUnread": "ምንም ያልተነበቡ ማሳወቂያዎች የሉም",
+  "notifications.none": "ምንም ማሳወቂያዎች የሉም",
+  "Notifications": "ማሳወቂያዎች"
 }

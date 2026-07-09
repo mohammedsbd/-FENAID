@@ -114,6 +114,15 @@ const notificationGroupLabels: Record<NotificationGroup, string> = {
   Security: 'topbar.notifSecurity',
 };
 
+const knownPages = ['dashboard', 'children', 'parents', 'services', 'funds', 'appointments', 'data-query', 'accounts', 'settings', 'notifications'];
+
+function formatPageName(segment: string) {
+  return segment
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export function Topbar({ user }: { user?: any }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -130,19 +139,25 @@ export function Topbar({ user }: { user?: any }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
-  // Helper to generate dynamic title from pathname
+  // Helper to get the current page name from pathname, ignoring dynamic ID segments
   const getPageTitle = () => {
     const parts = pathname.split('/').filter(Boolean);
     if (parts.length === 0) return t('topbar.dashboard', 'Dashboard');
 
-    const lastPart = parts[parts.length - 1];
-    return lastPart.charAt(0).toUpperCase() + lastPart.slice(1).replace(/-/g, ' ');
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (knownPages.includes(parts[i])) {
+        return formatPageName(parts[i]);
+      }
+    }
+
+    // Fallback: use last known segment
+    return formatPageName(parts[parts.length - 1]);
   };
 
   const fetchNotifications = async () => {
     try {
       const response = await api.get<Notification[]>('/notifications/mine');
-      setNotifications(response.data);
+      setNotifications(response.data.slice(0, 10));
     } catch {
       setNotifications([]);
     }
@@ -288,22 +303,10 @@ export function Topbar({ user }: { user?: any }) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 dark:border-neutral-800 dark:bg-neutral-950">
-      <div className="flex min-w-0 shrink-0 flex-col">
+    <header className="flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 dark:border-neutral-800 dark:bg-neutral-950">        <div className="flex min-w-0 shrink-0 flex-col">
         <h2 className="text-lg font-semibold tracking-tight">
           {getPageTitle()}
         </h2>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>{t('topbar.home', 'Home')}</span>
-          {pathname.split('/').filter(Boolean).map((part, i, arr) => (
-            <span key={part} className="flex items-center gap-1">
-              <span>/</span>
-              <span className={i === arr.length - 1 ? 'font-medium text-foreground' : ''}>
-                {part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' ')}
-              </span>
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="relative hidden w-full flex-1 md:block" ref={searchRef}>
@@ -367,7 +370,10 @@ export function Topbar({ user }: { user?: any }) {
             variant="ghost"
             size="icon"
             className="relative"
-            onClick={() => setIsOpen((value) => !value)}
+            onClick={() => {
+              setIsOpen((value) => !value);
+              void fetchNotifications();
+            }}
             aria-label={t('topbar.notifications', 'Notifications')}
           >
             <Bell className="h-5 w-5 text-muted-foreground" />
@@ -387,16 +393,25 @@ export function Topbar({ user }: { user?: any }) {
                     {t('topbar.unread', '{count} unread', { count: notifications.length })}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs"
-                  onClick={markAllAsRead}
-                  disabled={!notifications.length}
-                >
-                  <CheckCheck className="h-4 w-4" />
-                  {t('topbar.markAll', 'Mark all')}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/notifications"
+                    className="text-xs font-medium text-primary hover:underline"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {t('topbar.viewAll', 'View All')}
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={markAllAsRead}
+                    disabled={!notifications.length}
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                    {t('topbar.markAll', 'Mark all')}
+                  </Button>
+                </div>
               </div>
 
               <div className="max-h-[520px] overflow-y-auto p-3">
@@ -641,7 +656,7 @@ function NotificationRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full gap-3 rounded-md border-l-4 border-l-accent bg-muted/30 p-3 text-left transition hover:bg-muted"
+      className="flex w-full gap-3 rounded-md bg-muted/30 p-3 text-left transition hover:bg-muted"
     >
       <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${style.className}`}>
         <Icon className="h-4 w-4" />

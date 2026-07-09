@@ -83,6 +83,7 @@ export type ParentDetailResponse = ParentRow & {
   }>;
   serviceAssignments: any[];
   fundAllocations: any[];
+  appointments?: any[];
   documents: any[];
 };
 
