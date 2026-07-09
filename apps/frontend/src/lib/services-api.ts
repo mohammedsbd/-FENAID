@@ -157,3 +157,84 @@ export async function updateAssignment(id: string, data: UpdateAssignmentData): 
   const res = await api.patch(`/service-assignments/${id}`, data);
   return res.data;
 }
+
+// --- Referral Types ---
+
+export type ReferralStatus = 'PENDING' | 'CONTACTED' | 'COMPLETED' | 'CANCELLED';
+
+export interface ReferralDto {
+  id: string;
+  parentId: string | null;
+  childId: string | null;
+  referredTo: string;
+  referralReason: string;
+  referralDate: string;
+  status: ReferralStatus;
+  notes: string | null;
+  outcome: string | null;
+  followUpDate: string | null;
+  referredById: string;
+  createdAt: string;
+  updatedAt: string;
+  parent?: { id: string; fullName: string; photoUrl: string | null } | null;
+  child?: { id: string; fullName: string; photoUrl: string | null } | null;
+  staff?: { id: string; fullName: string } | null;
+}
+
+export interface CreateReferralData {
+  parentId?: string;
+  childId?: string;
+  referredTo: string;
+  referralReason: string;
+  referralDate: string;
+  status?: ReferralStatus;
+  notes?: string;
+  outcome?: string;
+  followUpDate?: string;
+}
+
+export interface UpdateReferralData {
+  referredTo?: string;
+  referralReason?: string;
+  referralDate?: string;
+  status?: ReferralStatus;
+  notes?: string;
+  outcome?: string;
+  followUpDate?: string;
+}
+
+export interface ListReferralsParams {
+  status?: ReferralStatus;
+  parentId?: string;
+  childId?: string;
+  referredById?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+// --- Referral APIs ---
+
+export async function getReferrals(params?: ListReferralsParams): Promise<PaginatedResult<ReferralDto>> {
+  const res = await api.get('/referrals', { params });
+  return res.data;
+}
+
+export async function getReferral(id: string): Promise<ReferralDto> {
+  const res = await api.get(`/referrals/${id}`);
+  return res.data;
+}
+
+export async function createReferral(data: CreateReferralData): Promise<ReferralDto> {
+  const res = await api.post('/referrals', data);
+  return res.data;
+}
+
+export async function updateReferral(id: string, data: UpdateReferralData): Promise<ReferralDto> {
+  const res = await api.patch(`/referrals/${id}`, data);
+  return res.data;
+}
+
+export async function deleteReferral(id: string): Promise<void> {
+  await api.delete(`/referrals/${id}`);
+}

@@ -141,6 +141,7 @@ function AdminDashboardView({ data }: { data: any }) {
           color="text-purple-600 dark:text-purple-400"
           bg="bg-purple-50 dark:bg-purple-950/50"
         />
+
       </div>
 
       {/* Row 2: Charts */}

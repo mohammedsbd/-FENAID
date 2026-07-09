@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import {
   CalendarDays,
   ExternalLink,
+  FileText,
   FileUp,
   Files,
   Mail,
@@ -49,7 +50,7 @@ import {
   formatEnum,
   escapeHTML,
 } from '@/lib/export';
-import { ParentDetailResponse, ParentStatus, StaffOption } from '@/types/parents';
+import { ParentDetailResponse, ParentStatus, ParentRow, StaffOption, MembershipStatus } from '@/types/parents';
 import { ParentDrawer } from '@/components/dashboard/parent-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +69,7 @@ const tabs = [
   'Children',
   'Services',
   'Appointments',
+  'Referrals',
   'Fund & Finance',
   'Documents',
 ] as const;
@@ -311,6 +313,18 @@ export default function ParentProfilePage() {
                 {parent.status === 'INACTIVE' ? t('parents.detail.activate', 'Activate') : t('parents.detail.deactivate', 'Deactivate')}
               </Button>
             </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('parents.detail.membership', 'Membership Fee')}</p>
+                  <p className="mt-1 text-lg font-bold text-slate-900">
+                    {parent.membershipFee != null ? `${Number(parent.membershipFee).toLocaleString()} ETB` : t('parents.detail.notSet', 'Not set')}
+                  </p>
+                </div>
+                <MembershipStatusBadge status={parent.membershipStatus} />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -340,6 +354,46 @@ export default function ParentProfilePage() {
         {activeTab === 'Children' && <ChildrenTab parent={parent} />}
         {activeTab === 'Services' && <ServicesTab parent={parent} />}
         {activeTab === 'Appointments' && <AppointmentsTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Referrals' && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">{t('parents.detail.referrals', 'Referrals')}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {(parent as any).referrals && (parent as any).referrals.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('services.referrals.table.organization', 'Organization')}</TableHead>
+                      <TableHead>{t('services.referrals.table.reason', 'Reason')}</TableHead>
+                      <TableHead>{t('services.referrals.table.date', 'Date')}</TableHead>
+                      <TableHead>{t('services.referrals.table.followUp', 'Follow-up')}</TableHead>
+                      <TableHead>{t('services.referrals.table.status', 'Status')}</TableHead>
+                      <TableHead>{t('services.referrals.table.referredBy', 'Referred By')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(parent as any).referrals.map((r: any) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.referredTo}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{r.referralReason}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatDt(r.referralDate, calendarSystem)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{r.followUpDate ? formatDt(r.followUpDate, calendarSystem) : '—'}</TableCell>
+                        <TableCell><ReferralStatusBadge status={r.status} /></TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.staff?.fullName || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <EmptyState message={t('parents.detail.noReferrals', 'No referrals recorded for this parent.')} />
+              )}
+            </CardContent>
+          </Card>
+        )}
         {activeTab === 'Fund & Finance' && <FinanceTab parent={parent} calendarSystem={calendarSystem} />}
         {activeTab === 'Documents' && <DocumentsTab parent={parent} calendarSystem={calendarSystem} />}
       </div>
@@ -752,7 +806,63 @@ function statusBadgeClass(status: string) {
 }
 
 function EmptyState({ message }: { message: string }) {
-  return <div className="flex min-h-[100px] items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">{message}</div>;
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <div className="rounded-full bg-slate-50 p-3 text-slate-300">
+        <FileText className="h-6 w-6" />
+      </div>
+      <p className="mt-2 text-sm text-slate-500">{message}</p>
+    </div>
+  );
+}
+
+function ReferralStatusBadge({ status }: { status: string }) {
+  const { t } = useLocale();
+  const config: Record<string, { className: string; label: string }> = {
+    PENDING: {
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+      label: t('services.referrals.status.pending', 'Pending'),
+    },
+    CONTACTED: {
+      className: 'border-blue-200 bg-blue-50 text-blue-700',
+      label: t('services.referrals.status.contacted', 'Contacted'),
+    },
+    COMPLETED: {
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      label: t('services.referrals.status.completed', 'Completed'),
+    },
+    CANCELLED: {
+      className: 'border-red-200 bg-red-50 text-red-700',
+      label: t('services.referrals.status.cancelled', 'Cancelled'),
+    },
+  };
+  const c = config[status] || config.PENDING;
+  return (
+    <Badge className={c.className}>
+      {c.label}
+    </Badge>
+  );
+}
+
+function StatusBadge({ status }: { status: ParentStatus }) {
+  const { t } = useLocale();
+  const className =
+    status === 'ACTIVE'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : status === 'UNDER_REVIEW'
+        ? 'border-amber-200 bg-amber-50 text-amber-700'
+        : 'border-slate-200 bg-slate-100 text-slate-600';
+
+  return <Badge className={className}>{t('enum.parentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
+}
+
+function MembershipStatusBadge({ status }: { status: MembershipStatus }) {
+  const isPaid = status === 'PAID';
+  const className = isPaid
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : 'border-amber-200 bg-amber-50 text-amber-700';
+
+  return <Badge className={className}>{isPaid ? 'Paid' : 'Unpaid'}</Badge>;
 }
 
 function parseIncome(notes?: string | null) {

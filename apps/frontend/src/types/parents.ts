@@ -1,6 +1,7 @@
 import { toIsoDateInputValue } from '@/lib/calendar';
 
 export type ParentStatus = 'ACTIVE' | 'INACTIVE' | 'UNDER_REVIEW';
+export type MembershipStatus = 'PAID' | 'UNPAID';
 export type FinancialBracket = 'LOW' | 'MEDIUM' | 'HIGH';
 export type MaritalStatus = 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
 export type EmploymentStatus = 'EMPLOYED' | 'UNEMPLOYED' | 'SELF_EMPLOYED';
@@ -20,6 +21,8 @@ export type ParentRow = {
   phone: string;
   email?: string | null;
   status: ParentStatus;
+  membershipFee?: number | null;
+  membershipStatus: MembershipStatus;
   financialBracket: FinancialBracket;
   maritalStatus: MaritalStatus;
   assignedStaffId: string;
@@ -46,6 +49,8 @@ export type ParentFormData = {
   financialBracket: FinancialBracket;
   monthlyIncomeRange: string;
   numberOfDependents: string;
+  membershipFee: string;
+  membershipStatus: MembershipStatus;
   assignedStaffId: string;
   internalNotes: string;
   status: ParentStatus;
@@ -106,6 +111,8 @@ export const emptyParentForm: ParentFormData = {
   financialBracket: 'LOW',
   monthlyIncomeRange: '',
   numberOfDependents: '0',
+  membershipFee: '',
+  membershipStatus: 'UNPAID',
   assignedStaffId: '',
   internalNotes: '',
   status: 'ACTIVE',
@@ -133,6 +140,8 @@ export function parentToForm(parent: ParentDetailResponse): ParentFormData {
     financialBracket: parent.financialBracket || 'LOW',
     monthlyIncomeRange: notes.monthlyIncomeRange,
     numberOfDependents: String(parent.numberOfDependents ?? 0),
+    membershipFee: parent.membershipFee != null ? String(parent.membershipFee) : '',
+    membershipStatus: parent.membershipStatus || 'UNPAID',
     assignedStaffId: parent.assignedStaffId || '',
     internalNotes: notes.internalNotes,
     status: parent.status || 'ACTIVE',
@@ -179,6 +188,8 @@ export function formToParentPayload(form: ParentFormData) {
     financialBracket: form.financialBracket,
     educationLevel: form.educationLevel.trim(),
     numberOfDependents: Number(form.numberOfDependents),
+    membershipFee: form.membershipFee ? Number(form.membershipFee) : undefined,
+    membershipStatus: form.membershipStatus,
     referralSource: form.referralSource.trim() || undefined,
     status: form.status,
     internalNotes: [

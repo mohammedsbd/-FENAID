@@ -44,11 +44,13 @@ import {
   ParentRow, 
   StaffOption, 
   ParentStatus, 
+  MembershipStatus, 
   FinancialBracket, 
   SuggestedService 
 } from '@/types/parents';
 
 const statusOptions: ParentStatus[] = ['ACTIVE', 'UNDER_REVIEW', 'INACTIVE'];
+const membershipStatusOptions: MembershipStatus[] = ['PAID', 'UNPAID'];
 const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 
 export default function ParentsPage() {
@@ -63,6 +65,7 @@ export default function ParentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('');
   const [financialBracket, setFinancialBracket] = useState('');
+  const [membershipStatus, setMembershipStatus] = useState('');
   const [assignedStaffId, setAssignedStaffId] = useState('');
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -89,7 +92,7 @@ export default function ParentsPage() {
 
   useEffect(() => {
     fetchParents();
-  }, [debouncedSearch, status, financialBracket, assignedStaffId, page]);
+  }, [debouncedSearch, status, financialBracket, membershipStatus, assignedStaffId, page]);
 
   useEffect(() => {
     const editId = searchParams.get('edit') || undefined;
@@ -149,6 +152,7 @@ export default function ParentsPage() {
           search: debouncedSearch || undefined,
           status: status || undefined,
           financialBracket: financialBracket || undefined,
+          membershipStatus: membershipStatus || undefined,
           assignedStaffId: assignedStaffId || undefined,
         },
       });
@@ -203,6 +207,20 @@ export default function ParentsPage() {
     }
   }
 
+  async function handleToggleMembership(parent: ParentRow) {
+    const newStatus: MembershipStatus = parent.membershipStatus === 'PAID' ? 'UNPAID' : 'PAID';
+    try {
+      await api.patch(`/parents/${parent.id}`, { membershipStatus: newStatus });
+      fetchParents();
+      toast({
+        title: newStatus === 'PAID' ? t('parents.membership.markedPaid', 'Marked as Paid') : t('parents.membership.markedUnpaid', 'Marked as Unpaid'),
+        description: t('parents.membership.toggleDesc', '{name} membership is now {status}.', { name: parent.fullName, status: newStatus }),
+      });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, t('parents.membership.errorToggle', 'Failed to update membership status.')));
+    }
+  }
+
   const handleExport = async (formatType: 'pdf' | 'csv' | 'excel' | 'docx') => {
     setExporting(true);
     try {
@@ -212,46 +230,60 @@ export default function ParentsPage() {
           search: debouncedSearch || undefined,
           status: status || undefined,
           financialBracket: financialBracket || undefined,
+          membershipStatus: membershipStatus || undefined,
           assignedStaffId: assignedStaffId || undefined,
         },
       });
       const data = res.data.data || [];
       const filename = `parents-export-${new Date().toISOString().split('T')[0]}`;
 
+      const membershipHeader = t('parents.export.csv.membership', 'Membership');
+      const membershipFeeHeader = t('parents.export.csv.membershipFee', 'Membership Fee');
+
       if (formatType === 'csv') {
-        const headers = [t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'), t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'), t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'), t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'), t('parents.export.csv.status', 'Status'), t('parents.export.csv.financialBracket', 'Financial Bracket'), t('parents.export.csv.maritalStatus', 'Marital Status'), t('parents.export.csv.assignedWorker', 'Assigned Worker'), t('parents.export.csv.registeredDate', 'Registered Date')];
+        const headers = [
+          t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'),
+          t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'),
+          t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'),
+          t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'),
+          t('parents.export.csv.status', 'Status'),
+          t('parents.export.csv.financialBracket', 'Financial Bracket'),
+          membershipHeader, membershipFeeHeader,
+          t('parents.export.csv.maritalStatus', 'Marital Status'),
+          t('parents.export.csv.assignedWorker', 'Assigned Worker'),
+          t('parents.export.csv.registeredDate', 'Registered Date'),
+        ];
         const rows = data.map((p: any) => [
-          p.idTag || '',
-          p.fullName || '',
-          p.nationalId || '',
-          p.phone || '',
-          p.email || '',
-          p.city || '',
-          p.subcity || '',
-          p.woreda || '',
-          p.status || '',
-          p.financialBracket || '',
+          p.idTag || '', p.fullName || '', p.nationalId || '', p.phone || '',
+          p.email || '', p.city || '', p.subcity || '', p.woreda || '',
+          p.status || '', p.financialBracket || '',
+          p.membershipStatus || '', p.membershipFee != null ? Number(p.membershipFee).toLocaleString() : '',
           p.maritalStatus || '',
           p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'),
-          p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''
+          p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '',
         ]);
         exportToCSV(headers, rows, `${filename}.csv`);
       } else if (formatType === 'excel') {
-        const headers = [t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'), t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'), t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'), t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'), t('parents.export.csv.status', 'Status'), t('parents.export.csv.financialBracket', 'Financial Bracket'), t('parents.export.csv.maritalStatus', 'Marital Status'), t('parents.export.csv.assignedWorker', 'Assigned Worker'), t('parents.export.csv.registeredDate', 'Registered Date')];
+        const headers = [
+          t('parents.export.csv.idTag', 'ID Tag'), t('parents.export.csv.fullName', 'Full Name'),
+          t('parents.export.csv.nationalId', 'National ID'), t('parents.export.csv.phone', 'Phone'),
+          t('parents.export.csv.email', 'Email'), t('parents.export.csv.city', 'City'),
+          t('parents.export.csv.subcity', 'Subcity'), t('parents.export.csv.woreda', 'Woreda'),
+          t('parents.export.csv.status', 'Status'),
+          t('parents.export.csv.financialBracket', 'Financial Bracket'),
+          membershipHeader, membershipFeeHeader,
+          t('parents.export.csv.maritalStatus', 'Marital Status'),
+          t('parents.export.csv.assignedWorker', 'Assigned Worker'),
+          t('parents.export.csv.registeredDate', 'Registered Date'),
+        ];
         const rows = data.map((p: any) => [
-          p.idTag || '',
-          p.fullName || '',
-          p.nationalId || '',
-          p.phone || '',
-          p.email || '',
-          p.city || '',
-          p.subcity || '',
-          p.woreda || '',
-          p.status || '',
-          p.financialBracket || '',
+          p.idTag || '', p.fullName || '', p.nationalId || '', p.phone || '',
+          p.email || '', p.city || '', p.subcity || '', p.woreda || '',
+          p.status || '', p.financialBracket || '',
+          p.membershipStatus || '', p.membershipFee != null ? Number(p.membershipFee).toLocaleString() : '',
           p.maritalStatus || '',
           p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'),
-          p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''
+          p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '',
         ]);
         exportToExcelHTML(t('parents.export.directory', 'Parents Directory'), headers, rows, `${filename}.xls`);
       } else if (formatType === 'docx') {
@@ -266,6 +298,8 @@ export default function ParentsPage() {
               <td>${escapeHTML(p.city || '')}, ${escapeHTML(p.subcity || '')}</td>
               <td><span class="badge">${escapeHTML(formatEnum(p.status))}</span></td>
               <td>${escapeHTML(formatEnum(p.financialBracket))}</td>
+              <td>${escapeHTML(p.membershipStatus || '')}</td>
+              <td>${escapeHTML(p.membershipFee != null ? Number(p.membershipFee).toLocaleString() : '')}</td>
               <td>${escapeHTML(p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
@@ -283,6 +317,8 @@ export default function ParentsPage() {
                 <th>${t('parents.export.csv.location', 'Location')}</th>
                 <th>${t('parents.export.csv.status', 'Status')}</th>
                 <th>${t('parents.export.csv.financialBracket', 'Financial Bracket')}</th>
+                <th>${membershipHeader}</th>
+                <th>${membershipFeeHeader}</th>
                 <th>${t('parents.export.csv.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
@@ -305,6 +341,8 @@ export default function ParentsPage() {
               <td>${escapeHTML(p.city || '')}, ${escapeHTML(p.subcity || '')}</td>
               <td><span class="badge ${statusClass}">${escapeHTML(formatEnum(p.status))}</span></td>
               <td>${escapeHTML(formatEnum(p.financialBracket))}</td>
+              <td>${escapeHTML(p.membershipStatus || '')}</td>
+              <td>${escapeHTML(p.membershipFee != null ? Number(p.membershipFee).toLocaleString() : '')}</td>
               <td>${escapeHTML(p.assignedStaff?.fullName || t('parents.unassigned', 'Unassigned'))}</td>
             </tr>
           `;
@@ -323,6 +361,8 @@ export default function ParentsPage() {
                 <th style="width: 15%">${t('parents.export.csv.location', 'Location')}</th>
                 <th style="width: 10%">${t('parents.export.csv.status', 'Status')}</th>
                 <th style="width: 10%">${t('parents.export.csv.financial', 'Financial')}</th>
+                <th style="width: 10%">${membershipHeader}</th>
+                <th style="width: 10%">${membershipFeeHeader}</th>
                 <th style="width: 15%">${t('parents.export.csv.caseWorker', 'Case Worker')}</th>
               </tr>
             </thead>
@@ -361,7 +401,7 @@ export default function ParentsPage() {
 
       <Card>
         <CardHeader className="gap-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(250px,1fr)_160px_160px_160px_auto] lg:items-end">
+          <div className="grid gap-4 lg:grid-cols-[minmax(250px,1fr)_160px_160px_130px_160px_auto] lg:items-end">
             <div className="space-y-1.5">
               <Label htmlFor="parent-search" className="text-sm font-semibold">{t('parents.search.label', 'Search Parents')}</Label>
               <div className="relative">
@@ -390,6 +430,12 @@ export default function ParentsPage() {
                 <option key={option} value={option}>{tI18n(`enum.parentStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
+            <FilterSelect label={t('parents.filter.membership', 'Membership')} value={membershipStatus} onChange={setMembershipStatus}>
+              <option value="">{t('parents.filter.membershipAll', 'All')}</option>
+              {membershipStatusOptions.map((option) => (
+                <option key={option} value={option}>{formatEnum(option)}</option>
+              ))}
+            </FilterSelect>
             <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={setFinancialBracket}>
               <option value="">{t('parents.filter.bracketAll', 'All brackets')}</option>
               {bracketOptions.map((option) => (
@@ -409,6 +455,7 @@ export default function ParentsPage() {
                 setSearch('');
                 setStatus('');
                 setFinancialBracket('');
+                setMembershipStatus('');
                 setAssignedStaffId('');
                 setPage(page);
               }}
@@ -433,6 +480,7 @@ export default function ParentsPage() {
                 <TableHead>{t('parents.table.nationalId', 'National ID')}</TableHead>
                 <TableHead>{t('parents.table.phone', 'Phone')}</TableHead>
                 <TableHead>{t('parents.table.financial', 'Financial')}</TableHead>
+                <TableHead>{t('parents.table.membership', 'Membership')}</TableHead>
                 <TableHead>{t('parents.table.status', 'Status')}</TableHead>
                 <TableHead>{t('parents.table.staff', 'Staff')}</TableHead>
                 <TableHead className="text-right">{t('parents.table.actions', 'Actions')}</TableHead>
@@ -442,7 +490,7 @@ export default function ParentsPage() {
               {loading ? (
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={9}>
                       <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
@@ -473,6 +521,13 @@ export default function ParentsPage() {
                     <TableCell>{parent.phone}</TableCell>
                     <TableCell>
                       <BracketBadge bracket={parent.financialBracket} />
+                    </TableCell>
+                    <TableCell>
+                      <MembershipBadge 
+                        status={parent.membershipStatus} 
+                        fee={parent.membershipFee} 
+                        onToggle={() => handleToggleMembership(parent)}
+                      />
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={parent.status} />
@@ -509,7 +564,7 @@ export default function ParentsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-64 text-center">
+                  <TableCell colSpan={9} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
@@ -637,6 +692,30 @@ function BracketBadge({ bracket }: { bracket: FinancialBracket }) {
   };
 
   return <Badge className={classes[bracket]}>{tI18n(`enum.financialBracket.${bracket.toLowerCase()}`, formatEnum(bracket))}</Badge>;
+}
+
+function MembershipBadge({ status, fee, onToggle }: { status: MembershipStatus; fee?: number | null; onToggle?: () => void }) {
+  const isPaid = status === 'PAID';
+  const numericFee = fee != null ? Number(fee) : null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggle?.();
+        }}
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all hover:opacity-80 active:scale-95"
+        title={isPaid ? 'Click to mark as unpaid' : 'Click to mark as paid'}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+        {isPaid ? 'Paid' : 'Unpaid'}
+      </button>
+      {numericFee != null && (
+        <span className="text-[11px] font-medium text-slate-500">{numericFee.toLocaleString()} ETB</span>
+      )}
+    </div>
+  );
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

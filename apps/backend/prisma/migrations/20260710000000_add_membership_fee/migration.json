@@ -1,0 +1,37 @@
+{
+  "version": "6.19.3",
+  "steps": [
+    {
+      "tag": "CreateEnum",
+      "enum": {
+        "name": "MembershipStatus",
+        "values": ["PAID", "UNPAID"]
+      }
+    },
+    {
+      "tag": "AlterTable",
+      "table": "Parent",
+      "addColumns": [
+        {
+          "name": "membershipFee",
+          "type": "Decimal(12,2)",
+          "isRequired": false
+        },
+        {
+          "name": "membershipStatus",
+          "type": "MembershipStatus",
+          "isRequired": true,
+          "default": "UNPAID"
+        }
+      ]
+    },
+    {
+      "tag": "CreateIndex",
+      "index": {
+        "name": "Parent_membershipStatus_idx",
+        "table": "Parent",
+        "columns": ["membershipStatus"]
+      }
+    }
+  ]
+}

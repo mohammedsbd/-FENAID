@@ -1,4 +1,4 @@
-import { FinancialBracket, ParentStatus } from '@prisma/client';
+import { FinancialBracket, MembershipStatus, ParentStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
@@ -26,6 +26,10 @@ export class ListParentsDto {
   @IsOptional()
   @IsEnum(FinancialBracket)
   financialBracket?: FinancialBracket;
+
+  @IsOptional()
+  @IsEnum(MembershipStatus)
+  membershipStatus?: MembershipStatus;
 
   @IsOptional()
   @IsString()

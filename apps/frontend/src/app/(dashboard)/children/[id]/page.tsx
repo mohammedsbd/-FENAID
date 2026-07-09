@@ -110,6 +110,7 @@ const tabs = [
   'Progress',
   'Services',
   'Appointments',
+  'Referrals',
   'Fund & Finance',
   'Documents',
 ] as const;
@@ -374,6 +375,7 @@ export default function ChildProfilePage() {
         {activeTab === 'Progress' && <ProgressTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Services' && <ServicesTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Appointments' && <AppointmentsTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Referrals' && <ReferralsTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Fund & Finance' && <FinanceTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Documents' && <DocumentsTab child={child} calendarSystem={calendarSystem} />}
       </div>
@@ -747,6 +749,59 @@ function FinanceTab({
   );
 }
 
+function ReferralsTab({
+  child,
+  calendarSystem,
+}: {
+  child: ChildProfile;
+  calendarSystem: CalendarSystem;
+}) {
+  const { t } = useLocale();
+  const referrals = (child as any).referrals || [];
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('services.referrals.table.organization', 'Organization')}</TableHead>
+              <TableHead>{t('services.referrals.table.reason', 'Reason')}</TableHead>
+              <TableHead>{t('services.referrals.table.date', 'Date')}</TableHead>
+              <TableHead>{t('services.referrals.table.followUp', 'Follow-up')}</TableHead>
+              <TableHead>{t('services.referrals.table.status', 'Status')}</TableHead>
+              <TableHead>{t('services.referrals.table.referredBy', 'Referred By')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {referrals.length > 0 ? (
+              referrals.map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.referredTo}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.referralReason}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(r.referralDate, calendarSystem)}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {r.followUpDate ? formatDate(r.followUpDate, calendarSystem) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <ReferralStatusBadge status={r.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {r.staff?.fullName || '—'}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">{t('children.detail.noReferrals', 'No referrals recorded for this child.')}</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 function DocumentsTab({
   child,
   calendarSystem,
@@ -792,6 +847,34 @@ function DocumentsTab({
 }
 
 // Helpers
+function ReferralStatusBadge({ status }: { status: string }) {
+  const { t } = useLocale();
+  const config: Record<string, { className: string; label: string }> = {
+    PENDING: {
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+      label: t('services.referrals.status.pending', 'Pending'),
+    },
+    CONTACTED: {
+      className: 'border-blue-200 bg-blue-50 text-blue-700',
+      label: t('services.referrals.status.contacted', 'Contacted'),
+    },
+    COMPLETED: {
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      label: t('services.referrals.status.completed', 'Completed'),
+    },
+    CANCELLED: {
+      className: 'border-red-200 bg-red-50 text-red-700',
+      label: t('services.referrals.status.cancelled', 'Cancelled'),
+    },
+  };
+  const c = config[status] || config.PENDING;
+  return (
+    <Badge className={c.className}>
+      {c.label}
+    </Badge>
+  );
+}
+
 function DisabilityIcon({ type }: { type: 'PHYSICAL' | 'INTELLECTUAL' | 'MULTIPLE' }) {
   if (type === 'PHYSICAL') return <Accessibility className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
   if (type === 'INTELLECTUAL') return <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" />;

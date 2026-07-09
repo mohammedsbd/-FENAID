@@ -675,6 +675,7 @@ function defaultPermissionMatrix() {
     { role: StaffRole.CASE_WORKER, module: PermissionModule.DOCUMENTS, accessLevel: AccessLevel.FULL },
     { role: StaffRole.CASE_WORKER, module: PermissionModule.DASHBOARD, accessLevel: AccessLevel.FULL },
     { role: StaffRole.CASE_WORKER, module: PermissionModule.REPORTS, accessLevel: AccessLevel.READ_ONLY },
+    { role: StaffRole.CASE_WORKER, module: PermissionModule.VOLUNTEERS, accessLevel: AccessLevel.FULL },
     { role: StaffRole.VIEWER, module: PermissionModule.PARENTS, accessLevel: AccessLevel.READ_ONLY },
     { role: StaffRole.VIEWER, module: PermissionModule.CHILDREN, accessLevel: AccessLevel.READ_ONLY },
     { role: StaffRole.VIEWER, module: PermissionModule.SERVICES, accessLevel: AccessLevel.READ_ONLY },
@@ -683,5 +684,6 @@ function defaultPermissionMatrix() {
     { role: StaffRole.VIEWER, module: PermissionModule.DOCUMENTS, accessLevel: AccessLevel.READ_ONLY },
     { role: StaffRole.VIEWER, module: PermissionModule.DASHBOARD, accessLevel: AccessLevel.READ_ONLY },
     { role: StaffRole.VIEWER, module: PermissionModule.REPORTS, accessLevel: AccessLevel.READ_ONLY },
+    { role: StaffRole.VIEWER, module: PermissionModule.VOLUNTEERS, accessLevel: AccessLevel.READ_ONLY },
   ];
 }

@@ -291,6 +291,17 @@ export class ChildrenService {
           },
           orderBy: { scheduledAt: 'asc' },
         },
+        referrals: {
+          include: {
+            staff: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+          orderBy: { referralDate: 'desc' },
+        },
         documents: {
           include: {
             uploadedBy: {

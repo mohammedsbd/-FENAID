@@ -6,6 +6,7 @@ import {
 import {
   FinancialBracket,
   MaritalStatus,
+  MembershipStatus,
   NotificationType,
   Parent,
   ParentStatus,
@@ -136,6 +137,9 @@ export class ParentsService {
       ...(query.financialBracket
         ? { financialBracket: query.financialBracket }
         : {}),
+      ...(query.membershipStatus
+        ? { membershipStatus: query.membershipStatus }
+        : {}),
       ...(query.assignedStaffId
         ? { assignedStaffId: query.assignedStaffId }
         : {}),
@@ -158,6 +162,8 @@ export class ParentsService {
           city: true,
           subcity: true,
           status: true,
+          membershipFee: true,
+          membershipStatus: true,
           financialBracket: true,
           maritalStatus: true,
           assignedStaffId: true,
@@ -238,6 +244,17 @@ export class ParentsService {
         },
         fundAllocations: {
           orderBy: { allocationDate: 'desc' },
+        },
+        referrals: {
+          include: {
+            staff: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+          orderBy: { referralDate: 'desc' },
         },
         documents: {
           include: {
@@ -453,6 +470,8 @@ export class ParentsService {
       'numberOfDependents',
       'referralSource',
       'status',
+      'membershipFee',
+      'membershipStatus',
       'internalNotes',
       'assignedStaffId',
     ];

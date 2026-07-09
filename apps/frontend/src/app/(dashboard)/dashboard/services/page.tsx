@@ -16,6 +16,8 @@ import {
   Pencil,
   Eye,
   AlertCircle,
+  ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,6 +47,8 @@ import {
   deleteService,
   getAssignments,
   updateAssignment,
+  getReferrals,
+  deleteReferral,
   type ServiceDto,
   type ServiceAssignmentDto,
   type PaginatedResult,
@@ -55,16 +59,22 @@ import { AssignServiceDrawer } from '@/components/services/AssignServiceDrawer';
 import { AssignmentDetailPanel } from '@/components/services/AssignmentDetailPanel';
 import { AssignmentStatusBadge } from '@/components/services/AssignmentStatusBadge';
 import { FrequencyBadge } from '@/components/services/FrequencyBadge';
+import { ReferralDrawer } from '@/components/services/ReferralDrawer';
 
-type Tab = 'catalog' | 'assignments';
+type Tab = 'catalog' | 'assignments' | 'referrals';
 
 export default function ServicesPage() {
   const { t } = useLocale();
   const { toast } = useToast();
-  const session = getSession();
-  const userRole = session?.role ?? '';
-  const isSuperAdmin = userRole === 'SUPER_ADMIN';
-  const canAssign = isSuperAdmin || userRole === 'CASE_WORKER';
+  const [userRole, setUserRole] = useState('');
+
+  const isSuperAdmin = useMemo(() => userRole === 'SUPER_ADMIN', [userRole]);
+  const canAssign = useMemo(() => userRole === 'SUPER_ADMIN' || userRole === 'CASE_WORKER', [userRole]);
+
+  useEffect(() => {
+    const session = getSession();
+    setUserRole(session?.role ?? '');
+  }, []);
 
   const [tab, setTab] = useState<Tab>('catalog');
 
@@ -93,6 +103,33 @@ export default function ServicesPage() {
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<ServiceAssignmentDto | null>(null);
 
+  // Referrals state
+  const [referrals, setReferrals] = useState<PaginatedResult<any> | null>(null);
+  const [referralsLoading, setReferralsLoading] = useState(true);
+  const [referralSearch, setReferralSearch] = useState('');
+  const [debouncedReferralSearch, setDebouncedReferralSearch] = useState('');
+  const [referralStatusFilter, setReferralStatusFilter] = useState('');
+  const [referralPage, setReferralPage] = useState(1);
+  const [referralDrawerOpen, setReferralDrawerOpen] = useState(false);
+  const [editingReferral, setEditingReferral] = useState<any | null>(null);
+
+  async function fetchReferrals() {
+    setReferralsLoading(true);
+    try {
+      const result = await getReferrals({
+        search: debouncedReferralSearch || undefined,
+        status: (referralStatusFilter as any) || undefined,
+        page: referralPage,
+        limit: 20,
+      });
+      setReferrals(result);
+    } catch {
+      toast({ title: t('common.error', 'Error'), description: t('services.referrals.error.load', 'Failed to load referrals'), variant: 'destructive' });
+    } finally {
+      setReferralsLoading(false);
+    }
+  }
+
   // Staff list for filter
   const [staffList, setStaffList] = useState<{ id: string; fullName: string }[]>([]);
 
@@ -111,12 +148,21 @@ export default function ServicesPage() {
   }, [assignSearch]);
 
   useEffect(() => {
+    const t3 = setTimeout(() => setDebouncedReferralSearch(referralSearch), 300);
+    return () => clearTimeout(t3);
+  }, [referralSearch]);
+
+  useEffect(() => {
     fetchServices();
   }, [debouncedServiceSearch, serviceTargetFilter, serviceStatusFilter]);
 
   useEffect(() => {
     fetchAssignments();
   }, [debouncedAssignSearch, assignStatusFilter, assignTargetFilter, assignStaffFilter, assignPage]);
+
+  useEffect(() => {
+    fetchReferrals();
+  }, [debouncedReferralSearch, referralStatusFilter, referralPage]);
 
   useEffect(() => {
     async function fetchStaff() {
@@ -128,12 +174,16 @@ export default function ServicesPage() {
         );
         if (workers.length) {
           setStaffList(workers);
-        } else if (session) {
-          setStaffList([{ id: session.id, fullName: session.fullName }]);
+        } else {
+          const s = getSession();
+          if (s) {
+            setStaffList([{ id: s.id, fullName: s.fullName }]);
+          }
         }
       } catch {
-        if (session) {
-          setStaffList([{ id: session.id, fullName: session.fullName }]);
+        const s = getSession();
+        if (s) {
+          setStaffList([{ id: s.id, fullName: s.fullName }]);
         }
       }
     }
@@ -187,6 +237,37 @@ export default function ServicesPage() {
     setAssignTargetFilter('');
     setAssignStaffFilter('');
     setAssignPage(1);
+  }
+
+  function resetReferralFilters() {
+    setReferralSearch('');
+    setReferralStatusFilter('');
+    setReferralPage(1);
+  }
+
+  function openNewReferral() {
+    setEditingReferral(null);
+    setReferralDrawerOpen(true);
+  }
+
+  function openEditReferral(referral: any) {
+    setEditingReferral(referral);
+    setReferralDrawerOpen(true);
+  }
+
+  async function handleDeleteReferral(id: string) {
+    if (!confirm(t('services.referrals.confirmDelete', 'Delete this referral?'))) return;
+    try {
+      await deleteReferral(id);
+      toast({
+        title: t('services.referrals.deleted', 'Referral Deleted'),
+        description: t('services.referrals.deletedDesc', 'The referral has been removed.'),
+      });
+      fetchReferrals();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || t('services.referrals.error.delete', 'Failed to delete referral');
+      toast({ title: t('common.error', 'Error'), description: msg, variant: 'destructive' });
+    }
   }
 
   function openAddService() {
@@ -290,6 +371,21 @@ export default function ServicesPage() {
           {assignments && (
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
               {assignments.total}
+            </Badge>
+          )}
+        </button>
+        <button
+          onClick={() => setTab('referrals')}
+          className={cn(
+            'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
+            tab === 'referrals' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <ExternalLink className="h-4 w-4" />
+          {t('services.tab.referrals', 'Referrals')}
+          {referrals && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+              {referrals.total}
             </Badge>
           )}
         </button>
@@ -654,6 +750,230 @@ export default function ServicesPage() {
         </div>
       )}
 
+      {/* Tab: Referrals */}
+      {tab === 'referrals' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <Card>
+            <CardHeader className="gap-4">
+              <div className="grid gap-4 lg:grid-cols-[1fr_160px_auto] lg:items-end">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">{t('common.search', 'Search')}</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/70" />
+                    <Input
+                      value={referralSearch}
+                      onChange={(e) => setReferralSearch(e.target.value)}
+                      placeholder={t('services.referrals.searchPlaceholder', 'Search by name or organization...')}
+                      className="h-12 pl-10 pr-10 text-base shadow-sm"
+                    />
+                    {referralSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setReferralSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <FilterSelect label={t('services.referrals.table.status', 'Status')} value={referralStatusFilter} onChange={setReferralStatusFilter}>
+                  <option value="">{t('common.all', 'All')}</option>
+                  <option value="PENDING">{t('services.referrals.status.pending', 'Pending')}</option>
+                  <option value="CONTACTED">{t('services.referrals.status.contacted', 'Contacted')}</option>
+                  <option value="COMPLETED">{t('services.referrals.status.completed', 'Completed')}</option>
+                  <option value="CANCELLED">{t('services.referrals.status.cancelled', 'Cancelled')}</option>
+                </FilterSelect>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" className="h-11" onClick={resetReferralFilters}>
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    {t('common.reset', 'Reset')}
+                  </Button>
+                  {canAssign && (
+                    <Button className="h-11" onClick={openNewReferral}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      {t('services.referrals.new', 'New Referral')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Table */}
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>{t('services.referrals.table.recipient', 'Recipient')}</TableHead>
+                    <TableHead>{t('services.referrals.table.organization', 'Organization')}</TableHead>
+                    <TableHead>{t('services.referrals.table.reason', 'Reason')}</TableHead>
+                    <TableHead>{t('services.referrals.table.date', 'Date')}</TableHead>
+                    <TableHead>{t('services.referrals.table.followUp', 'Follow-up')}</TableHead>
+                    <TableHead>{t('services.referrals.table.status', 'Status')}</TableHead>
+                    <TableHead>{t('services.referrals.table.referredBy', 'Referred By')}</TableHead>
+                    {canAssign && <TableHead className="text-right">{t('services.referrals.table.actions', 'Actions')}</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {referralsLoading ? (
+                    [...Array(6)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={canAssign ? 8 : 7}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : referrals && referrals.data.length > 0 ? (
+                    referrals.data.map((r: any) => (
+                      <TableRow key={r.id} className="hover:bg-slate-50 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs">
+                                {initials(r.parent?.fullName || r.child?.fullName || '??')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <Link
+                                href={
+                                  r.parent
+                                    ? `/dashboard/parents/${r.parent.id}`
+                                    : r.child
+                                    ? `/dashboard/children/${r.child.id}`
+                                    : '#'
+                                }
+                                className="font-medium text-sm hover:text-primary truncate max-w-[140px]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {r.parent?.fullName || r.child?.fullName || t('common.unknown', 'Unknown')}
+                              </Link>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'w-fit text-[10px] mt-0.5',
+                                  r.parent
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                                )}
+                              >
+                                {r.parent
+                                  ? t('services.assign.parent', 'Parent')
+                                  : t('services.assign.child', 'Child')}
+                              </Badge>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{r.referredTo}</span>
+                            <span className="text-xs text-muted-foreground line-clamp-1 max-w-[160px]">{r.referralReason}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs text-muted-foreground line-clamp-2 max-w-[180px]">
+                            {r.referralReason}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(r.referralDate), 'MMM dd, yyyy')}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {r.followUpDate ? format(new Date(r.followUpDate), 'MMM dd, yyyy') : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <ReferralStatusBadge status={r.status} />
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.staff?.fullName || '—'}
+                        </TableCell>
+                        {canAssign && (
+                          <TableCell>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => openEditReferral(r)}
+                                title={t('services.referrals.edit', 'Edit')}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {userRole === 'SUPER_ADMIN' && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-red-500"
+                                  onClick={() => handleDeleteReferral(r.id)}
+                                  title={t('services.referrals.delete', 'Delete')}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={canAssign ? 8 : 7} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <div className="rounded-full bg-slate-50 p-4">
+                            <ExternalLink className="h-10 w-10 text-muted-foreground/50" />
+                          </div>
+                          <p className="text-lg font-semibold">{t('services.referrals.table.noReferrals', 'No referrals yet')}</p>
+                          <p className="max-w-xs text-sm text-muted-foreground">
+                            {t('services.referrals.table.noReferralsDesc', 'Create a referral to track when a client is referred to an external organization.')}
+                          </p>
+                          {canAssign && (
+                            <Button onClick={openNewReferral}>
+                              <Plus className="h-4 w-4 mr-1" />
+                              {t('services.referrals.new', 'New Referral')}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {referrals && referrals.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t px-6 py-4">
+                  <p className="text-sm text-muted-foreground">
+                    {t('common.showingPage', 'Showing page {page} of {totalPages}', { page: referrals.page, totalPages: referrals.totalPages })}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={referralPage <= 1}
+                      onClick={() => setReferralPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      {t('common.previous', 'Previous')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={referralPage >= (referrals?.totalPages ?? 1)}
+                      onClick={() => setReferralPage((p) => Math.min(referrals?.totalPages ?? 1, p + 1))}
+                    >
+                      {t('common.next', 'Next')}
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Drawers */}
       <ServiceDrawer
         open={serviceDrawerOpen}
@@ -679,6 +999,21 @@ export default function ServicesPage() {
         userRole={userRole}
       />
 
+      <ReferralDrawer
+        open={referralDrawerOpen}
+        referral={editingReferral}
+        onClose={() => {
+          setReferralDrawerOpen(false);
+          setEditingReferral(null);
+        }}
+        onSaved={() => {
+          setReferralDrawerOpen(false);
+          setEditingReferral(null);
+          fetchReferrals();
+        }}
+        userRole={userRole}
+      />
+
       <AssignmentDetailPanel
         open={detailPanelOpen}
         assignment={selectedAssignment}
@@ -699,6 +1034,34 @@ export default function ServicesPage() {
         userRole={userRole}
       />
     </div>
+  );
+}
+
+function ReferralStatusBadge({ status }: { status: string }) {
+  const { t } = useLocale();
+  const config: Record<string, { className: string; label: string }> = {
+    PENDING: {
+      className: 'bg-amber-50 text-amber-700 border-amber-200',
+      label: t('services.referrals.status.pending', 'Pending'),
+    },
+    CONTACTED: {
+      className: 'bg-blue-50 text-blue-700 border-blue-200',
+      label: t('services.referrals.status.contacted', 'Contacted'),
+    },
+    COMPLETED: {
+      className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      label: t('services.referrals.status.completed', 'Completed'),
+    },
+    CANCELLED: {
+      className: 'bg-red-50 text-red-700 border-red-200',
+      label: t('services.referrals.status.cancelled', 'Cancelled'),
+    },
+  };
+  const c = config[status] || config.PENDING;
+  return (
+    <Badge variant="outline" className={c.className}>
+      {c.label}
+    </Badge>
   );
 }
 

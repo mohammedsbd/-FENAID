@@ -2,6 +2,7 @@ import {
   EmploymentStatus,
   FinancialBracket,
   MaritalStatus,
+  MembershipStatus,
   ParentStatus,
 } from '@prisma/client';
 import {
@@ -9,7 +10,9 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   Min,
   MinLength,
@@ -97,6 +100,15 @@ export class UpdateParentDto {
   @IsOptional()
   @IsEnum(ParentStatus)
   status?: ParentStatus;
+
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  membershipFee?: number;
+
+  @IsOptional()
+  @IsEnum(MembershipStatus)
+  membershipStatus?: MembershipStatus;
 
   @IsOptional()
   @IsString()

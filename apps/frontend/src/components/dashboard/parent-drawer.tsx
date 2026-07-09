@@ -15,6 +15,7 @@ import { formatEnum } from '@/lib/export';
 import { useLocale } from '@/components/providers/locale-provider';
 import { 
   ParentStatus, 
+  MembershipStatus,
   FinancialBracket, 
   MaritalStatus, 
   EmploymentStatus, 
@@ -28,6 +29,7 @@ import {
 } from '@/types/parents';
 
 const statusOptions: ParentStatus[] = ['ACTIVE', 'UNDER_REVIEW', 'INACTIVE'];
+const membershipStatusOptions: MembershipStatus[] = ['PAID', 'UNPAID'];
 const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 const maritalOptions: MaritalStatus[] = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'];
 const employmentOptions: EmploymentStatus[] = ['EMPLOYED', 'UNEMPLOYED', 'SELF_EMPLOYED'];
@@ -381,6 +383,31 @@ export function ParentDrawer({
                       value={form.numberOfDependents}
                       onChange={(event) => updateField('numberOfDependents', event.target.value)}
                     />
+                  </FormField>
+                  <FormField label={t('parentDrawer.membershipFee', 'Membership Fee (ETB)')} error={errors.membershipFee}>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={t('parentDrawer.membershipFeePlaceholder', 'e.g. 500')}
+                      value={form.membershipFee}
+                      onChange={(event) => updateField('membershipFee', event.target.value)}
+                    />
+                  </FormField>
+                  <FormField label={t('parentDrawer.membershipStatus', 'Membership Status')} error={errors.membershipStatus}>
+                    <select
+                      className={selectClassName}
+                      value={form.membershipStatus}
+                      onChange={(event) =>
+                        updateField('membershipStatus', event.target.value as MembershipStatus)
+                      }
+                    >
+                      {membershipStatusOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {formatEnum(option)}
+                        </option>
+                      ))}
+                    </select>
                   </FormField>
                 </div>
               )}

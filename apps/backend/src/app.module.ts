@@ -23,6 +23,8 @@ import { AccountsModule } from './accounts/accounts.module';
 import { SearchModule } from './search/search.module';
 import { SettingsModule } from './settings/settings.module';
 import { DataQueryModule } from './data-query/data-query.module';
+import { VolunteersModule } from './volunteers/volunteers.module';
+import { ReferralsModule } from './referrals/referrals.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { DataQueryModule } from './data-query/data-query.module';
     SearchModule,
     SettingsModule,
     DataQueryModule,
+    VolunteersModule,
+    ReferralsModule,
   ],
   controllers: [AppController],
   providers: [
