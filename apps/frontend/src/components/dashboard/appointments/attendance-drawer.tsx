@@ -29,6 +29,8 @@ interface AttendanceDrawerProps {
 }
 
 export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: AttendanceDrawerProps) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [appointment, setAppointment] = useState<any>(null);
@@ -38,6 +40,21 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
   const [apptStatus, setApptStatus] = useState<string>('COMPLETED');
   const { toast } = useToast();
   const { t } = useLocale();
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open && appointmentId) {
@@ -112,12 +129,16 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
 
 // ... (rest of the file remains similar but I'll provide the exact block for the UI change)
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-background h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-background shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">{t('attendanceDrawer.title', 'Appointment Details')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>

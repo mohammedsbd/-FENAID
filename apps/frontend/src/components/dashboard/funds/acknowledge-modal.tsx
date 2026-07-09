@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, HandCoins, CheckCircle2, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
@@ -16,11 +16,28 @@ interface AcknowledgeModalProps {
 }
 
 export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: AcknowledgeModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { t } = useLocale();
 
-  if (!open || !allocation) return null;
+  useEffect(() => {
+    if (open && allocation) {
+      setMounted(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+    } else if (!open) {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open, allocation]);
+
+  if (!mounted || !allocation) return null;
 
   async function handleConfirm() {
     if (!allocation) return;
@@ -41,9 +58,13 @@ export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: Ackno
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-background rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 !mt-0">
+      <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`relative w-full max-w-sm bg-background rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${
+        visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+      }`}>
         <div className="p-6">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-accent/10 rounded-full">

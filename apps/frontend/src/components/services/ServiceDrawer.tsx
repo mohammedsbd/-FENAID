@@ -31,6 +31,8 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const fetchedRef = useRef(false);
 
   useEffect(() => {
@@ -48,6 +50,22 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
       fetchCategories();
     }
   }, [service, open]);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   function resetForm() {
     setName('');
@@ -129,16 +147,20 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
     }
   }
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   const filteredSuggestions = suggestions.filter(
     (s) => s.toLowerCase().includes(category.toLowerCase()) && s !== category
   );
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-xl flex flex-col">
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-md bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h2 className="text-lg font-semibold">
             {isEdit ? t('services.catalog.edit', 'Edit Service') : t('services.catalog.add', 'Add Service')}
@@ -256,6 +278,6 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

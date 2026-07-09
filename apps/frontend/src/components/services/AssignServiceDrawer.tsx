@@ -75,6 +75,8 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const [loadingStaff, setLoadingStaff] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -88,6 +90,22 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
       fetchStaff();
     }
   }, [open, targetType]);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!parentSearch) {
@@ -224,12 +242,16 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
   const selectedService = services.find((s) => s.id === selectedServiceId);
   const selectedStaff = staffList.find((s) => s.id === assignedStaffId);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white shadow-xl flex flex-col">
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-xl bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
@@ -604,7 +626,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -158,18 +158,14 @@ export function ParentDrawer({
   }
 
   return (
-    <div className={`fixed inset-0 z-50 overflow-y-auto transition-opacity duration-300 ease-out ${
-      visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-    } bg-slate-950/30 backdrop-blur-sm`}>
-      <button
-        type="button"
-        className="fixed inset-0"
-        onClick={onClose}
-      />
-      <aside className={`absolute right-0 top-0 flex h-full w-full max-w-2xl flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-slate-950/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <aside className={`absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
-        <div className="flex items-center justify-between border-b px-6 py-4">
+        <div className="flex items-center justify-between border-b px-6 py-3">
           <div>
             <h2 className="text-lg font-semibold">
               {parentId ? t('parentDrawer.editTitle', 'Edit Parent Profile') : t('parentDrawer.registerTitle', 'Register New Parent')}
@@ -181,7 +177,7 @@ export function ParentDrawer({
           </Button>
         </div>
 
-        <div className="border-b px-6 py-4">
+        <div className="border-b px-6 py-3">
           <div className="grid grid-cols-4 gap-2">
             {steps.map((label, index) => (
               <div key={label} className="space-y-2">
@@ -199,15 +195,15 @@ export function ParentDrawer({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 px-6 pb-5">
               {[...Array(8)].map((_, index) => (
                 <div key={index} className="h-10 animate-pulse rounded bg-slate-100" />
               ))}
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="px-6 pb-5">
               {serverError && (
                 <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {serverError}

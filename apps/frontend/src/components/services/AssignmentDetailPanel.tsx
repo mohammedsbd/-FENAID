@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { X, Clock, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,8 +34,26 @@ export function AssignmentDetailPanel({
 }: AssignmentDetailPanelProps) {
   const { t } = useLocale();
   const canEdit = userRole === 'SUPER_ADMIN' || userRole === 'CASE_WORKER';
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-  if (!open || !assignment) return null;
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  if (!mounted || !assignment) return null;
 
   const recipientName =
     assignment.parent?.fullName || assignment.child?.fullName || 'Unknown';
@@ -45,9 +64,13 @@ export function AssignmentDetailPanel({
     : '#';
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white shadow-xl flex flex-col">
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-lg bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h2 className="text-lg font-semibold">{t('services.detail.title', 'Assignment Details')}</h2>
@@ -188,7 +211,7 @@ export function AssignmentDetailPanel({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

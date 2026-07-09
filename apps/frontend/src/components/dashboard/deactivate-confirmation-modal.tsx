@@ -26,7 +26,7 @@ export function DeactivateConfirmationModal({
   const defaultDescription = t('deactivateModal.defaultDescription', 'Are you sure you want to deactivate {name}? This will restrict their access and mark the profile as inactive in the system.', { name });
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] overflow-y-auto !mt-0 bg-slate-950/30 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="w-full max-w-md rounded-lg bg-white shadow-xl animate-in fade-in zoom-in duration-200">
         <div className="p-6">
