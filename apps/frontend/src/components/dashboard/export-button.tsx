@@ -79,7 +79,7 @@ export function ExportButton({ onExport, loading = false, className }: ExportBut
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
             {t('exportButton.chooseFormat', 'Choose Export Format')}
           </div>
@@ -92,14 +92,14 @@ export function ExportButton({ onExport, loading = false, className }: ExportBut
                   setIsOpen(false);
                   onExport(opt.format);
                 }}
-                className="flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50"
+                className="flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800"
               >
                 <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", opt.colorClass)}>
                   <opt.icon className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="font-semibold text-slate-800">{opt.label}</div>
-                  <div className="text-[11px] text-slate-400 font-medium">{opt.description}</div>
+                  <div className="font-semibold text-slate-800 dark:text-neutral-100">{opt.label}</div>
+                  <div className="text-[11px] text-slate-400 dark:text-neutral-500 font-medium">{opt.description}</div>
                 </div>
               </button>
             ))}

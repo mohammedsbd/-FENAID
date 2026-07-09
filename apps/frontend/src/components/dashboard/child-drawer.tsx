@@ -186,7 +186,7 @@ export function ChildDrawer({
       <div className={`fixed inset-0 bg-slate-950/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <aside className={`absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+      <aside className={`absolute right-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between border-b px-6 py-4">

@@ -271,8 +271,8 @@ export default function ChildProfilePage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
-        <div className="h-96 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-40 animate-pulse rounded-lg bg-slate-100 dark:bg-neutral-800" />
+        <div className="h-96 animate-pulse rounded-lg bg-slate-100 dark:bg-neutral-800" />
       </div>
     );
   }
@@ -322,7 +322,7 @@ export default function ChildProfilePage() {
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={child.status as any} />
                 <SeverityBadge level={child.severityLevel as any} />
-                <Badge variant="outline" className="bg-slate-50">{child.disabilityCategory}</Badge>
+                <Badge variant="outline" className="bg-slate-50 dark:bg-neutral-800 dark:text-neutral-400">{child.disabilityCategory}</Badge>
               </div>
             </div>
                         <div className="flex flex-row flex-wrap items-center gap-2">
@@ -479,13 +479,13 @@ function ProfileTab({
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase">{t('children.detail.profileTab.medicalHistory', 'Medical History')}</p>
-            <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-md border italic">
+            <p className="text-sm leading-relaxed text-slate-700 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800/50 p-4 rounded-md border italic dark:border-neutral-700">
               {child.medicalHistory || t('children.detail.profileTab.noMedicalHistory', 'No medical history recorded.')}
             </p>
           </div>
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase">{t('children.detail.profileTab.currentMedications', 'Current Medications')}</p>
-            <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-md border italic">
+            <p className="text-sm leading-relaxed text-slate-700 dark:text-neutral-300 bg-slate-50 dark:bg-neutral-800/50 p-4 rounded-md border italic dark:border-neutral-700">
               {child.medications || t('children.detail.profileTab.noMedications', 'No medications recorded.')}
             </p>
           </div>
@@ -521,15 +521,15 @@ function ProgressTab({
                 {child.progressNotes.map((note, idx) => (
                   <div key={note.id} className="relative pl-6 pb-6 last:pb-0">
                     {idx !== child.progressNotes.length - 1 && (
-                      <div className="absolute left-[7px] top-6 bottom-0 w-px bg-slate-200" />
+                      <div className="absolute left-[7px] top-6 bottom-0 w-px bg-slate-200 dark:bg-neutral-700" />
                     )}
-                    <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-white" />
+                    <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-white dark:bg-neutral-900" />
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-500 uppercase">{formatDate(note.createdAt, calendarSystem)}</span>
-                        <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 rounded text-slate-600">{note.staff?.fullName}</span>
+                        <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 dark:bg-neutral-800 rounded text-slate-600">{note.staff?.fullName}</span>
                       </div>
-                      <p className="text-sm leading-relaxed bg-slate-50/50 p-3 rounded-md border">{note.note}</p>
+                      <p className="text-sm leading-relaxed bg-slate-50/50 dark:bg-neutral-800/30 p-3 rounded-md border dark:border-neutral-700">{note.note}</p>
                     </div>
                   </div>
                 ))}
@@ -552,12 +552,12 @@ function ProgressTab({
             {child.milestones.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {child.milestones.map((ms) => (
-                  <div key={ms.id} className="flex items-center justify-between p-3 border rounded-md bg-slate-50/30">
+                  <div key={ms.id} className="flex items-center justify-between p-3 border rounded-md bg-slate-50/30 dark:bg-neutral-800/30">
                     <div className="flex items-center gap-3">
                       {ms.status === 'ACHIEVED' ? (
                         <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                       ) : (
-                        <TrendingUp className="h-5 w-5 text-slate-300" />
+                        <TrendingUp className="h-5 w-5 text-slate-300 dark:text-neutral-500" />
                       )}
                       <span className="text-sm font-medium">{ms.title}</span>
                     </div>
@@ -590,7 +590,7 @@ function ProgressTab({
                      goal.type === 'SHORT_TERM' ? "bg-blue-500" : "bg-purple-500"
                    )} />
                    <div className="flex items-center justify-between">
-                     <Badge className={goal.type === 'SHORT_TERM' ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}>
+                     <Badge className={goal.type === 'SHORT_TERM' ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300"}>
                        {formatEnum(goal.type)}
                      </Badge>
                      <span className="text-[10px] text-muted-foreground">{formatDate(goal.createdAt, calendarSystem)}</span>
@@ -677,9 +677,9 @@ function AppointmentsTab({
               const dateChip = appointmentDateChip(apt.scheduledAt, calendarSystem);
 
               return (
-              <div key={apt.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50">
+              <div key={apt.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700">
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 flex flex-col items-center justify-center bg-white border rounded text-center">
+                  <div className="h-10 w-10 flex flex-col items-center justify-center bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded text-center">
                     <span className="text-[10px] font-bold text-primary uppercase">{dateChip.month}</span>
                     <span className="text-lg font-bold leading-none">{dateChip.day}</span>
                   </div>
@@ -734,9 +734,9 @@ function FinanceTab({
                   <div className="flex items-center gap-2">
                     <GenericStatusBadge status={fund.status} />
                     {fund.parentAcknowledged ? (
-                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">{t('children.detail.financeTab.acknowledged', 'Acknowledged')}</Badge>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">{t('children.detail.financeTab.acknowledged', 'Acknowledged')}</Badge>
                     ) : (
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-200">{t('children.detail.financeTab.pending', 'Pending')}</Badge>
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800">{t('children.detail.financeTab.pending', 'Pending')}</Badge>
                     )}
                   </div>
                 </div>
@@ -773,9 +773,9 @@ function DocumentsTab({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {child.documents.length ? (
             child.documents.map((doc) => (
-              <div key={doc.id} className="p-4 border rounded-lg bg-slate-50/50 flex flex-col gap-3">
+              <div key={doc.id} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 bg-white rounded border"><Files className="h-5 w-5 text-slate-400" /></div>
+                  <div className="p-2 bg-white dark:bg-neutral-900 rounded border dark:border-neutral-700"><Files className="h-5 w-5 text-slate-400" /></div>
                   <Badge variant="outline">{doc.category}</Badge>
                 </div>
                 <div>
@@ -798,26 +798,26 @@ function DocumentsTab({
 
 // Helpers
 function DisabilityIcon({ type }: { type: 'PHYSICAL' | 'INTELLECTUAL' | 'MULTIPLE' }) {
-  if (type === 'PHYSICAL') return <Accessibility className="h-4 w-4 text-blue-600" />;
-  if (type === 'INTELLECTUAL') return <Brain className="h-4 w-4 text-purple-600" />;
-  return <div className="flex -space-x-1"><Accessibility className="h-4 w-4 text-blue-600" /><Brain className="h-4 w-4 text-purple-600" /></div>;
+  if (type === 'PHYSICAL') return <Accessibility className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+  if (type === 'INTELLECTUAL') return <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" />;
+  return <div className="flex -space-x-1"><Accessibility className="h-4 w-4 text-blue-600 dark:text-blue-400" /><Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" /></div>;
 }
 
 function SeverityBadge({ level }: { level: 'MILD' | 'MODERATE' | 'SEVERE' }) {
   const classes = {
-    MILD: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    MODERATE: 'bg-amber-50 text-amber-700 border-amber-200',
-    SEVERE: 'bg-red-50 text-red-700 border-red-200',
+    MILD: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+    MODERATE: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+    SEVERE: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
   };
   return <Badge className={classes[level]}>{formatEnum(level)}</Badge>;
 }
 
 function StatusBadge({ status }: { status: 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED' | 'INACTIVE' | 'DECEASED' }) {
   const classes = {
-    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    GRADUATED: 'bg-blue-50 text-blue-700 border-blue-200',
-    TRANSFERRED: 'bg-amber-50 text-amber-700 border-amber-200',
-    INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200',
+    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+    GRADUATED: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800',
+    TRANSFERRED: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+    INACTIVE: 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 border-slate-200 dark:border-neutral-700',
     DECEASED: 'bg-red-950 text-white border-red-900',
   };
   return <Badge className={classes[status]}>{formatEnum(status)}</Badge>;
@@ -826,10 +826,10 @@ function StatusBadge({ status }: { status: 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED
 function GenericStatusBadge({ status }: { status: string }) {
   const normalized = status.toUpperCase();
   const className = ['ACTIVE', 'COMPLETED', 'DISBURSED', 'ACHIEVED'].includes(normalized)
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
     : ['PENDING', 'ALLOCATED', 'IN_PROGRESS', 'SCHEDULED'].includes(normalized)
-      ? 'border-amber-200 bg-amber-50 text-amber-700'
-      : 'border-slate-200 bg-slate-100 text-slate-600';
+      ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+      : 'border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400';
   return <Badge className={className}>{formatEnum(status)}</Badge>;
 }
 

@@ -68,7 +68,7 @@ export function AssignmentDetailPanel({
       <div className={`fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-lg bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         {/* Header */}

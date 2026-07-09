@@ -209,7 +209,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
               <Field label={t('myAccount.currentPassword', 'Current password')}>
                 <div className="relative">
                   <Input type={showCurrentPassword ? 'text' : 'password'} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, currentPassword: e.target.value }))} />
-                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground dark:hover:text-neutral-100">
                     {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -217,7 +217,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
               <Field label={t('myAccount.newPassword', 'New password')}>
                 <div className="relative">
                   <Input type={showNewPassword ? 'text' : 'password'} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((c) => ({ ...c, newPassword: e.target.value }))} />
-                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground dark:hover:text-neutral-100">
                     {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -248,7 +248,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
               <div className="rounded-md border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-muted/50 dark:bg-neutral-800/50">
                       <TableHead>{t('myAccount.device', 'Device / Browser')}</TableHead>
                       <TableHead>{t('myAccount.ip', 'IP Address')}</TableHead>
                       <TableHead>{t('myAccount.lastSeen', 'Last seen')}</TableHead>
@@ -288,7 +288,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
               <div className="rounded-md border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-muted/50 dark:bg-neutral-800/50">
                       <TableHead className="w-[200px]">{t('myAccount.date', 'Date & Time')}</TableHead>
                       <TableHead>{t('myAccount.action', 'Action')}</TableHead>
                       <TableHead>{t('myAccount.entity', 'Module')}</TableHead>
@@ -346,7 +346,7 @@ function PasswordStrength({ password }: { password: string }) {
 
   return (
     <div className="space-y-1.5 mt-2">
-      <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-1 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
         <div className={cn("h-1 rounded-full transition-all duration-500", color)} style={{ width }} />
       </div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t('myAccount.passwordStrength', '{label} Security', { label })}</p>

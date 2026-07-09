@@ -1368,5 +1368,11 @@
   "services.error.update": "Failed to update service",
   "services.toast.markedComplete": "Marked as Completed",
   "services.toast.markedCancelled": "Marked as Cancelled",
-  "services.toast.statusUpdated": "The assignment status has been updated."
+  "services.toast.statusUpdated": "The assignment status has been updated.",
+  "datePicker.selectDate": "Select date",
+  "datePicker.clear": "Clear",
+  "datePicker.today": "Today",
+  "datePicker.gregorian": "Gregorian calendar",
+  "datePicker.ethiopian": "Ethiopian calendar",
+  "datePicker.dayHeaders": "S,M,T,W,T,F,S"
 }

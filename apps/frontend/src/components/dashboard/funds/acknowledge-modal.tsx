@@ -62,7 +62,7 @@ export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: Ackno
       <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <div className={`relative w-full max-w-sm bg-background rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${
+      <div className={`relative w-full max-w-sm bg-background dark:bg-neutral-900 rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${
         visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
       }`}>
         <div className="p-6">

@@ -47,10 +47,10 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="overflow-hidden rounded-md border bg-white">
+    <div className="overflow-hidden rounded-md border bg-white dark:bg-neutral-950">
       <button
         type="button"
-        className="flex w-full items-center justify-between bg-slate-50 px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100"
+        className="flex w-full items-center justify-between bg-slate-50 dark:bg-neutral-800/50 px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-neutral-800"
         onClick={() => setOpen(!open)}
       >
         <span className="flex items-center gap-2">
@@ -637,7 +637,7 @@ export function FilterBuilder({
         </div>
       </div>
 
-      <div className="sticky bottom-0 space-y-2 border-t bg-white pt-4">
+      <div className="sticky bottom-0 space-y-2 border-t bg-white dark:bg-neutral-950 pt-4">
         <Button className="w-full" onClick={onRun} disabled={running}>
           {running ? t('dataQuery.running', 'Running...') : t('dataQuery.run', 'Run Query')}
         </Button>

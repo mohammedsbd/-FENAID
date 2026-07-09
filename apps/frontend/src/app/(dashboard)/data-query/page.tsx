@@ -205,7 +205,7 @@ export default function DataQueryPage() {
           <div style={{ width: filterWidth, minWidth: 220, maxWidth: 500 }} className="shrink-0">
             <Card className="flex flex-col h-full overflow-hidden rounded-r-none border-r-0">
               <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-                <div className="border-b bg-slate-50 px-4 py-3">
+                <div className="border-b bg-slate-50 dark:bg-neutral-800/50 px-4 py-3">
                   <h2 className="text-sm font-semibold text-primary">{t('dataQuery.filtersTitle', 'Filters')}</h2>
                   <p className="text-xs text-muted-foreground">
                     {t('dataQuery.filtersDesc', 'Define criteria, then run your query')}
@@ -265,7 +265,7 @@ export default function DataQueryPage() {
 
           <Card className="flex flex-1 min-w-0 flex-col overflow-hidden rounded-l-none">
             <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-              <div className="border-b bg-slate-50 px-4 py-3">
+              <div className="border-b bg-slate-50 dark:bg-neutral-800/50 px-4 py-3">
                 <h2 className="text-sm font-semibold text-primary">{t('dataQuery.resultsTitle', 'Results')}</h2>
                 <p className="text-xs text-muted-foreground">
                   {t('dataQuery.resultsDesc', 'Matching members and export options')}

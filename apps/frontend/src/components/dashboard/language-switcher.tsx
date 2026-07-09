@@ -93,7 +93,7 @@ function LanguageOption({
       type="button"
       onClick={onClick}
       className={`rounded-md border p-4 text-left transition ${
-        checked ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-white hover:bg-muted/50'
+        checked ? 'border-primary bg-primary/5 ring-1 ring-primary dark:bg-primary/10' : 'bg-white dark:bg-neutral-950 hover:bg-muted/50 dark:hover:bg-neutral-800 dark:hover:bg-neutral-800'
       }`}
     >
       <span className="flex items-center gap-2">

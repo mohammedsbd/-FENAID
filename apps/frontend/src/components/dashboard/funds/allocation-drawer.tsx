@@ -126,7 +126,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
       <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-background shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+      <div className={`fixed inset-y-0 right-0 w-full max-w-2xl bg-background shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b">

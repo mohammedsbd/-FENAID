@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <CalendarSettingsProvider>
       <LocaleProvider initialLocale={initialLocale} initialDictionary={initialDictionary}>
-        <div className="flex h-screen overflow-hidden bg-slate-50">
+        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-neutral-900">
           <Sidebar user={user} />
           <div className="flex flex-1 flex-col overflow-hidden">
             <Topbar user={user} />

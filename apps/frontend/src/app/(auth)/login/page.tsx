@@ -24,8 +24,7 @@ import { useLocale } from '@/components/providers/locale-provider';
 import api from '../../../lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-const defaultLoginImageUrl =
-  'https://images.unsplash.com/photo-1661956602116-aa6865609028?q=80&w=2086&auto=format&fit=crop';
+const defaultLoginImageUrl = '/photo_2026-07-09_13-34-43.jpg';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -122,7 +121,7 @@ export default function LoginPage() {
         <img
           src={defaultLoginImageUrl}
           alt="Fikir login background"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain"
         />
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
@@ -157,13 +156,13 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side — Login Form */}
-      <div className="relative flex w-full items-center justify-center bg-white p-8 lg:w-1/2">
+      <div className="relative flex w-full items-center justify-center bg-white p-8 lg:w-1/2 dark:bg-neutral-950">
         {/* Top Right — Language Selector */}
         <div className="absolute right-6 top-6">
           <Select value={locale} onValueChange={handleLanguageChange}>
             <SelectTrigger
               aria-label={t('auth.login.selectLanguage', 'Select language')}
-              className="h-10 w-[130px] rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white"
+              className="h-10 w-[130px] rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white dark:border-neutral-700 dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
             >
               <Languages className="mr-2 h-4 w-4 text-primary" />
               <SelectValue />
@@ -195,10 +194,10 @@ export default function LoginPage() {
 
           {/* Header */}
           <div className="space-y-1.5">
-            <h2 className="text-3xl font-semibold tracking-tight text-gray-900">
+            <h2 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-neutral-100">
               {t('auth.login.welcome', 'Welcome back')}
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-neutral-400">
               {t('auth.login.signInPrompt', 'Sign in to your account to continue')}
             </p>
           </div>
@@ -207,7 +206,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                 {t('auth.login.emailLabel', 'Email Address')}
               </Label>
               <div className="relative">
@@ -216,10 +215,10 @@ export default function LoginPage() {
                   type="email"
                   placeholder={t('auth.login.emailPlaceholder', 'name@fikir.org')}
                   {...register('email')}
-                  className={`h-12 w-full border-gray-200 bg-gray-50 pl-10 text-gray-900 transition-colors focus:bg-white focus:ring-2 focus:ring-primary/20 ${errors.email ? 'border-red-400' : ''}`}
+                  className={`h-12 w-full border-gray-200 bg-gray-50 pl-10 text-gray-900 transition-colors focus:bg-white focus:ring-2 focus:ring-primary/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:bg-neutral-900 ${errors.email ? 'border-red-400' : ''}`}
                   disabled={isLoading}
                 />
-                <User className="absolute left-3.5 top-3.5 h-5 w-5 text-gray-400" />
+                <User className="absolute left-3.5 top-3.5 h-5 w-5 text-gray-400 dark:text-neutral-500" />
               </div>
               {errors.email && (
                 <p className="text-xs font-medium text-red-500">{errors.email.message}</p>
@@ -228,7 +227,7 @@ export default function LoginPage() {
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                 {t('auth.login.passwordLabel', 'Password')}
               </Label>
               <div className="relative">
@@ -237,14 +236,14 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder={t('auth.login.passwordPlaceholder', '••••••••')}
                   {...register('password')}
-                  className={`h-12 w-full border-gray-200 bg-gray-50 pl-10 pr-10 text-gray-900 transition-colors focus:bg-white focus:ring-2 focus:ring-primary/20 ${errors.password ? 'border-red-400' : ''}`}
+                  className={`h-12 w-full border-gray-200 bg-gray-50 pl-10 pr-10 text-gray-900 transition-colors focus:bg-white focus:ring-2 focus:ring-primary/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:bg-neutral-900 ${errors.password ? 'border-red-400' : ''}`}
                   disabled={isLoading}
                 />
-                <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-gray-400" />
+                <Lock className="absolute left-3.5 top-3.5 h-5 w-5 text-gray-400 dark:text-neutral-500" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-gray-400 hover:text-gray-600"
+                  className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
                   disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -261,10 +260,10 @@ export default function LoginPage() {
                 <Checkbox
                   checked={rememberMe}
                   onCheckedChange={(checked) => setRememberMe(checked === true)}
-                  className="border-gray-300"
+                  className="border-gray-300 dark:border-neutral-600"
                   disabled={isLoading}
                 />
-                <span className="text-sm font-normal text-gray-600">
+                <span className="text-sm font-normal text-gray-600 dark:text-neutral-400">
                   {t('auth.login.rememberMe', 'Remember me')}
                 </span>
               </label>
@@ -298,7 +297,7 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <p className="text-center text-xs text-gray-400">
+          <p className="text-center text-xs text-gray-400 dark:text-neutral-500">
             {t('auth.login.footer', '© 2026 FIKIR Ethiopia. All rights reserved.')}
           </p>
         </div>

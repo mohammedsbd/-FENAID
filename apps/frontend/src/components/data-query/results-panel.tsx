@@ -173,7 +173,7 @@ export function ResultsPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="bg-slate-50">
+      <Card className="bg-slate-50 dark:bg-neutral-800/50">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="text-lg font-bold">
             {t('dataQuery.found', 'Found')} {result.total} {subjectLabel}
@@ -216,7 +216,7 @@ export function ResultsPanel({
                   <BarChart data={chartData.disability}>
                     <XAxis dataKey="type" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                     <Bar dataKey="count" fill="#1e3a5f" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -237,7 +237,7 @@ export function ResultsPanel({
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -256,7 +256,7 @@ export function ResultsPanel({
                     width={80}
                     tick={{ fontSize: 9 }}
                   />
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                   <Bar dataKey="count" fill="#f59e0b" />
                 </BarChart>
               </ResponsiveContainer>
@@ -269,7 +269,7 @@ export function ResultsPanel({
                   <BarChart data={chartData.severity}>
                     <XAxis dataKey="level" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                     <Bar dataKey="count" fill="#10b981" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -298,7 +298,7 @@ export function ResultsPanel({
             {result.results.map((row, idx) => (
               <TableRow
                 key={idx}
-                className="cursor-pointer hover:bg-slate-50"
+                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800"
                 onClick={() => setSelectedRow(row)}
               >
                 {columns.map((col) => (
@@ -336,7 +336,7 @@ export function ResultsPanel({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-white dark:bg-neutral-950 p-3">
         <p className="text-xs text-muted-foreground">
           {t('dataQuery.exportIncludes', 'Export includes all')} {result.total} {t('dataQuery.recordsNotJustPage', 'records, not just this page')}
         </p>
@@ -381,7 +381,7 @@ export function ResultsPanel({
       </div>
 
       {selectedRow && (
-        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm border-l bg-white p-4 shadow-2xl">
+        <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm border-l bg-white dark:bg-neutral-900 dark:border-neutral-700 p-4 shadow-2xl">
           <div className="mb-4 flex items-start justify-between">
             <h3 className="font-semibold">{t('dataQuery.memberSummary', 'Member Summary')}</h3>
             <Button

@@ -267,12 +267,12 @@ export default function ServicesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg w-fit">
+      <div className="flex gap-2 overflow-x-auto border-b">
         <button
           onClick={() => setTab('catalog')}
           className={cn(
-            'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
-            tab === 'catalog' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2',
+            tab === 'catalog' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
           <Grid3X3 className="h-4 w-4" />
@@ -281,8 +281,8 @@ export default function ServicesPage() {
         <button
           onClick={() => setTab('assignments')}
           className={cn(
-            'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
-            tab === 'assignments' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2',
+            tab === 'assignments' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
           <List className="h-4 w-4" />
@@ -316,7 +316,7 @@ export default function ServicesPage() {
                       <button
                         type="button"
                         onClick={() => setServiceSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-neutral-800"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -358,7 +358,7 @@ export default function ServicesPage() {
             </div>
           ) : services.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <div className="rounded-full bg-slate-50 p-4">
+              <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                 <List className="h-10 w-10 text-muted-foreground/50" />
               </div>
               <p className="text-lg font-semibold">{t('services.catalog.empty.title', 'No services found')}</p>
@@ -411,7 +411,7 @@ export default function ServicesPage() {
                       <button
                         type="button"
                         onClick={() => setAssignSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-neutral-800"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -483,7 +483,7 @@ export default function ServicesPage() {
                     assignments.data.map((a) => (
                       <TableRow
                         key={a.id}
-                        className="cursor-pointer hover:bg-slate-50 transition-colors"
+                        className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                         onClick={() => openDetailPanel(a)}
                       >
                         <TableCell>
@@ -601,7 +601,7 @@ export default function ServicesPage() {
                     <TableRow>
                       <TableCell colSpan={10} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-3">
-                          <div className="rounded-full bg-slate-50 p-4">
+                          <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                             <AlertCircle className="h-10 w-10 text-muted-foreground/50" />
                           </div>
                           <p className="text-lg font-semibold">{t('services.table.noAssignments', 'No service assignments yet')}</p>
@@ -715,7 +715,7 @@ function FilterSelect({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
         {label}
       </span>
       <select

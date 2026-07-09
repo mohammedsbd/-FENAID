@@ -85,23 +85,23 @@ const notificationStyles: Record<
   { className: string; icon: typeof Bell }
 > = {
   Finance: {
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
     icon: CircleDollarSign,
   },
   Records: {
-    className: 'border-sky-200 bg-sky-50 text-sky-700',
+    className: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300',
     icon: Users,
   },
   'Follow-up': {
-    className: 'border-amber-200 bg-amber-50 text-amber-700',
+    className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300',
     icon: ShieldAlert,
   },
   Operations: {
-    className: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    className: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
     icon: Wrench,
   },
   Security: {
-    className: 'border-rose-200 bg-rose-50 text-rose-700',
+    className: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300',
     icon: Activity,
   },
 };
@@ -288,7 +288,7 @@ export function Topbar({ user }: { user?: any }) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b bg-white px-6">
+    <header className="flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex min-w-0 shrink-0 flex-col">
         <h2 className="text-lg font-semibold tracking-tight">
           {getPageTitle()}
@@ -379,7 +379,7 @@ export function Topbar({ user }: { user?: any }) {
           </Button>
 
           {isOpen && (
-            <div className="absolute right-0 top-12 z-50 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-md border bg-white shadow-lg">
+            <div className="absolute right-0 top-12 z-50 w-[min(420px,calc(100vw-2rem))] overflow-hidden rounded-md border bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
               <div className="flex items-center justify-between border-b px-4 py-3">
                 <div>
                   <p className="text-sm font-semibold">{t('topbar.notificationsTitle', 'Notifications')}</p>
@@ -449,7 +449,7 @@ export function Topbar({ user }: { user?: any }) {
           </button>
 
           {profileOpen && (
-            <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-md border bg-white shadow-lg">
+            <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-md border bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
               <div className="border-b px-4 py-3">
                 <p className="text-sm font-semibold">{user?.fullName || t('topbar.user', 'User')}</p>
                 <p className="text-xs text-muted-foreground">{user?.email || ''}</p>
@@ -498,7 +498,7 @@ function GlobalSearchPanel({
   const hasResults = parents.length > 0 || children.length > 0;
 
   return (
-    <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-md border bg-white shadow-lg">
+    <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-md border bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
       <div className="border-b px-4 py-3">
         <p className="text-sm font-semibold">{t('topbar.globalSearch', 'Global search')}</p>
         <p className="text-xs text-muted-foreground">
@@ -589,7 +589,7 @@ function SearchResultRow({
     <button
       type="button"
       onClick={() => onSelect(result)}
-      className="group flex w-full items-center gap-3 rounded-md border bg-white p-3 text-left transition hover:border-primary/40 hover:bg-muted/50"
+      className="group flex w-full items-center gap-3 rounded-md border bg-white p-3 text-left transition hover:border-primary/40 hover:bg-muted/50 dark:border-neutral-700 dark:bg-neutral-800/50"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground">
         <Icon className="h-4 w-4" />
@@ -957,7 +957,7 @@ function WeeklyCalendarPopup({ now, calendarSystem, onClose }: { now: Date; cale
   })();
 
   return (
-    <div className="absolute right-0 top-12 z-50 w-[320px] overflow-hidden rounded-md border bg-white shadow-lg">
+    <div className="absolute right-0 top-12 z-50 w-[320px] overflow-hidden rounded-md border bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
       <div className="border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((v) => v - 1)}>
@@ -966,7 +966,7 @@ function WeeklyCalendarPopup({ now, calendarSystem, onClose }: { now: Date; cale
           <div className="text-center">
             <p className="text-sm font-semibold">{headerLabel}</p>
             {calendarSystem === 'ETHIOPIAN' && (
-              <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+              <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
                 {t('calendar.ethiopian', 'Ethiopian Calendar')}
               </span>
             )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CalendarDays, Save } from 'lucide-react';
+import { CalendarDays, Moon, Save, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,12 +9,14 @@ import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { CalendarSystem, formatCalendarDate } from '@/lib/calendar';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+import { useTheme } from '@/components/providers/theme-provider';
 import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
 
 export function SystemSettingsClient() {
   const { calendarSystem, setCalendarSystem, refreshCalendarSettings } = useCalendarSettings();
   const { t } = useLocale();
+  const { theme, setTheme, resolved } = useTheme();
   const [draftCalendarSystem, setDraftCalendarSystem] = useState<CalendarSystem>(calendarSystem);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -57,7 +59,8 @@ export function SystemSettingsClient() {
   }
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-muted-foreground">
@@ -100,6 +103,45 @@ export function SystemSettingsClient() {
         </Button>
       </CardContent>
     </Card>
+
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+            {resolved === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </span>
+          <div>
+            <CardTitle className="text-lg">{t('theme.title', 'Appearance')}</CardTitle>
+            <CardDescription>
+              {t('theme.description', 'Choose your preferred color scheme.')}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 md:grid-cols-3">
+          <ThemeOption
+            icon={<Sun className="h-5 w-5" />}
+            label={t('theme.light', 'Light')}
+            checked={theme === 'light'}
+            onClick={() => setTheme('light')}
+          />
+          <ThemeOption
+            icon={<Moon className="h-5 w-5" />}
+            label={t('theme.dark', 'Dark')}
+            checked={theme === 'dark'}
+            onClick={() => setTheme('dark')}
+          />
+          <ThemeOption
+            icon={<Sun className="h-5 w-5" />}
+            label={t('theme.system', 'System')}
+            checked={theme === 'system'}
+            onClick={() => setTheme('system')}
+          />
+        </div>
+      </CardContent>
+    </Card>
+    </>
   );
 }
 
@@ -119,7 +161,7 @@ function CalendarOption({
       type="button"
       onClick={onClick}
       className={`rounded-md border p-4 text-left transition ${
-        checked ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-white hover:bg-muted/50'
+        checked ? 'border-primary bg-primary/5 ring-1 ring-primary dark:bg-primary/10' : 'bg-white dark:bg-neutral-950 hover:bg-muted/50 dark:hover:bg-neutral-800'
       }`}
     >
       <span className="flex items-center gap-2">
@@ -135,6 +177,31 @@ function CalendarOption({
       <span className="mt-2 block text-xs leading-5 text-muted-foreground">
         {description}
       </span>
+    </button>
+  );
+}
+
+function ThemeOption({
+  icon,
+  label,
+  checked,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  checked: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center gap-2 rounded-md border p-5 text-center transition ${
+        checked ? 'border-primary bg-primary/5 ring-1 ring-primary dark:bg-primary/10' : 'hover:bg-muted/50 dark:hover:bg-neutral-800'
+      }`}
+    >
+      <span className={checked ? 'text-primary' : 'text-muted-foreground'}>{icon}</span>
+      <span className="text-sm font-semibold">{label}</span>
     </button>
   );
 }

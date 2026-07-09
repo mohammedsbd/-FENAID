@@ -39,7 +39,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">{t('settings.subtitle', 'Manage your account, language, and system preferences.')}</p>
       </div>
 
-      <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg w-fit">
+      <div className="flex gap-2 overflow-x-auto border-b">
         {tabs.map(({ key, label }) => {
           const Icon = TAB_ICONS[key];
           return (
@@ -47,10 +47,10 @@ export default function SettingsPage() {
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
+                'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2',
                 tab === key
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               <Icon className="h-4 w-4" />

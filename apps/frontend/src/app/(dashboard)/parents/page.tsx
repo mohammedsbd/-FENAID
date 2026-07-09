@@ -377,7 +377,7 @@ export default function ParentsPage() {
                   <button
                     type="button"
                     onClick={() => setSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-foreground transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -443,7 +443,7 @@ export default function ParentsPage() {
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
                     <TableCell colSpan={8}>
-                      <div className="h-8 animate-pulse rounded bg-slate-100" />
+                      <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -451,7 +451,7 @@ export default function ParentsPage() {
                 parents.map((parent) => (
                   <TableRow 
                     key={parent.id}
-                    className="cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                     onClick={() => router.push(`/dashboard/parents/${parent.id}`)}
                   >
                     <TableCell>
@@ -511,7 +511,7 @@ export default function ParentsPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="rounded-full bg-slate-50 p-4">
+                      <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
                       </div>
                       <div className="space-y-1">
@@ -623,7 +623,7 @@ function StatusBadge({ status }: { status: ParentStatus }) {
   const classes = {
     ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     UNDER_REVIEW: 'bg-amber-50 text-amber-700 border-amber-200',
-    INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200',
+    INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
   };
 
   return <Badge className={classes[status]}>{tI18n(`enum.parentStatus.${status.toLowerCase()}`, formatEnum(status))}</Badge>;

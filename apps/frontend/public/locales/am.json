@@ -1345,5 +1345,11 @@
   "services.error.assign": "አገልግሎት መምደብ አልተሳካም",
   "services.toast.markedComplete": "እንደተጠናቀቀ ምልክት ተደርጓል",
   "services.toast.markedCancelled": "እንደተሰረዘ ምልክት ተደርጓል",
-  "services.toast.statusUpdated": "የምደባ ሁኔታ ተዘምኗል።"
+  "services.toast.statusUpdated": "የምደባ ሁኔታ ተዘምኗል።",
+  "datePicker.selectDate": "ቀን ይምረጡ",
+  "datePicker.clear": "አጽዳ",
+  "datePicker.today": "ዛሬ",
+  "datePicker.gregorian": "የጎሪጎሪያን ቀን መቁጠሪያ",
+  "datePicker.ethiopian": "የኢትዮጵያ ቀን መቁጠሪያ",
+  "datePicker.dayHeaders": "እ,ሰ,ማ,ረ,ሐ,ዓ,ቅ"
 }

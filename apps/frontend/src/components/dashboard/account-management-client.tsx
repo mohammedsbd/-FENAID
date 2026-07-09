@@ -17,7 +17,8 @@ import {
   UserMinus,
   LogOut,
   Eye,
-  EyeOff
+  EyeOff,
+  X,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/lib/api';
 import { useLocale } from '@/components/providers/locale-provider';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   AccessLevel,
@@ -358,11 +360,19 @@ export function AccountManagementClient({ currentUser }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto border-b">
         {(['accounts', 'permissions', 'sessions', 'audit'] as const).map((item) => (
-          <Button key={item} variant={tab === item ? 'default' : 'outline'} onClick={() => setTab(item)}>
+          <button
+            key={item}
+            type="button"
+            onClick={() => setTab(item)}
+            className={cn(
+              'whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+              tab === item ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
             {t(`accounts.tab.${item}`, item)}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -374,13 +384,13 @@ export function AccountManagementClient({ currentUser }: Props) {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('accounts.search', 'Search by name, email')} />
               </div>
-              <select className="h-10 rounded-md border px-3 text-sm" value={role} onChange={(e) => setRole(e.target.value)}>
+              <select className="h-10 rounded-md border bg-background px-3 text-sm" value={role} onChange={(e) => setRole(e.target.value)}>
                 <option value="">{t('accounts.allRoles', 'All roles')}</option>
                 <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
                 <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
-              <select className="h-10 rounded-md border px-3 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <select className="h-10 rounded-md border bg-background px-3 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="">{t('accounts.allStatus', 'All status')}</option>
                 <option value="active">{t('accounts.active', 'Active')}</option>
                 <option value="inactive">{t('accounts.inactive', 'Inactive')}</option>
@@ -440,7 +450,7 @@ export function AccountManagementClient({ currentUser }: Props) {
         <Card>
           <CardHeader className="space-y-3">
             <div className="flex items-center gap-3">
-              <select className="h-10 rounded-md border px-3 text-sm" value={permissionRole} onChange={(e) => setPermissionRole(e.target.value as any)}>
+              <select className="h-10 rounded-md border bg-background px-3 text-sm" value={permissionRole} onChange={(e) => setPermissionRole(e.target.value as any)}>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
                 <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
@@ -460,7 +470,7 @@ export function AccountManagementClient({ currentUser }: Props) {
                   <TableRow key={module}>
                     <TableCell>{t(`accounts.module.${module.toLowerCase()}`, module.replace('_', ' '))}</TableCell>
                     <TableCell>
-                      <select className="h-9 rounded-md border px-3 text-sm" value={permissionDraft[module] || 'READ_ONLY'} onChange={(e) => setPermissionDraft((current) => ({ ...current, [module]: e.target.value as AccessLevel }))}>
+                      <select className="h-9 rounded-md border bg-background px-3 text-sm" value={permissionDraft[module] || 'READ_ONLY'} onChange={(e) => setPermissionDraft((current) => ({ ...current, [module]: e.target.value as AccessLevel }))}>
                         <option value="FULL">{t('accounts.fullAccess', 'Full Access')}</option>
                         <option value="READ_ONLY">{t('accounts.readOnly', 'Read Only')}</option>
                         <option value="NO_ACCESS">{t('accounts.noAccess', 'No Access')}</option>
@@ -536,8 +546,7 @@ export function AccountManagementClient({ currentUser }: Props) {
         </Card>
       )}
 
-      {drawerOpen && (
-        <Overlay title={selected ? t('accounts.edit', 'Edit Account') : t('accounts.create', 'Create Account')} onClose={() => setDrawerOpen(false)}>
+      <Overlay open={drawerOpen} title={selected ? t('accounts.edit', 'Edit Account') : t('accounts.create', 'Create Account')} onClose={() => setDrawerOpen(false)}>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={t('accounts.fullName', 'Full name')}><Input value={accountForm.fullName} onChange={(e) => setAccountForm((c) => ({ ...c, fullName: e.target.value }))} /></Field>
             <Field label={t('accounts.email', 'Email')}><Input value={accountForm.email} onChange={(e) => setAccountForm((c) => ({ ...c, email: e.target.value }))} /></Field>
@@ -549,14 +558,14 @@ export function AccountManagementClient({ currentUser }: Props) {
               </div>
             </div>
             <Field label={t('accounts.role', 'Role')}>
-              <select className="h-10 w-full rounded-md border px-3 text-sm" value={accountForm.role} onChange={(e) => setAccountForm((c) => ({ ...c, role: e.target.value as any }))}>
+              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={accountForm.role} onChange={(e) => setAccountForm((c) => ({ ...c, role: e.target.value as any }))}>
                 <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
                 <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
             </Field>
             <Field label={t('accounts.status', 'Status')}>
-              <select className="h-10 w-full rounded-md border px-3 text-sm" value={String(accountForm.isActive)} onChange={(e) => setAccountForm((c) => ({ ...c, isActive: e.target.value === 'true' }))}>
+              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={String(accountForm.isActive)} onChange={(e) => setAccountForm((c) => ({ ...c, isActive: e.target.value === 'true' }))}>
                 <option value="true">{t('accounts.active', 'Active')}</option>
                 <option value="false">{t('accounts.inactive', 'Inactive')}</option>
               </select>
@@ -582,12 +591,10 @@ export function AccountManagementClient({ currentUser }: Props) {
             <Button onClick={saveAccount} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save', 'Save')}</Button>
           </div>
         </Overlay>
-      )}
 
-      {showReset && selected && (
-        <Overlay title={t('accounts.resetPassword', 'Reset Password')} onClose={() => setShowReset(false)}>
+      <Overlay open={showReset && !!selected} title={t('accounts.resetPassword', 'Reset Password')} onClose={() => setShowReset(false)}>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{selected.fullName}</p>
+            <p className="text-sm text-muted-foreground">{selected?.fullName}</p>
             <Field label={t('accounts.newPassword', 'New password (optional)')}>
               <div className="relative">
                 <Input type={showResetPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
@@ -601,10 +608,8 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowReset(false)}>{t('common.cancel', 'Cancel')}</Button><Button onClick={resetPassword}>{t('common.confirm', 'Confirm')}</Button></div>
           </div>
         </Overlay>
-      )}
 
-      {showPromote && (
-        <Overlay title={t('accounts.promote', 'Promote to Super Admin')} onClose={() => setShowPromote(false)}>
+      <Overlay open={showPromote} title={t('accounts.promote', 'Promote to Super Admin')} onClose={() => setShowPromote(false)}>
           <div className="space-y-4">
             <Field label={t('accounts.currentPassword', 'Your password')}>
               <div className="relative">
@@ -618,12 +623,10 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowPromote(false)}>{t('common.cancel', 'Cancel')}</Button><Button onClick={promote}>{t('common.confirm', 'Confirm')}</Button></div>
           </div>
         </Overlay>
-      )}
 
-      {showDelete && selected && (
-        <Overlay title={t('accounts.delete', 'Delete Account')} onClose={() => setShowDelete(false)}>
+      <Overlay open={showDelete && !!selected} title={t('accounts.delete', 'Delete Account')} onClose={() => setShowDelete(false)}>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{selected.fullName}</p>
+            <p className="text-sm text-muted-foreground">{selected?.fullName}</p>
             <Field label={t('accounts.currentPassword', 'Your password')}>
               <div className="relative">
                 <Input type={showAdminPassword ? 'text' : 'password'} value={securityPassword} onChange={(e) => setSecurityPassword(e.target.value)} />
@@ -636,20 +639,45 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setShowDelete(false)}>{t('common.cancel', 'Cancel')}</Button><Button variant="destructive" onClick={deleteAccount}>{t('common.delete', 'Delete')}</Button></div>
           </div>
         </Overlay>
-      )}
 
     </div>
   );
 }
 
-function Overlay({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
+function Overlay({ open, title, children, onClose }: { open: boolean; title: string; children: ReactNode; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  if (!mounted) return null;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/30 backdrop-blur-sm">
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
-          <div className="flex items-center justify-between border-b p-4"><h2 className="font-semibold">{title}</h2><Button variant="ghost" size="icon" onClick={onClose}>×</Button></div>
-          <div className="p-4">{children}</div>
+    <div className="fixed inset-0 z-50 !mt-0">
+      <div className={`fixed inset-0 bg-slate-950/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`} onClick={onClose} />
+      <div className={`fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        visible ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex items-center justify-between border-b p-4">
+          <h2 className="font-semibold">{title}</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" /></Button>
         </div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </div>
     </div>
   );

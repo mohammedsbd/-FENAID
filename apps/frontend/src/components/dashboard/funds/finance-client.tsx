@@ -241,7 +241,7 @@ export default function FinanceClient() {
                 <p className="text-sm font-medium text-muted-foreground">{t('finance.totalAllocated', 'Total Allocated')}</p>
                 <h3 className="text-2xl font-bold mt-1">{stats.totalAllocated.toLocaleString()} ETB</h3>
               </div>
-              <div className="p-3 bg-primary/10 rounded-full">
+              <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-full">
                 <DollarSign className="w-5 h-5 text-primary" />
               </div>
             </div>
@@ -447,8 +447,8 @@ export default function FinanceClient() {
                       <Badge 
                         variant={item.status === 'DISBURSED' ? 'default' : 'outline'}
                         className={cn(
-                          item.status === 'ALLOCATED' && "bg-primary/5 text-primary border-primary/20",
-                          item.status === 'DISBURSED' && "bg-green-50 text-green-700 border-green-200"
+                          item.status === 'ALLOCATED' && "bg-primary/5 text-primary border-primary/20 dark:bg-primary/20 dark:border-primary/40",
+                          item.status === 'DISBURSED' && "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800"
                         )}
                       >
                         {t(`enum.allocationStatus.${item.status.toLowerCase()}`, item.status)}
@@ -463,7 +463,7 @@ export default function FinanceClient() {
                     </TableCell>
                     <TableCell className="text-right">
                       {item.status === 'DISBURSED' && item.parentAcknowledged ? (
-                        <div className="flex items-center justify-end text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-100 w-fit ml-auto">
+                        <div className="flex items-center justify-end text-green-600 bg-green-50 dark:bg-green-950/50 dark:text-green-300 px-2 py-1 rounded-md border border-green-100 dark:border-green-800 w-fit ml-auto">
                           <ShieldCheck className="w-4 h-4 mr-1" />
                           <span className="text-xs font-semibold uppercase tracking-wider">{t('finance.verified', 'Verified')}</span>
                           <Lock className="w-3 h-3 ml-2" />
@@ -541,7 +541,7 @@ export default function FinanceClient() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                         <div className="flex items-center text-muted-foreground bg-muted/50 px-2 py-1 rounded-md border text-[10px] font-medium uppercase tracking-wider">
+                         <div className="flex items-center text-muted-foreground bg-muted/50 dark:bg-neutral-800 px-2 py-1 rounded-md border dark:border-neutral-700 text-[10px] font-medium uppercase tracking-wider">
                           <Lock className="w-3 h-3 mr-1" />
                            {t('finance.immutable', 'Immutable')}
                         </div>

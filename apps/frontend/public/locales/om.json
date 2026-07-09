@@ -1260,5 +1260,11 @@
   "savedQueries.saveQueryDesc": "Daddaftee fayyadamuu keef, danqaraa fi tulloo ammaa olkaa'i.",
   "savedQueries.name": "Maqaa",
   "savedQueries.description": "Ibsa",
-  "savedQueries.shareWithOrg": "Dhaabbata waliin qoodi"
+  "savedQueries.shareWithOrg": "Dhaabbata waliin qoodi",
+  "datePicker.selectDate": "Guyyaa filadhu",
+  "datePicker.clear": "Qulqulleessi",
+  "datePicker.today": "Har'a",
+  "datePicker.gregorian": "Kalendara Giriigoriyaan",
+  "datePicker.ethiopian": "Kalendara Itoophiyaa",
+  "datePicker.dayHeaders": "D,W,Q,R,K,J,S"
 }

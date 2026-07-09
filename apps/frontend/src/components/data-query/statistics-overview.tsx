@@ -86,7 +86,7 @@ export function StatisticsOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t('stats.activeChildren', 'Active Children')}</CardTitle>
-            <Baby className="h-4 w-4 text-blue-700" />
+            <Baby className="h-4 w-4 text-blue-700 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.totalActiveChildren}</div>
@@ -95,7 +95,7 @@ export function StatisticsOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t('stats.activeParents', 'Active Parents')}</CardTitle>
-            <Users className="h-4 w-4 text-amber-600" />
+            <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.totalActiveParents}</div>
@@ -104,7 +104,7 @@ export function StatisticsOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t('stats.fundsDisbursed', 'Funds Disbursed (YTD)')}</CardTitle>
-            <HandCoins className="h-4 w-4 text-emerald-600" />
+            <HandCoins className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -115,7 +115,7 @@ export function StatisticsOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t('stats.workshopAttendance', 'Workshop Attendance')}</CardTitle>
-            <GraduationCap className="h-4 w-4 text-violet-600" />
+            <GraduationCap className="h-4 w-4 text-violet-600 dark:text-violet-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.workshopAttendanceRate}%</div>
@@ -134,7 +134,7 @@ export function StatisticsOverview() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="type" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 <Bar dataKey="count" fill="#1e3a5f" />
               </BarChart>
             </ResponsiveContainer>
@@ -152,7 +152,7 @@ export function StatisticsOverview() {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -168,7 +168,7 @@ export function StatisticsOverview() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="group" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 <Bar dataKey="count" fill="#f59e0b" />
               </BarChart>
             </ResponsiveContainer>
@@ -187,7 +187,7 @@ export function StatisticsOverview() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis type="category" dataKey="subcity" width={100} tick={{ fontSize: 9 }} />
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 <Bar dataKey="childCount" fill="#1e3a5f" name="Children" />
                 <Bar dataKey="parentCount" fill="#f59e0b" name="Parents" />
                 <Legend />
@@ -205,7 +205,7 @@ export function StatisticsOverview() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 9 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                 <Line type="monotone" dataKey="children" stroke="#1e3a5f" name="Children" />
                 <Line type="monotone" dataKey="parents" stroke="#f59e0b" name="Parents" />
                 <Legend />

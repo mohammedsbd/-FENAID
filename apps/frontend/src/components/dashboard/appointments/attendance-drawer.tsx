@@ -136,7 +136,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
       <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-background shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+      <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-background dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b">
@@ -166,9 +166,9 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                   </div>
                   <Badge className={cn(
                     "uppercase text-[10px]",
-                    appointment.status === 'COMPLETED' ? "bg-green-50 text-green-700 border-green-200" :
-                    appointment.status === 'CANCELLED' ? "bg-rose-50 text-rose-700 border-rose-200" :
-                    "bg-blue-50 text-blue-700 border-blue-200"
+                    appointment.status === 'COMPLETED' ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800" :
+                    appointment.status === 'CANCELLED' ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800" :
+                    "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800"
                   )}>
                     {appointment.status}
                   </Badge>
@@ -263,7 +263,7 @@ export function AttendanceDrawer({ open, appointmentId, onClose, onSuccess }: At
                 )}
 
                 {isAttendanceLogged && (
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex items-center justify-center text-green-700 text-sm font-medium">
+                  <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-100 dark:border-green-800 flex items-center justify-center text-green-700 text-sm font-medium">
                     <CheckCircle2 className="w-5 h-5 mr-2" /> {t('attendanceDrawer.attendanceLoggedImmutable', 'Attendance Logged — Immutable Record')}
                   </div>
                 )}

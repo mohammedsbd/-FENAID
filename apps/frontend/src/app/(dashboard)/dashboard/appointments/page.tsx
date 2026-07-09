@@ -295,7 +295,7 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick 
               className={cn(
                 "border-r border-b p-2 transition-colors cursor-pointer hover:bg-muted/30",
                 !isSameMonth(day, monthStart) && "bg-muted/10 text-muted-foreground",
-                isSameDay(day, new Date()) && "bg-primary/5"
+                isSameDay(day, new Date()) && "bg-primary/5 dark:bg-primary/10"
               )}
               onClick={() => onDayClick(day)}
             >
@@ -413,9 +413,9 @@ function ListView({ appointments, onEdit, onView }: any) {
               <TableCell>
                 <Badge className={cn(
                   "uppercase text-[10px]",
-                  app.status === 'COMPLETED' ? "bg-green-50 text-green-700 border-green-200" :
-                  app.status === 'CANCELLED' ? "bg-rose-50 text-rose-700 border-rose-200" :
-                  "bg-blue-50 text-blue-700 border-blue-200"
+                  app.status === 'COMPLETED' ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800" :
+                  app.status === 'CANCELLED' ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800" :
+                  "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800"
                 )}>
                   {app.status}
                 </Badge>

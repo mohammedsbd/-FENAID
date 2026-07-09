@@ -360,7 +360,7 @@ export default function ChildrenPage() {
                   <button
                     type="button"
                     onClick={() => setSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-foreground transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -433,7 +433,7 @@ export default function ChildrenPage() {
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
                     <TableCell colSpan={8}>
-                      <div className="h-8 animate-pulse rounded bg-slate-100" />
+                      <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -441,7 +441,7 @@ export default function ChildrenPage() {
                 children.map((child) => (
                   <TableRow 
                     key={child.id}
-                    className="cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                     onClick={() => router.push(`/dashboard/children/${child.id}`)}
                   >
                     <TableCell>
@@ -518,7 +518,7 @@ export default function ChildrenPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="rounded-full bg-slate-50 p-4">
+                      <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
                       </div>
                       <div className="space-y-1">
@@ -588,7 +588,7 @@ export default function ChildrenPage() {
       {showConfirmation && (
         <div className="fixed inset-0 z-[60] overflow-y-auto !mt-0 bg-slate-950/30 backdrop-blur-sm">
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-lg bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-full max-w-lg rounded-lg bg-white dark:bg-neutral-900 shadow-xl animate-in fade-in zoom-in-95 duration-200">
             <div className="border-b p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
@@ -643,8 +643,8 @@ function StatusBadge({ status }: { status: ChildStatus }) {
     ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     GRADUATED: 'bg-blue-50 text-blue-700 border-blue-200',
     TRANSFERRED: 'bg-amber-50 text-amber-700 border-amber-200',
-    INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200',
-    DECEASED: 'bg-red-950 text-white border-red-900',
+    INACTIVE: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700',
+    DECEASED: 'bg-red-950 text-white border-red-900 dark:bg-red-950 dark:border-red-800',
   };
   return <Badge className={classes[status]}>{tI18n(`enum.childStatus.${status.toLowerCase()}`, formatEnum(status))}</Badge>;
 }

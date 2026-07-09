@@ -249,7 +249,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
       <div className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300 ease-out ${
         visible ? 'opacity-100' : 'opacity-0'
       }`} onClick={onClose} />
-      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-xl bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+      <div className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-2xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         {/* Header */}
@@ -297,7 +297,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'PARENT'
                       ? 'bg-amber-50 border-amber-200 text-amber-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
                   {t('services.assign.parent', 'Parent')}
@@ -309,7 +309,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'CHILD'
                       ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
                   {t('services.assign.child', 'Child')}
@@ -478,7 +478,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                         'rounded-md border px-3 py-2 text-xs font-medium transition-colors',
                         frequency === f
                           ? 'bg-primary/10 border-primary/30 text-primary'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                          : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                       )}
                     >
                       {f.replace('_', ' ')}

@@ -320,7 +320,7 @@ export default function ParentProfilePage() {
                       'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                       activeTab === tab
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100',
                     )}
                   >
                     {t(`parents.detail.tab.${tab.toLowerCase().replace(/[\s&]+/g, '_')}`, tab)}
@@ -369,7 +369,7 @@ export default function ParentProfilePage() {
                     <CardTitle className="text-base font-semibold">{t('parents.detail.internalCaseNotes', 'Internal Case Notes')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-lg bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+                    <div className="rounded-lg bg-slate-50 dark:bg-neutral-800/50 p-4 text-sm leading-relaxed text-slate-600 dark:text-neutral-300">
                       {parent.internalNotes}
                     </div>
                   </CardContent>
@@ -396,14 +396,14 @@ export default function ParentProfilePage() {
                       <Link 
                         key={child.id} 
                         href={`/dashboard/children/${child.id}`}
-                        className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50"
+                        className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-neutral-800 dark:border-neutral-700"
                       >
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={child.photoUrl || undefined} />
                           <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
-                          <p className="truncate font-medium text-slate-900">{child.fullName}</p>
+                          <p className="truncate font-medium text-slate-900 dark:text-neutral-100">{child.fullName}</p>
                           <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
@@ -477,11 +477,11 @@ export default function ParentProfilePage() {
                       {parent.fundAllocations.map((fund: any) => (
                         <div key={fund.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                           <div>
-                            <p className="font-bold text-slate-900">{fund.amount} ETB</p>
+                            <p className="font-bold text-slate-900 dark:text-neutral-100">{fund.amount} ETB</p>
                             <p className="text-xs text-muted-foreground">{formatDate(fund.allocationDate)} &middot; {fund.purpose}</p>
                           </div>
                           <Badge variant="outline" className={cn(
-                            fund.status === 'APPROVED' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50"
+                            fund.status === 'APPROVED' ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800" : "bg-slate-50 dark:bg-neutral-800"
                           )}>{fund.status}</Badge>
                         </div>
                       ))}
@@ -507,7 +507,7 @@ export default function ParentProfilePage() {
                    <div className="grid gap-4 sm:grid-cols-2">
                      {parent.documents.map((doc: any) => (
                        <div key={doc.id} className="flex items-center gap-3 rounded-lg border p-3">
-                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400">
                            <FileText className="h-5 w-5" />
                          </div>
                          <div className="flex-1 overflow-hidden">
@@ -574,12 +574,12 @@ function HeroMetric({ label, value }: { label: string; value: string | number })
 function ContactItem({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 rounded bg-slate-50 p-1.5 text-slate-400">
+      <div className="mt-0.5 rounded bg-slate-50 dark:bg-neutral-800 p-1.5 text-slate-400 dark:text-neutral-500">
         <Icon className="h-4 w-4" />
       </div>
       <div>
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="text-sm font-medium text-slate-900">{value}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-neutral-100">{value}</p>
       </div>
     </div>
   );
@@ -606,7 +606,7 @@ function DetailItem({ icon: Icon, label, value }: { icon: LucideIcon; label: str
       </div>
       <div className="flex-1">
         <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold text-slate-900">{value}</p>
+        <p className="text-sm font-semibold text-slate-900 dark:text-neutral-100">{value}</p>
       </div>
     </div>
   );
@@ -615,7 +615,7 @@ function DetailItem({ icon: Icon, label, value }: { icon: LucideIcon; label: str
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
-      <div className="rounded-full bg-slate-50 p-3 text-slate-300">
+      <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-3 text-slate-300 dark:text-neutral-500">
         <FileText className="h-6 w-6" />
       </div>
       <p className="mt-2 text-sm text-slate-500">{message}</p>
@@ -630,7 +630,7 @@ function StatusBadge({ status }: { status: ParentStatus }) {
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
       : status === 'UNDER_REVIEW'
         ? 'border-amber-200 bg-amber-50 text-amber-700'
-        : 'border-slate-200 bg-slate-100 text-slate-600';
+        : 'border-slate-200 bg-slate-100 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400';
 
   return <Badge className={className}>{t('enum.parentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
 }

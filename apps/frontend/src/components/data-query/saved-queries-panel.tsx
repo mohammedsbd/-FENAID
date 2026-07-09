@@ -76,7 +76,7 @@ export function SavedQueriesPanel({
   return (
     <>
       <div className="flex h-full min-h-[640px] flex-col">
-        <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+        <div className="flex items-center justify-between border-b bg-slate-50 dark:bg-neutral-800/50 px-4 py-3">
           <div>
             <h3 className="text-sm font-semibold text-primary">
               {t('dataQuery.savedQueries', 'Saved Queries')}
@@ -135,7 +135,7 @@ export function SavedQueriesPanel({
           {list.map((query) => (
             <div
               key={query.id}
-              className="group rounded-md border bg-white p-3 shadow-sm transition hover:border-primary/30 hover:bg-slate-50"
+              className="group rounded-md border bg-white dark:bg-neutral-950 p-3 shadow-sm transition hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-neutral-800"
             >
               {editingId === query.id ? (
                 <div className="space-y-2">
@@ -207,7 +207,7 @@ export function SavedQueriesPanel({
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg border bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-5 shadow-xl">
             <h3 className="mb-1 text-lg font-semibold text-primary">{t('savedQueries.saveQueryTitle', 'Save Query')}</h3>
             <p className="mb-4 text-sm text-muted-foreground">
               {t('savedQueries.saveQueryDesc', 'Store the current filters and columns for quick reuse.')}

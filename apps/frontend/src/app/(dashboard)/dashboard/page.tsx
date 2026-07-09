@@ -106,40 +106,40 @@ function AdminDashboardView({ data }: { data: any }) {
           value={data.stats.totalParents}
           subtitle={t('dashboard.totalParentsActive', '{count} active', { count: data.stats.activeParents })}
           icon={Users}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-blue-600 dark:text-blue-400"
+          bg="bg-blue-50 dark:bg-blue-950/50"
         />
         <StatCard
           title={t('dashboard.totalChildren', 'Total Children')}
           value={data.stats.totalChildren}
           subtitle={t('dashboard.totalChildrenActive', '{count} active', { count: data.stats.activeChildren })}
           icon={Baby}
-          color="text-amber-600"
-          bg="bg-amber-50"
+          color="text-amber-600 dark:text-amber-400"
+          bg="bg-amber-50 dark:bg-amber-950/50"
         />
         <StatCard
           title={t('dashboard.allocatedFunds', 'Allocated Funds')}
           value={`${Number(data.stats.totalFundsAllocated).toLocaleString()} ETB`}
           subtitle={t('dashboard.allocatedFundsSubtitle', 'Total support committed')}
           icon={HandCoins}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-blue-600 dark:text-blue-400"
+          bg="bg-blue-50 dark:bg-blue-950/50"
         />
         <StatCard
           title={t('dashboard.disbursedFunds', 'Disbursed Funds')}
           value={`${Number(data.stats.totalFundsDisbursed).toLocaleString()} ETB`}
           subtitle={t('dashboard.disbursedFundsSubtitle', 'Total support delivered')}
           icon={HandCoins}
-          color="text-emerald-600"
-          bg="bg-emerald-50"
+          color="text-emerald-600 dark:text-emerald-400"
+          bg="bg-emerald-50 dark:bg-emerald-950/50"
         />
         <StatCard
           title={t('dashboard.totalDonations', 'Total Donations')}
           value={`${Number(data.stats.totalDonationsThisYear).toLocaleString()} ETB`}
           subtitle={t('dashboard.totalDonationsSubtitle', 'This year')}
           icon={HeartHandshake}
-          color="text-purple-600"
-          bg="bg-purple-50"
+          color="text-purple-600 dark:text-purple-400"
+          bg="bg-purple-50 dark:bg-purple-950/50"
         />
       </div>
 
@@ -167,7 +167,7 @@ function AdminDashboardView({ data }: { data: any }) {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                   <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
@@ -186,7 +186,7 @@ function AdminDashboardView({ data }: { data: any }) {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="staffName" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip cursor={{ fill: 'transparent' }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', color: 'hsl(var(--foreground))' }} />
                   <Legend verticalAlign="top" align="right" height={36} />
                   <Bar dataKey="parentCount" name={t('dashboard.parentsChart', 'Parents')} stackId="a" fill="#1e3a5f" />
                   <Bar dataKey="childCount" name={t('dashboard.childrenChart', 'Children')} stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
@@ -211,8 +211,8 @@ function AdminDashboardView({ data }: { data: any }) {
                 <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noAppointments', 'No appointments scheduled')}</p>
               ) : (
                 data.upcomingAppointmentsThisWeek.slice(0, 6).map((app: any) => (
-                  <div key={app.id} className="flex items-start gap-3 rounded-lg border p-2 text-xs hover:bg-slate-50">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded bg-slate-100 font-bold text-slate-600">
+                  <div key={app.id} className="flex items-start gap-3 rounded-lg border p-2 text-xs hover:bg-slate-50 dark:hover:bg-neutral-800 dark:hover:bg-neutral-800">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded bg-slate-100 font-bold text-slate-600 dark:bg-neutral-800 dark:text-neutral-300">
                       <span>{format(new Date(app.scheduledAt), 'dd')}</span>
                     </div>
                     <div className="flex-1 space-y-1">
@@ -236,9 +236,9 @@ function AdminDashboardView({ data }: { data: any }) {
         </Card>
 
         {/* Middle: Overdue Progress Notes */}
-        <Card className="flex flex-col border-amber-100 bg-amber-50/20">
+        <Card className="flex flex-col border-amber-100 bg-amber-50/20 dark:border-amber-900/50 dark:bg-amber-950/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-semibold text-amber-900">{t('dashboard.overdueNotes', 'Overdue Progress Notes')}</CardTitle>
+            <CardTitle className="text-sm font-semibold text-amber-900 dark:text-amber-300">{t('dashboard.overdueNotes', 'Overdue Progress Notes')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent className="flex-1">
@@ -247,12 +247,12 @@ function AdminDashboardView({ data }: { data: any }) {
                 <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.allReportsUpToDate', 'All reports are up to date')}</p>
               ) : (
                 data.overdueProgressNotes.slice(0, 5).map((child: any) => (
-                  <div key={child.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white p-3 text-xs shadow-sm">
+                  <div key={child.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white p-3 text-xs shadow-sm dark:border-amber-800 dark:bg-neutral-900">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-slate-900">{child.fullName}</span>
+                      <span className="font-semibold text-slate-900 dark:text-neutral-100">{child.fullName}</span>
                       <span className="text-[10px] text-muted-foreground">{t('dashboard.staffLabel', 'Staff: {name}', { name: child.assignedStaff.fullName })}</span>
                     </div>
-                    <Button size="sm" variant="outline" className="h-7 border-amber-200 bg-amber-50 px-2 text-[10px] text-amber-700 hover:bg-amber-100" asChild>
+                    <Button size="sm" variant="outline" className="h-7 border-amber-200 bg-amber-50 px-2 text-[10px] text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900" asChild>
                        <Link href={`/dashboard/children/${child.id}`}>{t('dashboard.logNoteButton', 'Log Note')}</Link>
                     </Button>
                   </div>
@@ -274,13 +274,13 @@ function AdminDashboardView({ data }: { data: any }) {
                 <p className="py-8 text-center text-xs text-muted-foreground">{t('dashboard.noPendingDisbursements', 'No pending disbursements')}</p>
               ) : (
                 data.pendingFundDisbursements.slice(0, 5).map((alloc: any) => (
-                  <div key={alloc.id} className="flex items-center justify-between rounded-lg border p-3 text-xs hover:bg-slate-50">
+                  <div key={alloc.id} className="flex items-center justify-between rounded-lg border p-3 text-xs hover:bg-slate-50 dark:hover:bg-neutral-800 dark:hover:bg-neutral-800">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold">{alloc.parent.fullName}</span>
                       <span className="text-[10px] text-muted-foreground">{format(new Date(alloc.allocationDate), 'MMM dd, yyyy')}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-slate-900">{Number(alloc.amount).toLocaleString()} ETB</div>
+                      <div className="font-bold text-slate-900 dark:text-neutral-100">{Number(alloc.amount).toLocaleString()} ETB</div>
                       <Badge variant="ghost" className="text-[9px] text-emerald-600 px-0 h-fit">{t('dashboard.readyStatus', 'Ready')}</Badge>
                     </div>
                   </div>
@@ -378,24 +378,24 @@ function StaffDashboardView({ data }: { data: any }) {
           value={data.myParents}
           subtitle={t('dashboard.assignedToYou', 'Assigned to you')}
           icon={Users}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-blue-600 dark:text-blue-400"
+          bg="bg-blue-50 dark:bg-blue-950/50"
         />
         <StatCard
           title={t('dashboard.myChildren', 'My Children')}
           value={data.myChildren}
           subtitle={t('dashboard.underYourCare', 'Under your care')}
           icon={Baby}
-          color="text-amber-600"
-          bg="bg-amber-50"
+          color="text-amber-600 dark:text-amber-400"
+          bg="bg-amber-50 dark:bg-amber-950/50"
         />
         <StatCard
           title={t('dashboard.overdueNotesTitle', 'Overdue Notes')}
           value={data.myChildrenWithOverdueNotes.length}
           subtitle={t('dashboard.needAttention', 'Need attention')}
           icon={AlertCircle}
-          color="text-red-600"
-          bg="bg-red-50"
+          color="text-red-600 dark:text-red-400"
+          bg="bg-red-50 dark:bg-red-950/50"
         />
       </div>
 
@@ -410,8 +410,8 @@ function StaffDashboardView({ data }: { data: any }) {
             ) : (
               <div className="space-y-3">
                 {data.myUpcomingAppointments.slice(0, 6).map((app: any) => (
-                  <div key={app.id} className="flex items-start gap-3 rounded-lg border p-2 text-xs hover:bg-slate-50">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded bg-slate-100 font-bold text-slate-600">
+                  <div key={app.id} className="flex items-start gap-3 rounded-lg border p-2 text-xs hover:bg-slate-50 dark:hover:bg-neutral-800 dark:hover:bg-neutral-800">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded bg-slate-100 font-bold text-slate-600 dark:bg-neutral-800 dark:text-neutral-300">
                       <span>{format(new Date(app.scheduledAt), 'dd')}</span>
                     </div>
                     <div className="flex-1 space-y-1">
@@ -441,7 +441,7 @@ function StaffDashboardView({ data }: { data: any }) {
             ) : (
               <div className="space-y-3">
                 {data.myPendingServiceAssignments.slice(0, 6).map((a: any) => (
-                  <div key={a.id} className="flex items-center justify-between rounded-lg border p-3 text-xs">
+                  <div key={a.id} className="flex items-center justify-between rounded-lg border p-3 text-xs dark:border-neutral-700">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold">{a.service.name}</span>
                       <span className="text-[10px] text-muted-foreground">

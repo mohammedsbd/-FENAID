@@ -73,7 +73,7 @@ export function ServiceCard({ service, isSuperAdmin, onEdit, onToggleActive }: S
           )}
 
           {/* Bottom row */}
-          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-neutral-700">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {isForParents ? (
                 <Users className="h-3.5 w-3.5" />

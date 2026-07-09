@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+import { useLocale } from '@/components/providers/locale-provider';
 
 type CalendarDatePickerProps = {
   value: string;
@@ -36,21 +37,23 @@ export function CalendarDatePicker({
   value,
   onChange,
   label,
-  placeholder = 'Select date',
+  placeholder,
   disabled,
   minYear = 1900,
   maxYear = 2100,
   className,
 }: CalendarDatePickerProps) {
   const { calendarSystem } = useCalendarSettings();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const resolvedPlaceholder = placeholder ?? t('datePicker.selectDate', 'Select date');
   const [viewIso, setViewIso] = useState(value || todayIso());
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
   const displayValue = value
     ? formatCalendarDate(value, calendarSystem)
-    : placeholder;
+    : resolvedPlaceholder;
 
   const grid = useMemo(
     () => buildMonthGrid(viewIso, calendarSystem),
@@ -197,17 +200,30 @@ function CalendarDatePickerPopup({
   useEffect(() => {
     if (!wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
+    const popupWidth = Math.min(360, window.innerWidth - 32);
+    let left = rect.left;
+    let top = rect.bottom + 4;
+
+    if (left + popupWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - popupWidth - 8);
+    }
+
     setStyle({
       position: 'fixed',
-      left: rect.left,
-      top: rect.bottom + 4,
-      zIndex: 70,
+      left,
+      top,
+      zIndex: 100,
     });
 
     function updatePosition() {
       if (!wrapperRef.current) return;
       const r = wrapperRef.current.getBoundingClientRect();
-      setStyle({ position: 'fixed', left: r.left, top: r.bottom + 4, zIndex: 70 });
+      let newLeft = r.left;
+      let newTop = r.bottom + 4;
+      if (newLeft + popupWidth > window.innerWidth - 8) {
+        newLeft = Math.max(8, window.innerWidth - popupWidth - 8);
+      }
+      setStyle({ position: 'fixed', left: newLeft, top: newTop, zIndex: 100 });
     }
 
     window.addEventListener('scroll', updatePosition, true);
@@ -218,11 +234,23 @@ function CalendarDatePickerPopup({
     };
   }, []);
 
+  useLayoutEffect(() => {
+    if (!popupRef.current || !wrapperRef.current) return;
+    const popupRect = popupRef.current.getBoundingClientRect();
+    if (popupRect.bottom > window.innerHeight - 8) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setStyle(prev => ({
+        ...prev,
+        top: rect.top - popupRect.height - 4,
+      }));
+    }
+  }, []);
+
   return (
     <div
       ref={popupRef}
       style={style}
-      className="w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white p-3 shadow-lg"
+      className="w-[min(360px,calc(100vw-2rem))] rounded-md border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-3 shadow-lg"
     >
       <CalendarDatePickerControls
         grid={grid}
@@ -269,6 +297,7 @@ function CalendarDatePickerControls({
   onYearChange: (year: number) => void;
   onMonthChange: (month: number) => void;
 }) {
+  const { t, locale } = useLocale();
 
   const { minYearAdj, maxYearAdj } = useMemo(() => {
     if (calendarSystem === 'ETHIOPIAN') {
@@ -288,6 +317,21 @@ function CalendarDatePickerControls({
     return Array.from({ length: max - min + 1 }, (_, index) => max - index);
   }, [minYearAdj, maxYearAdj, grid.year]);
 
+  const translatedMonths = useMemo(() => {
+    if (calendarSystem === 'ETHIOPIAN') {
+      return grid.months.map((name, i) => t(`calendar.ethiopianMonth.${i + 1}`, name));
+    }
+    const fmt = new Intl.DateTimeFormat(locale, { month: 'long' });
+    return grid.months.map((_, i) => fmt.format(new Date(Date.UTC(2000, i, 1))));
+  }, [calendarSystem, grid.months, locale, t]);
+
+  const translatedTitle = useMemo(() => {
+    if (calendarSystem === 'ETHIOPIAN') {
+      return `${translatedMonths[grid.month - 1]} ${grid.year} ${t('calendar.ec', 'E.C.')}`;
+    }
+    return `${translatedMonths[grid.month - 1]} ${grid.year}`;
+  }, [calendarSystem, grid.month, grid.year, translatedMonths, t]);
+
   return (
     <>
       <div className="flex items-center justify-between gap-2">
@@ -295,9 +339,9 @@ function CalendarDatePickerControls({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0 text-center">
-          <p className="text-sm font-semibold">{grid.title}</p>
+          <p className="text-sm font-semibold">{translatedTitle}</p>
           <p className="text-xs text-muted-foreground">
-            {calendarSystem === 'ETHIOPIAN' ? 'Ethiopian calendar' : 'Gregorian calendar'}
+            {calendarSystem === 'ETHIOPIAN' ? t('datePicker.ethiopian', 'Ethiopian calendar') : t('datePicker.gregorian', 'Gregorian calendar')}
           </p>
         </div>
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onNextMonth}>
@@ -322,7 +366,7 @@ function CalendarDatePickerControls({
           value={grid.month}
           onChange={(event) => onMonthChange(Number(event.target.value))}
         >
-          {grid.months.map((monthName, index) => (
+          {translatedMonths.map((monthName, index) => (
             <option key={monthName} value={index + 1}>
               {monthName}
             </option>
@@ -331,7 +375,7 @@ function CalendarDatePickerControls({
       </div>
 
       <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-muted-foreground">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+        {t('datePicker.dayHeaders', 'S,M,T,W,T,F,S').split(',').map((day, index) => (
           <div key={`${day}-${index}`} className="h-6 leading-6">
             {day}
           </div>
@@ -362,10 +406,10 @@ function CalendarDatePickerControls({
       <div className="mt-3 flex items-center justify-between border-t pt-3">
         <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={onClear}>
           <X className="h-4 w-4" />
-          Clear
+          {t('datePicker.clear', 'Clear')}
         </Button>
         <Button type="button" variant="outline" size="sm" className="h-8 px-2" onClick={onToday}>
-          Today
+          {t('datePicker.today', 'Today')}
         </Button>
       </div>
     </>
