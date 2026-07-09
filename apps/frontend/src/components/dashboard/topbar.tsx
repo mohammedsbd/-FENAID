@@ -114,7 +114,7 @@ const notificationGroupLabels: Record<NotificationGroup, string> = {
   Security: 'topbar.notifSecurity',
 };
 
-const knownPages = ['dashboard', 'children', 'parents', 'services', 'funds', 'appointments', 'data-query', 'accounts', 'settings', 'notifications'];
+const knownPages = ['dashboard', 'children', 'parents', 'volunteers', 'services', 'funds', 'appointments', 'data-query', 'accounts', 'settings', 'notifications'];
 
 function formatPageName(segment: string) {
   return segment

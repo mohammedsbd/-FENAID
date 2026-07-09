@@ -16,6 +16,7 @@ import {
   Loader2,
   ChevronRight,
   Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -108,6 +109,16 @@ export default function VolunteersPage() {
   // History Dialog state
   const [historyVolunteer, setHistoryVolunteer] = useState<Volunteer | null>(null);
 
+  // Delete confirmation state
+  const [deletingVolunteer, setDeletingVolunteer] = useState<Volunteer | null>(null);
+  const [deletingServiceRecord, setDeletingServiceRecord] = useState<{ id: string; name: string } | null>(null);
+
+  // Drawer animation state
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [serviceDrawerVisible, setServiceDrawerVisible] = useState(false);
+  const [serviceDrawerMounted, setServiceDrawerMounted] = useState(false);
+
   // Handle search debounce
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,7 +137,7 @@ export default function VolunteersPage() {
       });
       setVolunteers(res.data || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load volunteers.');
+      setError(err.response?.data?.message || t('volunteers.errorLoad', 'Failed to load volunteers.'));
     } finally {
       setLoading(false);
     }
@@ -170,6 +181,12 @@ export default function VolunteersPage() {
       notes: '',
       status: 'ACTIVE',
     });
+    setDrawerMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setDrawerVisible(true);
+      });
+    });
     setDrawerOpen(true);
   };
 
@@ -182,6 +199,12 @@ export default function VolunteersPage() {
       serviceTypes: volunteer.serviceTypes || '',
       notes: volunteer.notes || '',
       status: volunteer.status,
+    });
+    setDrawerMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setDrawerVisible(true);
+      });
     });
     setDrawerOpen(true);
   };
@@ -212,7 +235,8 @@ export default function VolunteersPage() {
           description: 'Volunteer registered successfully',
         });
       }
-      setDrawerOpen(false);
+      setDrawerVisible(false);
+      setTimeout(() => { setDrawerMounted(false); setDrawerOpen(false); }, 300);
       fetchVolunteers();
     } catch (err: any) {
       toast({
@@ -225,6 +249,11 @@ export default function VolunteersPage() {
     }
   };
 
+  function closeDrawer() {
+    setDrawerVisible(false);
+    setTimeout(() => { setDrawerMounted(false); setDrawerOpen(false); }, 300);
+  }
+
   // Manage Service logs
   const openServiceLog = (volunteer: Volunteer) => {
     setActiveVolunteer(volunteer);
@@ -235,8 +264,19 @@ export default function VolunteersPage() {
       serviceDate: new Date().toISOString().split('T')[0],
       notes: '',
     });
+    setServiceDrawerMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setServiceDrawerVisible(true);
+      });
+    });
     setServiceDrawerOpen(true);
   };
+
+  function closeServiceDrawer() {
+    setServiceDrawerVisible(false);
+    setTimeout(() => { setServiceDrawerMounted(false); setServiceDrawerOpen(false); }, 300);
+  }
 
   const handleSSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +296,8 @@ export default function VolunteersPage() {
         title: 'Success',
         description: `Service log added for ${activeVolunteer?.fullName}`,
       });
-      setServiceDrawerOpen(false);
+      setServiceDrawerVisible(false);
+      setTimeout(() => { setServiceDrawerMounted(false); setServiceDrawerOpen(false); }, 300);
       fetchVolunteers();
     } catch (err: any) {
       toast({
@@ -271,8 +312,7 @@ export default function VolunteersPage() {
 
   // Delete volunteer
   const handleDeleteVolunteer = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove volunteer ${name}?`)) return;
-
+    setDeletingVolunteer(null);
     try {
       await api.delete(`/volunteers/${id}`);
       toast({
@@ -291,15 +331,13 @@ export default function VolunteersPage() {
 
   // Delete service log
   const handleDeleteService = async (serviceId: string, volunteerName: string) => {
-    if (!confirm('Are you sure you want to delete this service record?')) return;
-
+    setDeletingServiceRecord(null);
     try {
       await api.delete(`/volunteers/services/${serviceId}`);
       toast({
         title: 'Success',
         description: 'Service record deleted',
       });
-      // Refresh details
       if (historyVolunteer) {
         const res = await api.get(`/volunteers/${historyVolunteer.id}`);
         setHistoryVolunteer(res.data);
@@ -328,7 +366,7 @@ export default function VolunteersPage() {
       {/* Header section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
             <HeartHandshake className="h-8 w-8 text-primary" />
             {t('volunteers.title', 'Volunteers')}
           </h1>
@@ -346,21 +384,22 @@ export default function VolunteersPage() {
       </div>
 
       {/* Main card with table */}
-      <Card className="border border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
-        <CardHeader className="border-b border-slate-50 bg-slate-50/50 py-5">
+      <Card className="border border-border bg-card shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="border-b border-border bg-muted/30 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}                    placeholder={t('volunteers.searchPlaceholder', 'Search by name, service types, contact...')}
-                className="h-11 pl-11 pr-10 text-sm shadow-inner bg-white border-slate-200 focus-visible:ring-primary rounded-xl"
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('volunteers.searchPlaceholder', 'Search by name, service types, contact...')}
+                className="h-11 pl-11 pr-10 text-sm shadow-inner bg-background border-border focus-visible:ring-primary rounded-xl"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-slate-100 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-accent transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -370,7 +409,7 @@ export default function VolunteersPage() {
               <Button
                 variant="outline"
                 onClick={() => setSearch('')}
-                className="h-11 gap-1.5 border-slate-200 hover:bg-slate-50 rounded-xl"
+                className="h-11 gap-1.5 border-border hover:bg-accent rounded-xl"
               >
                 <RotateCcw className="h-4 w-4" />
                 {t('common.reset', 'Reset')}
@@ -381,27 +420,28 @@ export default function VolunteersPage() {
 
         <CardContent className="p-0">
           {error && (
-            <div className="m-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="m-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <Table>
-            <TableHeader className="bg-slate-50/70 border-b border-slate-100">
+            <TableHeader className="bg-muted/30 border-b border-border">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6">{t('volunteers.table.name', 'Volunteer')}</TableHead>
-                <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6">{t('volunteers.table.contact', 'Contact')}</TableHead>                  <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6">{t('volunteers.table.serviceTypes', 'Service Types')}</TableHead>
-                <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6">{t('volunteers.table.status', 'Status')}</TableHead>
-                <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6">{t('volunteers.table.servicesCount', 'Services Logged')}</TableHead>
-                <TableHead className="font-semibold text-slate-700 h-12 py-3 px-6 text-right">{t('volunteers.table.actions', 'Actions')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6">{t('volunteers.table.name', 'Volunteer')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6">{t('volunteers.table.contact', 'Contact')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6">{t('volunteers.table.serviceTypes', 'Service Types')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6">{t('volunteers.table.status', 'Status')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6">{t('volunteers.table.servicesCount', 'Services Logged')}</TableHead>
+                <TableHead className="font-semibold text-foreground h-12 py-3 px-6 text-right">{t('volunteers.table.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 [...Array(5)].map((_, i) => (
-                  <TableRow key={i} className="border-b border-slate-50">
+                  <TableRow key={i} className="border-b border-border">
                     <TableCell colSpan={6} className="py-6 px-6">
-                      <div className="h-10 animate-pulse rounded-lg bg-slate-100/80" />
+                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -409,62 +449,62 @@ export default function VolunteersPage() {
                 <TableRow>
                   <TableCell colSpan={6} className="h-56 text-center px-6">
                     <div className="flex flex-col items-center justify-center text-muted-foreground gap-3">
-                      <HeartHandshake className="h-12 w-12 text-slate-200" />
+                      <HeartHandshake className="h-12 w-12 text-muted-foreground/30" />
                       <div>
-                        <p className="font-semibold text-base text-slate-700">{t('volunteers.empty.title', 'No Volunteers Found')}</p>
-                        <p className="text-sm text-slate-400 mt-1">{t('volunteers.empty.desc', 'Try searching with a different term or register a new volunteer.')}</p>
+                        <p className="font-semibold text-base text-foreground">{t('volunteers.empty.title', 'No Volunteers Found')}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{t('volunteers.empty.desc', 'Try searching with a different term or register a new volunteer.')}</p>
                       </div>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 volunteers.map((vol) => (
-                  <TableRow key={vol.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="py-4 px-6 font-medium text-slate-900">
+                  <TableRow key={vol.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                    <TableCell className="py-4 px-6 font-medium text-foreground">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border border-slate-100 shadow-sm bg-primary/5 text-primary">
+                        <Avatar className="h-10 w-10 border border-border shadow-sm bg-primary/5 text-primary">
                           <AvatarFallback className="font-bold bg-transparent">{initials(vol.fullName)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-semibold text-slate-900">{vol.fullName}</div>
+                          <div className="font-semibold text-foreground">{vol.fullName}</div>
                           <div className="text-xs text-muted-foreground">Joined {new Date(vol.createdAt).toLocaleDateString()}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <div className="flex flex-col gap-1 text-sm text-slate-600">
+                      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1.5">
-                          <Mail className="h-3.5 w-3.5 text-slate-400" />
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground/60" />
                           <span>{vol.email}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 text-slate-400" />
+                          <Phone className="h-3.5 w-3.5 text-muted-foreground/60" />
                           <span>{vol.phone}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       {vol.serviceTypes ? (
-                        <p className="text-sm text-slate-600 max-w-xs truncate" title={vol.serviceTypes}>
+                        <p className="text-sm text-muted-foreground max-w-xs truncate" title={vol.serviceTypes}>
                           {vol.serviceTypes}
                         </p>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">None specified</span>
+                        <span className="text-xs text-muted-foreground italic">None specified</span>
                       )}
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       <Badge
                         variant={vol.status === 'ACTIVE' ? 'default' : 'secondary'}
-                        className={vol.status === 'ACTIVE' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-50 rounded-full font-medium' 
-                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-100 rounded-full font-medium'}
+                        className={vol.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-50 rounded-full font-medium dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-950/40'
+                          : 'bg-muted text-muted-foreground border-border hover:bg-muted rounded-full font-medium'}
                       >
                         {vol.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 font-semibold rounded-lg px-2.5 py-1">
+                        <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 font-semibold rounded-lg px-2.5 py-1 dark:border-primary/30 dark:bg-primary/10">
                           {vol.services?.length || 0}
                         </Badge>
                         {(vol.services?.length || 0) > 0 && (
@@ -487,7 +527,7 @@ export default function VolunteersPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => openServiceLog(vol)}
-                          className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg"
+                          className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30"
                         >
                           <HeartHandshake className="h-4 w-4" />
                         </Button>
@@ -496,7 +536,7 @@ export default function VolunteersPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => openEditVolunteer(vol)}
-                          className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+                          className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-950/30"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -504,8 +544,8 @@ export default function VolunteersPage() {
                           title="Remove Volunteer"
                           size="icon"
                           variant="ghost"
-                          onClick={() => handleDeleteVolunteer(vol.id, vol.fullName)}
-                          className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                          onClick={() => setDeletingVolunteer(vol)}
+                          className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -520,14 +560,18 @@ export default function VolunteersPage() {
       </Card>
 
       {/* Volunteer Registration & Edit Slide-over Panel */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setDrawerOpen(false)} />
+      {drawerMounted && (
+        <div className="fixed inset-0 z-50 !mt-0">
+          <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60 transition-opacity duration-300 ease-out ${
+            drawerVisible ? 'opacity-100' : 'opacity-0'
+          }`} onClick={closeDrawer} />
           <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-            <div className="pointer-events-auto w-screen max-w-md transform bg-white shadow-2xl transition-transform duration-300 ease-in-out border-l border-slate-100 flex flex-col h-full">
-              <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className={`pointer-events-auto w-screen max-w-2xl bg-background shadow-2xl flex flex-col h-full transition-transform duration-300 ease-out ${
+              drawerVisible ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+              <div className="px-6 py-5 border-b border-border bg-muted/30 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
                     {editingVolunteer ? 'Edit Volunteer' : 'Register Volunteer'}
                   </h2>
@@ -535,7 +579,7 @@ export default function VolunteersPage() {
                     {editingVolunteer ? 'Update active profile details' : 'Create a new volunteer profile'}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-slate-200" onClick={() => setDrawerOpen(false)}>
+                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={closeDrawer}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -543,19 +587,19 @@ export default function VolunteersPage() {
               <ScrollArea className="flex-1 px-6 py-4">
                 <form onSubmit={handleVSave} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="v-name" className="text-slate-700 font-semibold">Full Name *</Label>
+                    <Label htmlFor="v-name" className="text-foreground font-semibold">Full Name *</Label>
                     <Input
                       id="v-name"
                       required
                       placeholder="e.g. Abebe Kebede"
                       value={vForm.fullName}
                       onChange={(e) => setVForm({ ...vForm, fullName: e.target.value })}
-                      className="rounded-xl border-slate-200 focus-visible:ring-primary h-11"
+                      className="rounded-xl border-border focus-visible:ring-primary h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-email" className="text-slate-700 font-semibold">Email Address *</Label>
+                    <Label htmlFor="v-email" className="text-foreground font-semibold">Email Address *</Label>
                     <Input
                       id="v-email"
                       type="email"
@@ -563,29 +607,29 @@ export default function VolunteersPage() {
                       placeholder="e.g. abebe@email.com"
                       value={vForm.email}
                       onChange={(e) => setVForm({ ...vForm, email: e.target.value })}
-                      className="rounded-xl border-slate-200 focus-visible:ring-primary h-11"
+                      className="rounded-xl border-border focus-visible:ring-primary h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-phone" className="text-slate-700 font-semibold">Phone Number *</Label>
+                    <Label htmlFor="v-phone" className="text-foreground font-semibold">Phone Number *</Label>
                     <Input
                       id="v-phone"
                       required
                       placeholder="e.g. +251 911 000 000"
                       value={vForm.phone}
                       onChange={(e) => setVForm({ ...vForm, phone: e.target.value })}
-                      className="rounded-xl border-slate-200 focus-visible:ring-primary h-11"
+                      className="rounded-xl border-border focus-visible:ring-primary h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-status" className="text-slate-700 font-semibold">Status</Label>
+                    <Label htmlFor="v-status" className="text-foreground font-semibold">Status</Label>
                     <select
                       id="v-status"
                       value={vForm.status}
                       onChange={(e) => setVForm({ ...vForm, status: e.target.value })}
-                      className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="ACTIVE">ACTIVE</option>
                       <option value="INACTIVE">INACTIVE</option>
@@ -593,30 +637,30 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-serviceTypes" className="text-slate-700 font-semibold">Service Types</Label>
+                    <Label htmlFor="v-serviceTypes" className="text-foreground font-semibold">Service Types</Label>
                     <textarea
                       id="v-serviceTypes"
                       placeholder="e.g. Teaching, Health Assessment, Counseling, Home Visit, Fundraising..."
                       rows={3}
                       value={vForm.serviceTypes}
                       onChange={(e) => setVForm({ ...vForm, serviceTypes: e.target.value })}
-                      className="flex w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
+                      className="flex w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-notes" className="text-slate-700 font-semibold">Internal Notes</Label>
+                    <Label htmlFor="v-notes" className="text-foreground font-semibold">Internal Notes</Label>
                     <textarea
                       id="v-notes"
                       placeholder="General notes or observations about this volunteer..."
                       rows={3}
                       value={vForm.notes}
                       onChange={(e) => setVForm({ ...vForm, notes: e.target.value })}
-                      className="flex w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
+                      className="flex w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
                     />
                   </div>
 
-                  <div className="pt-4 flex gap-3 border-t border-slate-100">
+                  <div className="pt-4 flex gap-3 border-t border-border">
                     <Button
                       type="submit"
                       disabled={vSaving}
@@ -634,8 +678,8 @@ export default function VolunteersPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setDrawerOpen(false)}
-                      className="h-11 rounded-xl border-slate-200 text-slate-700 font-semibold px-4"
+                      onClick={closeDrawer}
+                      className="h-11 rounded-xl border-border text-foreground font-semibold px-4"
                     >
                       Cancel
                     </Button>
@@ -648,22 +692,26 @@ export default function VolunteersPage() {
       )}
 
       {/* Log Volunteer Service Slide-over Panel */}
-      {serviceDrawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setServiceDrawerOpen(false)} />
+      {serviceDrawerMounted && (
+        <div className="fixed inset-0 z-50 !mt-0">
+          <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60 transition-opacity duration-300 ease-out ${
+            serviceDrawerVisible ? 'opacity-100' : 'opacity-0'
+          }`} onClick={closeServiceDrawer} />
           <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-            <div className="pointer-events-auto w-screen max-w-md transform bg-white shadow-2xl transition-transform duration-300 ease-in-out border-l border-slate-100 flex flex-col h-full">
-              <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className={`pointer-events-auto w-screen max-w-2xl bg-background shadow-2xl flex flex-col h-full transition-transform duration-300 ease-out ${
+              serviceDrawerVisible ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+              <div className="px-6 py-5 border-b border-border bg-muted/30 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <HeartHandshake className="h-5 w-5 text-emerald-600" />
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <HeartHandshake className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     Log Service Provided
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Record a service activity for <strong className="text-slate-700">{activeVolunteer?.fullName}</strong>
+                    Record a service activity for <strong className="text-foreground">{activeVolunteer?.fullName}</strong>
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-slate-200" onClick={() => setServiceDrawerOpen(false)}>
+                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={closeServiceDrawer}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -671,21 +719,21 @@ export default function VolunteersPage() {
               <ScrollArea className="flex-1 px-6 py-4">
                 <form onSubmit={handleSSave} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="s-type" className="text-slate-700 font-semibold">Service Type / Activity *</Label>
+                    <Label htmlFor="s-type" className="text-foreground font-semibold">Service Type / Activity *</Label>
                     <Input
                       id="s-type"
                       required
                       placeholder="e.g. Special tutoring, Health assessment, Counseling"
                       value={sForm.serviceType}
                       onChange={(e) => setSForm({ ...sForm, serviceType: e.target.value })}
-                      className="rounded-xl border-slate-200 focus-visible:ring-primary h-11"
+                      className="rounded-xl border-border focus-visible:ring-primary h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-child" className="text-slate-700 font-semibold">Target Recipient</Label>
+                    <Label htmlFor="s-child" className="text-foreground font-semibold">Target Recipient</Label>
                     {childrenLoading ? (
-                      <div className="h-11 flex items-center justify-center border rounded-xl bg-slate-50">
+                      <div className="h-11 flex items-center justify-center border rounded-xl bg-muted/30">
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
                         <span className="text-xs text-muted-foreground">Loading child options...</span>
                       </div>
@@ -694,7 +742,7 @@ export default function VolunteersPage() {
                         id="s-child"
                         value={sForm.childId}
                         onChange={(e) => setSForm({ ...sForm, childId: e.target.value })}
-                        className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       >
                         <option value="">All Children / General Service</option>
                         {children.map((child) => (
@@ -707,42 +755,42 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-date" className="text-slate-700 font-semibold">Service Date *</Label>
+                    <Label htmlFor="s-date" className="text-foreground font-semibold">Service Date *</Label>
                     <Input
                       id="s-date"
                       type="date"
                       required
                       value={sForm.serviceDate}
                       onChange={(e) => setSForm({ ...sForm, serviceDate: e.target.value })}
-                      className="rounded-xl border-slate-200 focus-visible:ring-primary h-11"
+                      className="rounded-xl border-border focus-visible:ring-primary h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-desc" className="text-slate-700 font-semibold">Activity Description</Label>
+                    <Label htmlFor="s-desc" className="text-foreground font-semibold">Activity Description</Label>
                     <textarea
                       id="s-desc"
                       placeholder="Describe what the volunteer did during this service activity..."
                       rows={4}
                       value={sForm.description}
                       onChange={(e) => setSForm({ ...sForm, description: e.target.value })}
-                      className="flex w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[100px]"
+                      className="flex w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[100px]"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-notes" className="text-slate-700 font-semibold">Additional Notes</Label>
+                    <Label htmlFor="s-notes" className="text-foreground font-semibold">Additional Notes</Label>
                     <textarea
                       id="s-notes"
                       placeholder="Notes on outcome, observations, or follow-ups needed..."
                       rows={3}
                       value={sForm.notes}
                       onChange={(e) => setSForm({ ...sForm, notes: e.target.value })}
-                      className="flex w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
+                      className="flex w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 min-h-[80px]"
                     />
                   </div>
 
-                  <div className="pt-4 flex gap-3 border-t border-slate-100">
+                  <div className="pt-4 flex gap-3 border-t border-border">
                     <Button
                       type="submit"
                       disabled={sSaving}
@@ -760,8 +808,8 @@ export default function VolunteersPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setServiceDrawerOpen(false)}
-                      className="h-11 rounded-xl border-slate-200 text-slate-700 font-semibold px-4"
+                      onClick={closeServiceDrawer}
+                      className="h-11 rounded-xl border-border text-foreground font-semibold px-4"
                     >
                       Cancel
                     </Button>
@@ -773,22 +821,86 @@ export default function VolunteersPage() {
         </div>
       )}
 
+      {/* Delete Volunteer Confirmation Modal */}
+      {deletingVolunteer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingVolunteer(null)} />
+          <div className="relative w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Remove Volunteer</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Are you sure you want to remove <strong>{deletingVolunteer.fullName}</strong>?
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeletingVolunteer(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteVolunteer(deletingVolunteer.id, deletingVolunteer.fullName)}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Service Record Confirmation Modal */}
+      {deletingServiceRecord && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeletingServiceRecord(null)} />
+          <div className="relative w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Delete Service Record</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Are you sure you want to delete this service record for <strong>{deletingServiceRecord.name}</strong>?
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeletingServiceRecord(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteService(deletingServiceRecord.id, deletingServiceRecord.name)}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* History Dialog Modal */}
       {historyVolunteer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setHistoryVolunteer(null)} />
-          <Card className="z-10 w-full max-w-2xl max-h-[85vh] bg-white border border-slate-100 shadow-2xl rounded-2xl flex flex-col overflow-hidden">
-            <CardHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between space-y-0">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60 transition-opacity" onClick={() => setHistoryVolunteer(null)} />
+          <Card className="z-10 w-full max-w-2xl max-h-[85vh] bg-card border border-border shadow-2xl rounded-2xl flex flex-col overflow-hidden">
+            <CardHeader className="px-6 py-5 border-b border-border bg-muted/30 flex flex-row items-center justify-between space-y-0">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
                   Service History
                 </h2>
                 <p className="text-xs text-muted-foreground mt-1">
-                  List of services logged for <strong className="text-slate-700">{historyVolunteer.fullName}</strong>
+                  List of services logged for <strong className="text-foreground">{historyVolunteer.fullName}</strong>
                 </p>
               </div>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-slate-200" onClick={() => setHistoryVolunteer(null)}>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={() => setHistoryVolunteer(null)}>
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
@@ -797,32 +909,32 @@ export default function VolunteersPage() {
               {historyVolunteer.services && historyVolunteer.services.length > 0 ? (
                 <div className="space-y-4">
                   {historyVolunteer.services.map((service) => (
-                    <div key={service.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/40 relative hover:border-slate-200 transition-colors">
+                    <div key={service.id} className="p-4 rounded-xl border border-border bg-muted/20 relative hover:border-border/80 transition-colors">
                       <button
                         title="Delete record"
-                        onClick={() => handleDeleteService(service.id, historyVolunteer.fullName)}
-                        className="absolute top-4 right-4 p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        onClick={() => setDeletingServiceRecord({ id: service.id, name: historyVolunteer.fullName })}
+                        className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                       <div className="flex flex-col gap-1.5 pr-8">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-slate-950 text-base">{service.serviceType}</span>
-                          <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 rounded-lg">
+                          <span className="font-semibold text-foreground text-base">{service.serviceType}</span>
+                          <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 rounded-lg dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-950/40">
                             {service.child ? `For Child: ${service.child.fullName}` : 'All Children'}
                           </Badge>
                         </div>
-                        <div className="text-xs text-slate-400 font-medium">
+                        <div className="text-xs text-muted-foreground font-medium">
                           Performed on {new Date(service.serviceDate).toLocaleDateString()}
                         </div>
                         {service.description && (
-                          <p className="text-sm text-slate-700 bg-white p-2.5 rounded-lg border border-slate-50 mt-1 shadow-sm whitespace-pre-wrap leading-relaxed">
+                          <p className="text-sm text-foreground bg-card p-2.5 rounded-lg border border-border mt-1 shadow-sm whitespace-pre-wrap leading-relaxed">
                             {service.description}
                           </p>
                         )}
                         {service.notes && (
-                          <div className="text-xs text-slate-500 mt-1.5 flex gap-1 items-start bg-blue-50/20 border border-blue-50/40 p-2 rounded-lg">
-                            <strong className="shrink-0 text-blue-600">Internal notes:</strong>
+                          <div className="text-xs text-muted-foreground mt-1.5 flex gap-1 items-start bg-blue-50/20 border border-blue-50/40 p-2 rounded-lg dark:bg-blue-950/20 dark:border-blue-950/30">
+                            <strong className="shrink-0 text-blue-600 dark:text-blue-400">Internal notes:</strong>
                             <span className="italic">{service.notes}</span>
                           </div>
                         )}
@@ -831,13 +943,13 @@ export default function VolunteersPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-slate-400 flex flex-col items-center gap-3">
-                  <Calendar className="h-10 w-10 text-slate-200" />
+                <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
+                  <Calendar className="h-10 w-10 text-muted-foreground/30" />
                   <p className="font-medium">No service records registered yet.</p>
                 </div>
               )}
             </ScrollArea>
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+            <div className="px-6 py-4 border-t border-border flex justify-end">
               <Button onClick={() => setHistoryVolunteer(null)} className="rounded-xl px-5">
                 Close
               </Button>
