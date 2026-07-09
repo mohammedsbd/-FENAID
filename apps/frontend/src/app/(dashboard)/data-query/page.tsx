@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { useLocale } from '@/components/providers/locale-provider';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 type DataSubject = 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
@@ -30,6 +31,7 @@ type Tab = 'builder' | 'statistics';
 export default function DataQueryPage() {
   const session = getSession();
   const { t } = useLocale();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('builder');
   const [filterWidth, setFilterWidth] = useState(300);
   const resizing = useRef(false);
@@ -311,6 +313,7 @@ export default function DataQueryPage() {
                   onDelete={async (id) => {
                     await api.delete(`/data-query/saved/${id}`);
                     await loadSaved();
+                    toast({ title: t('dataQuery.queryDeleted', 'Query deleted'), description: t('dataQuery.queryDeletedDesc', 'The saved query has been deleted.') });
                   }}
                   onUpdate={async (id, payload) => {
                     await api.put(`/data-query/saved/${id}`, payload);
@@ -333,6 +336,7 @@ export default function DataQueryPage() {
                   onDelete={async (id) => {
                     await api.delete(`/data-query/saved/${id}`);
                     await loadSaved();
+                    toast({ title: t('dataQuery.queryDeleted', 'Query deleted'), description: t('dataQuery.queryDeletedDesc', 'The saved query has been deleted.') });
                   }}
                   onUpdate={async (id, payload) => {
                     await api.put(`/data-query/saved/${id}`, payload);

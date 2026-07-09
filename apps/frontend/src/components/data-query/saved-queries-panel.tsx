@@ -2,7 +2,7 @@
 
 import type { DataQueryFilters } from '@fikir/types';
 import { formatDistanceToNow } from 'date-fns';
-import { ChevronLeft, ChevronRight, Pencil, Play, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Play, Trash2, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +60,7 @@ export function SavedQueriesPanel({
   const [isOrgWide, setIsOrgWide] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingQuery, setDeletingQuery] = useState<SavedQueryItem | null>(null);
 
   const list = tab === 'mine' ? mine : orgWide.filter((q) => q.isOrgWide);
 
@@ -190,9 +191,7 @@ export function SavedQueriesPanel({
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        if (confirm(t('savedQueries.confirmDelete', 'Delete this saved query?'))) onDelete(query.id);
-                      }}
+                      onClick={() => setDeletingQuery(query)}
                       title={t('savedQueries.delete', 'Delete')}
                     >
                       <Trash2 className="h-4 w-4 text-red-500" />
@@ -247,6 +246,33 @@ export function SavedQueriesPanel({
               >
                 {t('savedQueries.save', 'Save')}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingQuery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeletingQuery(null)}>
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{t('savedQueries.confirmDeleteTitle', 'Delete Query?')}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('savedQueries.confirmDeleteDesc', 'Are you sure you want to delete "{name}"? This cannot be undone.', { name: deletingQuery.name })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeletingQuery(null)}>{t('savedQueries.cancel', 'Cancel')}</Button>
+              <Button variant="destructive" onClick={() => {
+                const id = deletingQuery.id;
+                onDelete(id);
+                setDeletingQuery(null);
+              }}>{t('savedQueries.delete', 'Delete')}</Button>
             </div>
           </div>
         </div>

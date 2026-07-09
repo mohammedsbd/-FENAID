@@ -18,6 +18,7 @@ import {
   AlertCircle,
   ExternalLink,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -97,6 +98,10 @@ export default function ServicesPage() {
   const [assignTargetFilter, setAssignTargetFilter] = useState('');
   const [assignStaffFilter, setAssignStaffFilter] = useState('');
   const [assignPage, setAssignPage] = useState(1);
+
+  // Confirmation modals
+  const [deactivatingService, setDeactivatingService] = useState<ServiceDto | null>(null);
+  const [cancellingAssignment, setCancellingAssignment] = useState<ServiceAssignmentDto | null>(null);
 
   // Assignment drawer / detail
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false);
@@ -280,28 +285,59 @@ export default function ServicesPage() {
     setServiceDrawerOpen(true);
   }
 
-  async function handleToggleActive(service: ServiceDto) {
+  function handleToggleActive(service: ServiceDto) {
+    if (service.isActive) {
+      // Deactivating — show confirmation first
+      setDeactivatingService(service);
+    } else {
+      // Reactivating — proceed directly
+      void handleConfirmReactivate(service.id);
+    }
+  }
+
+  async function handleConfirmReactivate(id: string) {
     try {
-      const targetActive = !service.isActive;
-      if (!targetActive) {
-        // Soft-deactivate
-        await deleteService(service.id);
-        toast({
-          title: t('services.catalog.deactivated', 'Service Deactivated'),
-          description: t('services.catalog.deactivatedDesc', '"{name}" has been deactivated.', { name: service.name }),
-        });
-      } else {
-        // Reactivate
-        const { updateService } = await import('@/lib/services-api');
-        await updateService(service.id, { isActive: true });
-        toast({
-          title: t('services.catalog.activated', 'Service Activated'),
-          description: t('services.catalog.activatedDesc', '"{name}" has been activated.', { name: service.name }),
-        });
-      }
+      const { updateService } = await import('@/lib/services-api');
+      await updateService(id, { isActive: true });
+      toast({
+        title: t('services.catalog.activated', 'Service Activated'),
+        description: t('services.catalog.activatedDesc', 'The service has been activated.'),
+      });
       fetchServices();
     } catch (err: any) {
       const msg = err?.response?.data?.message || t('services.error.update', 'Failed to update service');
+      toast({ title: t('common.error', 'Error'), description: msg, variant: 'destructive' });
+    }
+  }
+
+  async function handleConfirmDeactivate(service: ServiceDto) {
+    setDeactivatingService(null);
+    try {
+      await deleteService(service.id);
+      toast({
+        title: t('services.catalog.deactivated', 'Service Deactivated'),
+        description: t('services.catalog.deactivatedDesc', '"{name}" has been deactivated.', { name: service.name }),
+      });
+      fetchServices();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || t('services.error.update', 'Failed to update service');
+      toast({ title: t('common.error', 'Error'), description: msg, variant: 'destructive' });
+    }
+  }
+
+  async function handleConfirmCancelled() {
+    const assignment = cancellingAssignment;
+    if (!assignment) return;
+    setCancellingAssignment(null);
+    try {
+      await updateAssignment(assignment.id, { status: 'CANCELLED' });
+      toast({
+        title: t('services.toast.markedCancelled', 'Marked as Cancelled'),
+        description: t('services.toast.statusUpdated', 'The assignment status has been updated.'),
+      });
+      fetchAssignments();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || t('services.error.update', 'Failed to update status');
       toast({ title: t('common.error', 'Error'), description: msg, variant: 'destructive' });
     }
   }
@@ -316,10 +352,18 @@ export default function ServicesPage() {
   }
 
   async function handleStatusChange(id: string, status: 'COMPLETED' | 'CANCELLED') {
+    if (status === 'CANCELLED') {
+      // Show confirmation before cancelling
+      const assignment = assignments?.data.find((a) => a.id === id);
+      if (assignment) {
+        setCancellingAssignment(assignment);
+      }
+      return;
+    }
     try {
       await updateAssignment(id, { status });
       toast({
-        title: status === 'COMPLETED' ? t('services.toast.markedComplete', 'Marked as Completed') : t('services.toast.markedCancelled', 'Marked as Cancelled'),
+        title: t('services.toast.markedComplete', 'Marked as Completed'),
         description: t('services.toast.statusUpdated', 'The assignment status has been updated.'),
       });
       fetchAssignments();
@@ -1029,10 +1073,60 @@ export default function ServicesPage() {
           if (selectedAssignment) handleStatusChange(selectedAssignment.id, 'COMPLETED');
         }}
         onMarkCancelled={() => {
-          if (selectedAssignment) handleStatusChange(selectedAssignment.id, 'CANCELLED');
+          if (selectedAssignment) {
+            setCancellingAssignment(selectedAssignment);
+            setDetailPanelOpen(false);
+            setSelectedAssignment(null);
+          }
         }}
         userRole={userRole}
       />
+
+      {/* Deactivate Service Confirmation Modal */}
+      {deactivatingService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeactivatingService(null)}>
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{t('services.catalog.confirmDeactivateTitle', 'Deactivate Service?')}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('services.catalog.confirmDeactivateDesc', 'Are you sure you want to deactivate "{name}"? Existing assignments will remain, but the service will no longer be available for new assignments.', { name: deactivatingService.name })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeactivatingService(null)}>{t('common.cancel', 'Cancel')}</Button>
+              <Button variant="destructive" onClick={() => void handleConfirmDeactivate(deactivatingService)}>{t('services.catalog.confirmDeactivate', 'Deactivate')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Assignment Confirmation Modal */}
+      {cancellingAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setCancellingAssignment(null)}>
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{t('services.detail.confirmCancelTitle', 'Cancel Assignment?')}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('services.detail.confirmCancelDesc', 'Are you sure you want to cancel the assignment for "{name}"?', { name: cancellingAssignment.service?.name || t('common.unknown', 'Unknown') })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setCancellingAssignment(null)}>{t('common.cancel', 'Cancel')}</Button>
+              <Button variant="destructive" onClick={() => void handleConfirmCancelled()}>{t('services.detail.confirmCancel', 'Cancel Assignment')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
