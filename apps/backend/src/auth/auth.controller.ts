@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -14,13 +14,30 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  login(@Body() loginDto: LoginDto, @Req() request: Request) {
-    return this.authService.login(loginDto, {
+  async login(@Body() loginDto: LoginDto, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    const result = await this.authService.login(loginDto, {
       ipAddress: request.ip,
       userAgent: Array.isArray(request.headers['user-agent'])
         ? request.headers['user-agent'][0]
         : request.headers['user-agent'],
     });
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    };
+
+    response.cookie('token', result.accessToken, cookieOptions);
+    response.cookie('session', JSON.stringify({
+      id: result.user.id,
+      role: result.user.role,
+      fullName: result.user.fullName,
+    }), { ...cookieOptions, httpOnly: false });
+
+    return result;
   }
 
   @Post('change-password')
@@ -41,7 +58,9 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Req() request: AuthenticatedRequest) {
+  logout(@Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    response.clearCookie('token', { path: '/' });
+    response.clearCookie('session', { path: '/' });
     return this.authService.logout(request.user.sessionId);
   }
 }

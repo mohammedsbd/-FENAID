@@ -32,7 +32,7 @@ export class AuthService {
     if (!staff || staff.deletedAt || !staff.isActive) {
       await this.logLoginAttempt({
         staffId: null,
-        entityId: email,
+        entityId: 'unknown',
         success: false,
         ipAddress: metadata.ipAddress,
         userAgent: metadata.userAgent,
@@ -226,7 +226,7 @@ export class AuthService {
     const history = await this.prisma.passwordHistory.findMany({
       where: { staffId },
       orderBy: { createdAt: 'desc' },
-      take: 2,
+      take: 5,
       select: { passwordHash: true },
     });
 
