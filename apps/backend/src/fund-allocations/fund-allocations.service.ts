@@ -8,6 +8,7 @@ import { FundAllocationStatus, NotificationType, Prisma, StaffRole } from '@pris
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  AcknowledgeFundAllocationDto,
   CreateFundAllocationDto,
   ListFundAllocationsDto,
   UpdateFundAllocationDto,
@@ -191,10 +192,6 @@ export class FundAllocationsService {
       ...(dto.status && { status: dto.status }),
       ...(dto.receiptUrl && { receiptUrl: dto.receiptUrl }),
       ...(dto.notes && { notes: dto.notes }),
-      ...(dto.parentAcknowledged !== undefined && {
-        parentAcknowledged: dto.parentAcknowledged,
-        acknowledgedAt: dto.parentAcknowledged ? new Date() : null,
-      }),
     };
 
     const updated = await this.prisma.fundAllocation.update({
@@ -207,21 +204,51 @@ export class FundAllocationsService {
 
     await this.logAudit(staffId, 'UPDATE', id, updated, existing);
 
-    if (
-      dto.status ||
-      dto.parentAcknowledged !== undefined ||
-      dto.receiptUrl
-    ) {
+    if (dto.status || dto.receiptUrl) {
       await this.notifications.notifyStaffAndAdmins(
         [updated.parent.assignedStaffId],
         {
-          message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status, acknowledged: updated.parentAcknowledged ? ' and acknowledged' : '' }),
+          message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status }),
           type: NotificationType.FUND_REMINDER,
           entityType: 'FundAllocation',
           entityId: updated.id,
         },
       );
     }
+
+    return updated;
+  }
+
+  async acknowledge(staffId: string, id: string, dto: AcknowledgeFundAllocationDto) {
+    const existing = await this.prisma.fundAllocation.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Fund allocation not found');
+
+    if (existing.status === FundAllocationStatus.DISBURSED && existing.parentAcknowledged) {
+      throw new ForbiddenException('This record is finalized and cannot be modified.');
+    }
+
+    const updated = await this.prisma.fundAllocation.update({
+      where: { id },
+      data: {
+        parentAcknowledged: dto.acknowledged,
+        acknowledgedAt: dto.acknowledged ? new Date() : null,
+      },
+      include: {
+        parent: { select: { fullName: true, assignedStaffId: true } },
+      },
+    });
+
+    await this.logAudit(staffId, 'ACKNOWLEDGE', id, updated, existing);
+
+    await this.notifications.notifyStaffAndAdmins(
+      [updated.parent.assignedStaffId],
+      {
+        message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status, acknowledged: updated.parentAcknowledged ? ' and acknowledged' : '' }),
+        type: NotificationType.FUND_REMINDER,
+        entityType: 'FundAllocation',
+        entityId: updated.id,
+      },
+    );
 
     return updated;
   }

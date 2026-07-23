@@ -47,9 +47,11 @@ export class UpdateFundAllocationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
 
-  @IsOptional()
-  parentAcknowledged?: boolean;
+export class AcknowledgeFundAllocationDto {
+  @IsNotEmpty()
+  acknowledged!: boolean;
 }
 
 export class ListFundAllocationsDto {

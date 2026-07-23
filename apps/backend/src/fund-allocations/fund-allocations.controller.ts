@@ -13,6 +13,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import {
+  AcknowledgeFundAllocationDto,
   CreateFundAllocationDto,
   ListFundAllocationsDto,
   UpdateFundAllocationDto,
@@ -56,5 +57,15 @@ export class FundAllocationsController {
     @Body() dto: UpdateFundAllocationDto,
   ) {
     return this.fundAllocationsService.update(req.user.staffId, id, dto);
+  }
+
+  @Post(':id/acknowledge')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
+  acknowledge(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: AcknowledgeFundAllocationDto,
+  ) {
+    return this.fundAllocationsService.acknowledge(req.user.staffId, id, dto);
   }
 }
