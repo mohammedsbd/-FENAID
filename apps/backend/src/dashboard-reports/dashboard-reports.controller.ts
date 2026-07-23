@@ -24,7 +24,7 @@ export class DashboardReportsController {
 
   @Get('reports/:type')
   @ModuleAccess('REPORTS' as any)
-  @Roles(StaffRole.SUPER_ADMIN, StaffRole.VIEWER)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   getReport(
     @Req() req: AuthenticatedRequest,
     @Param('type') type: ReportType,

@@ -70,9 +70,5 @@ function defaultAccess(role: StaffRole, moduleName: PermissionModule) {
     return 'READ_ONLY';
   }
 
-  if (role === StaffRole.VIEWER) {
-    return 'READ_ONLY';
-  }
-
   return 'FULL';
 }

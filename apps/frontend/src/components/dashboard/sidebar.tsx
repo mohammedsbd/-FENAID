@@ -22,8 +22,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale } from '@/components/providers/locale-provider';
+import { fetchSession } from '@/lib/auth';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -37,17 +38,22 @@ const navItems = [
     icon: Table2,
     label: 'Data Query',
     href: '/data-query',
-    roles: ['SUPER_ADMIN', 'VIEWER'],
+    roles: ['SUPER_ADMIN', 'CASE_WORKER'],
   },
   { icon: Bell, label: 'Notifications', href: '/notifications' },
   { icon: ShieldCheck, label: 'Accounts', href: '/accounts', superAdminOnly: true },
   { icon: Settings, label: 'Settings', href: '/settings' },
 ];
 
-export function Sidebar({ user }: { user: any }) {
+export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { t } = useLocale();
+
+  useEffect(() => {
+    fetchSession().then(setUser);
+  }, []);
 
   return (
     <div

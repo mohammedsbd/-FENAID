@@ -141,18 +141,7 @@ export class DataQueryService {
       dto.anonymize === true ||
       dto.format?.startsWith('anonymized_') === true;
 
-    if (
-      role === StaffRole.VIEWER &&
-      !anonymize &&
-      !staff?.canExportIdentified
-    ) {
-      throw new ForbiddenException('error.dataQuery.viewerExportForbidden');
-    }
-
     let columns = [...dto.columns];
-    if (role === StaffRole.VIEWER) {
-      columns = columns.filter((c) => c !== 'internalNotes');
-    }
 
     const { rows, total } = await this.fetchRows(
       { ...dto, page: 1, pageSize: MAX_EXPORT + 1 },
@@ -472,11 +461,11 @@ export class DataQueryService {
   async listSavedQueries(staffId: string) {
     const [mine, orgWide] = await Promise.all([
       this.prisma.savedQuery.findMany({
-        where: { createdById: staffId },
+        where: { createdById: staffId, deletedAt: null },
         orderBy: { updatedAt: 'desc' },
       }),
       this.prisma.savedQuery.findMany({
-        where: { isOrgWide: true },
+        where: { isOrgWide: true, deletedAt: null },
         orderBy: { updatedAt: 'desc' },
       }),
     ]);
@@ -485,7 +474,7 @@ export class DataQueryService {
   }
 
   async getSavedQuery(id: string) {
-    const query = await this.prisma.savedQuery.findUnique({ where: { id } });
+    const query = await this.prisma.savedQuery.findFirst({ where: { id, deletedAt: null } });
     if (!query) {
       throw new NotFoundException('error.dataQuery.savedQueryNotFound');
     }
@@ -526,7 +515,10 @@ export class DataQueryService {
       throw new ForbiddenException('error.dataQuery.onlyCreatorCanDelete');
     }
 
-    await this.prisma.savedQuery.delete({ where: { id } });
+    await this.prisma.savedQuery.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
     return { success: true };
   }
 

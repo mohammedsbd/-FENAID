@@ -10,7 +10,6 @@ datasource db {
 enum StaffRole {
   SUPER_ADMIN
   CASE_WORKER
-  VIEWER
 }
 
 enum AccessLevel {
@@ -227,6 +226,7 @@ model Parent {
   status            ParentStatus
   internalNotes     String?          @db.Text
   assignedStaffId   String
+  deletedAt         DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -270,6 +270,7 @@ model Child {
   internalNotes          String?                @db.Text
   parentId               String
   assignedStaffId        String
+  deletedAt              DateTime?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -448,6 +449,7 @@ model Goal {
   description String?   @db.Text
   type        GoalType
   achievedAt  DateTime?
+  deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -472,6 +474,7 @@ model Appointment {
   isRecurring     Boolean           @default(false)
   recurrenceRule  String?
   status          AppointmentStatus
+  deletedAt       DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -521,6 +524,7 @@ model Document {
   uploadedById String
   parentId     String?
   childId      String?
+  deletedAt    DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -643,6 +647,7 @@ model SavedQuery {
   lastRunCount      Int?
   isScheduled       Boolean   @default(false)
   scheduleFrequency String?
+  deletedAt         DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -710,17 +715,20 @@ model Staff {
 
 model Volunteer {
   id           String             @id @default(cuid())
-  fullName     String
+  firstName    String
+  lastName     String
   email        String             @unique
   phone        String
   status       String             @default("ACTIVE") // ACTIVE, INACTIVE
   serviceTypes String?            @db.Text
   notes        String?            @db.Text
+  deletedAt    DateTime?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   services     VolunteerService[]
 
-  @@index([fullName])
+  @@index([firstName])
+  @@index([lastName])
   @@index([email])
 }
 
@@ -754,6 +762,7 @@ model Referral {
   outcome        String?        @db.Text
   followUpDate   DateTime?
   referredById   String
+  deletedAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 

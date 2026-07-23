@@ -1,4 +1,4 @@
-export type AccountRole = 'SUPER_ADMIN' | 'CASE_WORKER' | 'VIEWER';
+export type AccountRole = 'SUPER_ADMIN' | 'CASE_WORKER';
 export type AccessLevel = 'FULL' | 'READ_ONLY' | 'NO_ACCESS';
 export type PermissionModule =
   | 'ACCOUNTS'

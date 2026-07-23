@@ -56,7 +56,7 @@ type AccountForm = {
   fullName: string;
   email: string;
   photoUrl: string;
-  role: 'SUPER_ADMIN' | 'CASE_WORKER' | 'VIEWER';
+  role: 'SUPER_ADMIN' | 'CASE_WORKER';
   password: string;
   sendWelcomeEmail: boolean;
   forceChangeOnNextLogin: boolean;
@@ -118,7 +118,7 @@ export function AccountManagementClient({ currentUser }: Props) {
   const [notifyUser, setNotifyUser] = useState(true);
   const [forceChange, setForceChange] = useState(true);
   const [auditFilters, setAuditFilters] = useState({ staffId: '', action: '', from: '', to: '' });
-  const [permissionRole, setPermissionRole] = useState<'CASE_WORKER' | 'VIEWER'>('CASE_WORKER');
+  const [permissionRole, setPermissionRole] = useState<'CASE_WORKER'>('CASE_WORKER');
   const [permissionDraft, setPermissionDraft] = useState<Record<PermissionModule, AccessLevel>>({} as Record<PermissionModule, AccessLevel>);
   const [activeSessionStaffId, setActiveSessionStaffId] = useState('');
   
@@ -388,7 +388,6 @@ export function AccountManagementClient({ currentUser }: Props) {
                 <option value="">{t('accounts.allRoles', 'All roles')}</option>
                 <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
-                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
               <select className="h-10 rounded-md border bg-background px-3 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="">{t('accounts.allStatus', 'All status')}</option>
@@ -452,7 +451,6 @@ export function AccountManagementClient({ currentUser }: Props) {
             <div className="flex items-center gap-3">
               <select className="h-10 rounded-md border bg-background px-3 text-sm" value={permissionRole} onChange={(e) => setPermissionRole(e.target.value as any)}>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
-                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
               <Button variant="outline" onClick={loadPermissions}><RefreshCcw className="h-4 w-4" />{t('accounts.reload', 'Reload')}</Button>
             </div>
@@ -561,7 +559,6 @@ export function AccountManagementClient({ currentUser }: Props) {
               <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={accountForm.role} onChange={(e) => setAccountForm((c) => ({ ...c, role: e.target.value as any }))}>
                 <option value="SUPER_ADMIN">{t('accounts.superAdmin', 'Super Admin')}</option>
                 <option value="CASE_WORKER">{t('accounts.staff', 'Staff')}</option>
-                <option value="VIEWER">{t('accounts.viewer', 'Viewer')}</option>
               </select>
             </Field>
             <Field label={t('accounts.status', 'Status')}>

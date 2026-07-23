@@ -22,7 +22,7 @@ import {
 } from './dto/save-query.dto';
 
 @Controller('data-query')
-@Roles(StaffRole.SUPER_ADMIN, StaffRole.VIEWER)
+@Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
 export class DataQueryController {
   constructor(private readonly dataQueryService: DataQueryService) {}
 

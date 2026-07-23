@@ -35,7 +35,7 @@ async function main() {
   await prisma.staff.deleteMany();
 
   console.log('Creating fresh Super Admin accounts...');
-  const [admin1, admin2, caseworker1, caseworker2, viewer] = await Promise.all([
+  const [admin1, admin2, caseworker1, caseworker2] = await Promise.all([
     prisma.staff.create({
       data: {
         email: 'superadmin@fikir.org',
@@ -72,15 +72,7 @@ async function main() {
         mustChangePassword: true,
       },
     }),
-    prisma.staff.create({
-      data: {
-        email: 'viewer@fikir.org',
-        fullName: 'Tigist Bekele',
-        passwordHash,
-        role: 'VIEWER',
-        mustChangePassword: true,
-      },
-    }),
+
   ]);
 
   const services = await prisma.service.createManyAndReturn({
@@ -740,7 +732,7 @@ async function main() {
 
   console.log('Seed completed for Fikir system.');
   console.log(
-    `Staff: ${[admin1, admin2, caseworker1, caseworker2, viewer].length}`,
+    `Staff: ${[admin1, admin2, caseworker1, caseworker2].length}`,
   );
   console.log(`Services: ${services.length}`);
   console.log(`Parents: ${parents.length}`);

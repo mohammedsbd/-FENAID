@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { AccessLevel, PermissionModule, Prisma, StaffRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
@@ -620,7 +620,7 @@ export class AccountsService {
     const history = await this.prisma.passwordHistory.findMany({
       where: { staffId },
       orderBy: { createdAt: 'desc' },
-      take: 2,
+      take: 5,
       select: { passwordHash: true },
     });
 
@@ -654,7 +654,7 @@ export class AccountsService {
 }
 
 function generateTempPassword() {
-  return `Fikir-${randomUUID().slice(0, 8)}!`;
+  return randomBytes(6).toString('base64url');
 }
 
 function defaultNotificationPreferences() {
@@ -676,14 +676,6 @@ function defaultPermissionMatrix() {
     { role: StaffRole.CASE_WORKER, module: PermissionModule.DASHBOARD, accessLevel: AccessLevel.FULL },
     { role: StaffRole.CASE_WORKER, module: PermissionModule.REPORTS, accessLevel: AccessLevel.READ_ONLY },
     { role: StaffRole.CASE_WORKER, module: PermissionModule.VOLUNTEERS, accessLevel: AccessLevel.FULL },
-    { role: StaffRole.VIEWER, module: PermissionModule.PARENTS, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.CHILDREN, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.SERVICES, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.FINANCE, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.APPOINTMENTS, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.DOCUMENTS, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.DASHBOARD, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.REPORTS, accessLevel: AccessLevel.READ_ONLY },
-    { role: StaffRole.VIEWER, module: PermissionModule.VOLUNTEERS, accessLevel: AccessLevel.READ_ONLY },
+
   ];
 }
