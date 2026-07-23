@@ -40,7 +40,8 @@ export type ChildRow = {
 };
 
 export type ChildFormData = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   photoUrl: string;
   dateOfBirth: string;
   gender: string;
@@ -58,7 +59,8 @@ export type ChildFormData = {
 };
 
 export const emptyChildForm: ChildFormData = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   photoUrl: '',
   dateOfBirth: '',
   gender: '',
@@ -75,9 +77,16 @@ export const emptyChildForm: ChildFormData = {
   status: 'ACTIVE',
 };
 
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = (fullName || '').trim().split(' ');
+  return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' };
+}
+
 export function childToForm(child: any): ChildFormData {
+  const { firstName, lastName } = splitFullName(child.fullName || '');
   return {
-    fullName: child.fullName || '',
+    firstName,
+    lastName,
     photoUrl: child.photoUrl || '',
     dateOfBirth: toIsoDateInputValue(child.dateOfBirth),
     gender: child.gender || '',
@@ -98,7 +107,7 @@ export function childToForm(child: any): ChildFormData {
 export function formToChildPayload(form: ChildFormData) {
   return {
     ...form,
-    fullName: form.fullName.trim(),
+    fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
     parentId: form.parentId,
     assignedStaffId: form.assignedStaffId,
   };

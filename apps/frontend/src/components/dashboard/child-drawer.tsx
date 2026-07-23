@@ -108,9 +108,11 @@ export function ChildDrawer({
         .then((res) => setForm(childToForm(res.data)))
         .catch(() => {
           if (fallbackChild) {
+            const nameParts = (fallbackChild.fullName || '').split(' ');
             setForm({
               ...emptyChildForm,
-              fullName: fallbackChild.fullName,
+              firstName: nameParts[0] || '',
+              lastName: nameParts.slice(1).join(' ') || '',
               photoUrl: fallbackChild.photoUrl || '',
               dateOfBirth: toIsoDateInputValue(fallbackChild.dateOfBirth),
               disabilityType: fallbackChild.disabilityType,
@@ -237,14 +239,17 @@ export function ChildDrawer({
               )}
               {step === 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label={t('childDrawer.fullName', 'Full Name')} error={errors.fullName}>
-                    <Input value={form.fullName} onChange={(event) => updateField('fullName', event.target.value)} />
+                  <FormField label={t('childDrawer.firstName', 'First Name')} error={errors.firstName}>
+                    <Input value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} />
+                  </FormField>
+                  <FormField label={t('childDrawer.lastName', 'Last Name')} error={errors.lastName}>
+                    <Input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} />
                   </FormField>
                   <FormField label={t('childDrawer.photoUpload', 'Photo Upload')} error={errors.photoUrl}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || t('childDrawer.child', 'Child')} />
-                        <AvatarFallback>{initials(form.fullName || t('childDrawer.child', 'Child'))}</AvatarFallback>
+                        <AvatarImage src={form.photoUrl || undefined} alt={`${form.firstName} ${form.lastName}` || t('childDrawer.child', 'Child')} />
+                        <AvatarFallback>{initials(`${form.firstName} ${form.lastName}` || t('childDrawer.child', 'Child'))}</AvatarFallback>
                       </Avatar>
                       <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                         <Upload className="h-4 w-4" />
@@ -363,7 +368,8 @@ export function ChildDrawer({
                             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mr-3">
                               {initials(p.fullName)}
                             </span>
-                            {p.fullName}
+                            <span className="font-medium">{p.fullName.split(' ')[0] || p.fullName}</span>
+                            <span className="text-muted-foreground ml-1">{p.fullName.split(' ').slice(1).join(' ') || ''}</span>
                           </button>
                         ))
                       ) : (
@@ -432,7 +438,7 @@ function FormField({ label, error, children, className }: { label: string; error
 function validateStep(step: number, form: ChildFormData, t: (key: string, fallback?: string) => string) {
   const errors: Record<string, string> = {};
   if (step === 0) {
-    if (!String(form.fullName).trim()) errors.fullName = t('childDrawer.error.fullNameRequired', 'Full name is required.');
+    if (!String(form.firstName).trim()) errors.firstName = t('childDrawer.error.firstNameRequired', 'First name is required.');
     if (!String(form.dateOfBirth).trim()) errors.dateOfBirth = t('childDrawer.error.dobRequired', 'Date of birth is required.');
     if (!String(form.gender).trim()) errors.gender = t('childDrawer.error.genderRequired', 'Gender is required.');
   }

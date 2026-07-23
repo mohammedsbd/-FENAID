@@ -475,7 +475,8 @@ export default function ParentsPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>{t('parents.table.name', 'Parent Name')}</TableHead>
+                <TableHead>{t('parents.table.firstName', 'First Name')}</TableHead>
+                <TableHead>{t('parents.table.lastName', 'Last Name')}</TableHead>
                 <TableHead className="w-[120px]">{t('parents.table.id', 'ID')}</TableHead>
                 <TableHead>{t('parents.table.nationalId', 'National ID')}</TableHead>
                 <TableHead>{t('parents.table.phone', 'Phone')}</TableHead>
@@ -490,7 +491,7 @@ export default function ParentsPage() {
               {loading ? (
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={9}>
+                    <TableCell colSpan={10}>
                       <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
@@ -508,11 +509,11 @@ export default function ParentsPage() {
                           <AvatarImage src={parent.photoUrl || undefined} alt={parent.fullName} />
                           <AvatarFallback>{initials(parent.fullName)}</AvatarFallback>
                         </Avatar>
-                        <div>
-                          <div className="font-medium">{parent.fullName}</div>
-                          <div className="text-xs text-muted-foreground">{parent.email || t('parents.table.noEmail', 'No email')}</div>
-                        </div>
+                        <span className="font-medium">{splitFullName(parent.fullName).firstName}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-medium">{splitFullName(parent.fullName).lastName}</span>
                     </TableCell>
                     <TableCell>
                       <span className="font-mono font-bold text-primary">{parent.idTag || t('parents.table.idTagPlaceholder', '---')}</span>
@@ -738,6 +739,14 @@ function getErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = (fullName || '').trim().split(' ');
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ') || '',
+  };
 }
 
 function initials(value: string) {

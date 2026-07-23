@@ -102,9 +102,11 @@ export function ParentDrawer({
         .then((res) => setForm(parentToForm(res.data)))
         .catch(() => {
           if (fallbackParent) {
+            const nameParts = (fallbackParent.fullName || '').split(' ');
             setForm({
               ...emptyParentForm,
-              fullName: fallbackParent.fullName,
+              firstName: nameParts[0] || '',
+              lastName: nameParts.slice(1).join(' ') || '',
               nationalId: fallbackParent.nationalId,
               phone: fallbackParent.phone,
               email: fallbackParent.email || '',
@@ -213,17 +215,23 @@ export function ParentDrawer({
               )}
               {step === 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <FormField label={t('parentDrawer.fullName', 'Full Name')} error={errors.fullName}>
+                  <FormField label={t('parentDrawer.firstName', 'First Name')} error={errors.firstName}>
                     <Input
-                      value={form.fullName}
-                      onChange={(event) => updateField('fullName', event.target.value)}
+                      value={form.firstName}
+                      onChange={(event) => updateField('firstName', event.target.value)}
+                    />
+                  </FormField>
+                  <FormField label={t('parentDrawer.lastName', 'Last Name')} error={errors.lastName}>
+                    <Input
+                      value={form.lastName}
+                      onChange={(event) => updateField('lastName', event.target.value)}
                     />
                   </FormField>
                   <FormField label={t('parentDrawer.photoUpload', 'Photo Upload')} error={errors.photoUrl}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={form.photoUrl || undefined} alt={form.fullName || t('parentDrawer.parent', 'Parent')} />
-                        <AvatarFallback>{initials(form.fullName || t('parentDrawer.parent', 'Parent'))}</AvatarFallback>
+                        <AvatarImage src={form.photoUrl || undefined} alt={`${form.firstName} ${form.lastName}` || t('parentDrawer.parent', 'Parent')} />
+                        <AvatarFallback>{initials(`${form.firstName} ${form.lastName}` || t('parentDrawer.parent', 'Parent'))}</AvatarFallback>
                       </Avatar>
                       <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                         <Upload className="h-4 w-4" />
@@ -298,10 +306,24 @@ export function ParentDrawer({
                     <Input value={form.city} onChange={(event) => updateField('city', event.target.value)} />
                   </FormField>
                   <FormField label={t('parentDrawer.subcity', 'Subcity')} error={errors.subcity}>
-                    <Input
+                    <select
+                      className={selectClassName}
                       value={form.subcity}
                       onChange={(event) => updateField('subcity', event.target.value)}
-                    />
+                    >
+                      <option value="">Select subcity</option>
+                      <option value="Addis Ketema">Addis Ketema</option>
+                      <option value="Akaky Kaliti">Akaky Kaliti</option>
+                      <option value="Arada">Arada</option>
+                      <option value="Bole">Bole</option>
+                      <option value="Gullele">Gullele</option>
+                      <option value="Kirkos">Kirkos</option>
+                      <option value="Kolfe Keranio">Kolfe Keranio</option>
+                      <option value="Lemi Kura">Lemi Kura</option>
+                      <option value="Lideta">Lideta</option>
+                      <option value="Nifas Silk-Lafto">Nifas Silk-Lafto</option>
+                      <option value="Yeka">Yeka</option>
+                    </select>
                   </FormField>
                   <FormField label={t('parentDrawer.woreda', 'Woreda')} error={errors.woreda}>
                     <Input
@@ -502,7 +524,7 @@ function validateStep(step: number, form: ParentFormData, t: (key: string, fallb
   const errors: Record<string, string> = {};
 
   if (step === 0) {
-    if (!form.fullName.trim()) errors.fullName = t('parentDrawer.error.fullNameRequired', 'Full name is required');
+    if (!form.firstName.trim()) errors.firstName = t('parentDrawer.error.firstNameRequired', 'First name is required');
     if (!form.dateOfBirth) errors.dateOfBirth = t('parentDrawer.error.dobRequired', 'Date of birth is required');
     if (!form.gender) errors.gender = t('parentDrawer.error.genderRequired', 'Gender is required');
     if (!form.nationalId.trim()) errors.nationalId = t('parentDrawer.error.nationalIdRequired', 'National ID is required');

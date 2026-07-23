@@ -418,7 +418,8 @@ export default function ChildrenPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>{t('children.table.name', 'Child Name')}</TableHead>
+                <TableHead>{t('children.table.firstName', 'First Name')}</TableHead>
+                <TableHead>{t('children.table.lastName', 'Last Name')}</TableHead>
                 <TableHead className="w-[120px]">{t('children.table.id', 'ID')}</TableHead>
                 <TableHead>{t('children.table.disabilityType', 'Disability Type')}</TableHead>
                 <TableHead>{t('children.table.severity', 'Severity')}</TableHead>
@@ -432,7 +433,7 @@ export default function ChildrenPage() {
               {loading ? (
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={9}>
                       <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
@@ -450,11 +451,12 @@ export default function ChildrenPage() {
                           <AvatarImage src={child.photoUrl || undefined} alt={child.fullName} />
                           <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
                         </Avatar>
-                        <div>
-                          <div className="font-medium">{child.fullName}</div>
-                          <div className="text-xs text-muted-foreground">{t('children.table.age', '{age} years old', { age: String(calculateAge(child.dateOfBirth)) })}</div>
-                        </div>
+                        <span className="font-medium">{splitFullName(child.fullName).firstName}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-medium">{splitFullName(child.fullName).lastName}</span>
+                      <div className="text-xs text-muted-foreground">{t('children.table.age', '{age} years old', { age: String(calculateAge(child.dateOfBirth)) })}</div>
                     </TableCell>
                     <TableCell>
                       <span className="font-mono font-bold text-primary">{child.idTag || t('children.table.idTagPlaceholder', '---')}</span>
@@ -675,6 +677,11 @@ function calculateAge(dob: string) {
 
 function initials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = (fullName || '').trim().split(' ');
+  return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || parts[0] || '' };
 }
 
 function getErrorMessage(err: any, fallback: string) {

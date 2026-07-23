@@ -31,7 +31,8 @@ export type ParentRow = {
 };
 
 export type ParentFormData = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   photoUrl: string;
   dateOfBirth: string;
   gender: string;
@@ -93,7 +94,8 @@ export type ParentDetailResponse = ParentRow & {
 };
 
 export const emptyParentForm: ParentFormData = {
-  fullName: '',
+  firstName: '',
+  lastName: '',
   photoUrl: '',
   dateOfBirth: '',
   gender: '',
@@ -118,11 +120,20 @@ export const emptyParentForm: ParentFormData = {
   status: 'ACTIVE',
 };
 
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+  return { firstName, lastName };
+}
+
 export function parentToForm(parent: ParentDetailResponse): ParentFormData {
   const notes = parseParentNotes(parent.internalNotes || '');
+  const { firstName, lastName } = splitFullName(parent.fullName);
 
   return {
-    fullName: parent.fullName,
+    firstName,
+    lastName,
     photoUrl: parent.photoUrl || '',
     dateOfBirth: toIsoDateInputValue(parent.dateOfBirth),
     gender: parent.gender || '',
@@ -172,7 +183,7 @@ export function parseParentNotes(notes: string) {
 
 export function formToParentPayload(form: ParentFormData) {
   return {
-    fullName: form.fullName.trim(),
+    fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
     photoUrl: form.photoUrl || undefined,
     dateOfBirth: form.dateOfBirth,
     gender: form.gender,
