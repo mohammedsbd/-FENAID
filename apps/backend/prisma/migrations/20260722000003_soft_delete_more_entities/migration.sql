@@ -1,0 +1,6 @@
+ALTER TABLE "Volunteer" ADD COLUMN "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Appointment" ADD COLUMN "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Document" ADD COLUMN "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Referral" ADD COLUMN "deletedAt" TIMESTAMP(3);
+ALTER TABLE "Goal" ADD COLUMN "deletedAt" TIMESTAMP(3);
+ALTER TABLE "SavedQuery" ADD COLUMN "deletedAt" TIMESTAMP(3);
