@@ -4,23 +4,46 @@ set -euo pipefail
 echo "=== Fikir Deployment Script ==="
 
 if [ ! -f .env ]; then
-  echo "Error: .env file not found. Copy .env.example to .env and fill in your values."
+  echo "Error: .env file not found."
+  echo "Copy .env.production.example to .env and fill in your values."
   exit 1
 fi
 
-echo "Building images..."
-docker compose build
+MODE="${1:-docker}"
 
-echo "Starting services..."
-docker compose up -d
+if [ "$MODE" = "docker" ]; then
+  echo "=== Deploying with Docker ==="
+  docker compose build
+  docker compose up -d
+  docker compose exec -T backend npx prisma db push
+  docker compose exec -T backend npx prisma db seed
+  echo ""
+  echo "=== Docker deployment complete ==="
+  echo "App: https://app.yourdomain.com"
+  echo "API: https://api.yourdomain.com"
 
-echo "Applying database schema..."
-docker compose exec backend npx prisma db push
+elif [ "$MODE" = "pm2" ]; then
+  echo "=== Deploying with PM2 (no Docker) ==="
+  command -v node >/dev/null || { echo "Node.js is required. Install it first."; exit 1; }
+  command -v pnpm >/dev/null || npm install -g pnpm@9.15.4
 
-echo "Seeding database..."
-docker compose exec backend npx prisma db seed
+  pnpm install
+  pnpm build
+  pnpm db:push
+  pnpm db:seed
 
-echo ""
-echo "=== Deployment complete ==="
-echo "App: https://app.yourdomain.com"
-echo "API: https://api.yourdomain.com"
+  command -v pm2 >/dev/null || npm install -g pm2
+  pm2 start ecosystem.config.js
+  pm2 save
+  pm2 startup 2>/dev/null || true
+
+  echo ""
+  echo "=== PM2 deployment complete ==="
+  echo "App: http://YOUR_VPS_IP:3100"
+  echo "API: http://YOUR_VPS_IP:3001"
+  echo "Set up Nginx/Caddy for SSL and domain binding."
+
+else
+  echo "Usage: ./deploy.sh [docker|pm2]"
+  exit 1
+fi
