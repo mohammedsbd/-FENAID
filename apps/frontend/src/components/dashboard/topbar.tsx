@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/providers/locale-provider';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
+import { fetchSession } from '@/lib/auth';
 import {
   gregorianToEthiopian,
   ethiopianMonths,
@@ -123,8 +124,13 @@ function formatPageName(segment: string) {
     .join(' ');
 }
 
-export function Topbar({ user }: { user?: any }) {
+export function Topbar() {
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetchSession().then(setUser);
+  }, []);
   const router = useRouter();
   const { t } = useLocale();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -879,13 +885,16 @@ function WeeklyCalendarPopup({ now, calendarSystem, onClose }: { now: Date; cale
   }, [t]);
 
   const calendarGrid = useMemo(() => {
+    const localNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const utcNow = new Date(Date.UTC(localNow.getFullYear(), localNow.getMonth(), localNow.getDate()));
+
     let viewYear: number;
     let viewMonth: number; // 1-indexed
     let daysInMonth: number;
     let startDayOfWeek: number; // 0=Sun
 
     if (calendarSystem === 'ETHIOPIAN') {
-      const eth = gregorianToEthiopian(now);
+      const eth = gregorianToEthiopian(utcNow);
       const absoluteMonth = eth.year * 13 + (eth.month - 1) + monthOffset;
       viewYear = Math.floor(absoluteMonth / 13);
       viewMonth = (absoluteMonth % 13) + 1;
@@ -903,7 +912,7 @@ function WeeklyCalendarPopup({ now, calendarSystem, onClose }: { now: Date; cale
     const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
 
     const todayEth = calendarSystem === 'ETHIOPIAN'
-      ? gregorianToEthiopian(now)
+      ? gregorianToEthiopian(utcNow)
       : null;
 
     interface MonthCell {

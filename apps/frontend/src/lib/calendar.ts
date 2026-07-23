@@ -130,9 +130,11 @@ export function daysInGregorianMonth(year: number, month: number) {
 
 export function addGregorianMonths(value: string, amount: number) {
   const date = parseIsoDate(value);
-  return toIsoDateInputValue(
-    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1)),
-  );
+  const totalMonths = date.getUTCFullYear() * 12 + date.getUTCMonth() + amount;
+  const year = Math.floor(totalMonths / 12);
+  const month = ((totalMonths % 12) + 12) % 12;
+  const day = Math.min(date.getUTCDate(), daysInGregorianMonth(year, month + 1));
+  return toIsoDateInputValue(new Date(Date.UTC(year, month, day)));
 }
 
 export function addEthiopianMonths(value: string, amount: number) {
