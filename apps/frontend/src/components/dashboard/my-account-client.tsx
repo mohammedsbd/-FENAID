@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import Cookies from 'js-cookie';
 import api from '@/lib/api';
 import { useLocale } from '@/components/providers/locale-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -84,18 +83,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
     try {
       const res = await api.patch('/accounts/me', form);
       toast({ title: t('myAccount.saved', 'Profile saved') });
-      
-      const updatedUser = {
-        id: res.data.id,
-        fullName: res.data.fullName,
-        email: res.data.email,
-        role: res.data.role,
-        photoUrl: res.data.photoUrl,
-        mustChangePassword: res.data.mustChangePassword,
-      };
 
-      Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, path: '/' });
-      localStorage.setItem('user', JSON.stringify(updatedUser));
       window.location.reload();
     } catch (err: any) {
       toast({ variant: 'destructive', title: t('myAccount.saveFailed', 'Save failed'), description: err.response?.data?.message || t('myAccount.saveFailedDesc', 'Unable to save your profile.') });
@@ -116,18 +104,8 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
 
     setSaving(true);
     try {
-      const res = await api.post('/auth/change-password', passwordForm);
+      await api.post('/auth/change-password', passwordForm);
       toast({ title: t('myAccount.passwordChanged', 'Password updated') });
-      
-      const updatedUser = {
-        id: res.data.user.id,
-        fullName: res.data.user.fullName,
-        email: res.data.user.email,
-        role: res.data.user.role,
-        photoUrl: res.data.user.photoUrl,
-        mustChangePassword: false
-      };
-      Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, path: '/' });
       
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {

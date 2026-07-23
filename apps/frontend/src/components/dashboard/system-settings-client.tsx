@@ -5,8 +5,8 @@ import { CalendarDays, Moon, Save, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import Cookies from 'js-cookie';
 import api from '@/lib/api';
+import { fetchSession } from '@/lib/auth';
 import { CalendarSystem, formatCalendarDate } from '@/lib/calendar';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
 import { useTheme } from '@/components/providers/theme-provider';
@@ -19,11 +19,12 @@ export function SystemSettingsClient() {
   const { theme, setTheme, resolved } = useTheme();
   const [draftCalendarSystem, setDraftCalendarSystem] = useState<CalendarSystem>(calendarSystem);
   const [saving, setSaving] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const userCookie = Cookies.get('user');
-  const user = userCookie ? JSON.parse(decodeURIComponent(userCookie)) : null;
-  const role = user?.role;
+  useEffect(() => {
+    fetchSession().then((u) => setRole(u?.role ?? null));
+  }, []);
 
   useEffect(() => {
     setDraftCalendarSystem(calendarSystem);
