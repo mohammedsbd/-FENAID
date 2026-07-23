@@ -1,4 +1,49 @@
 services:
+  caddy:
+    image: caddy:2
+    container_name: fikir_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: fikir_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.yourdomain.com
+    expose:
+      - "3000"
+
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: fikir_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      CORS_ORIGIN: https://app.yourdomain.com
+    expose:
+      - "3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:16
     container_name: fikir_db
@@ -6,9 +51,9 @@ services:
     environment:
       POSTGRES_DB: fikir
       POSTGRES_USER: fikir
-      POSTGRES_PASSWORD: fikir_dev_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fikir_dev_password}
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - fikir_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,3 +64,5 @@ services:
 
 volumes:
   fikir_postgres_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+pnpm-lock.yaml.bak
+bun.lock
+.env
+.env.example
+*.md
+.prettier*
+eslint*
