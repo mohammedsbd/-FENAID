@@ -36,6 +36,7 @@ import { ReferralsModule } from './referrals/referrals.module';
       name: 'default',
       ttl: 60000,
       limit: 100,
+      getTracker: (req) => req?.ip || req?.connection?.remoteAddress || 'unknown',
     }]),
     ScheduleModule.forRoot(),
     I18nModule,
