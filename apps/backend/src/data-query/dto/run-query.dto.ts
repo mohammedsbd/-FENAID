@@ -5,18 +5,18 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
-  IsObject,
   IsOptional,
   IsString,
   Max,
   Min,
 } from 'class-validator';
+import { IsDataQueryFilters } from '../../common/validators/is-data-query-filters.validator';
 
 export class RunQueryDto {
   @IsIn(['CHILD', 'PARENT', 'PARENT_CHILD_PAIR'])
   dataSubject!: 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
 
-  @IsObject()
+  @IsDataQueryFilters()
   filters!: DataQueryFilters;
 
   @IsArray()
