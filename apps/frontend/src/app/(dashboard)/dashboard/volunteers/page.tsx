@@ -52,7 +52,8 @@ interface VolunteerServiceRow {
 
 interface Volunteer {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   status: string;
@@ -83,7 +84,8 @@ export default function VolunteersPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
   const [vForm, setVForm] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     serviceTypes: '',
@@ -174,7 +176,8 @@ export default function VolunteersPage() {
   const openNewVolunteer = () => {
     setEditingVolunteer(null);
     setVForm({
-      fullName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       serviceTypes: '',
@@ -193,7 +196,8 @@ export default function VolunteersPage() {
   const openEditVolunteer = (volunteer: Volunteer) => {
     setEditingVolunteer(volunteer);
     setVForm({
-      fullName: volunteer.fullName,
+      firstName: volunteer.firstName,
+      lastName: volunteer.lastName,
       email: volunteer.email,
       phone: volunteer.phone,
       serviceTypes: volunteer.serviceTypes || '',
@@ -211,10 +215,10 @@ export default function VolunteersPage() {
 
   const handleVSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vForm.fullName || !vForm.email || !vForm.phone) {
+    if (!vForm.firstName || !vForm.lastName || !vForm.email || !vForm.phone) {
       toast({
         title: 'Validation Error',
-        description: 'Name, email, and phone are required',
+        description: 'First name, last name, email, and phone are required',
         variant: 'destructive',
       });
       return;
@@ -294,7 +298,7 @@ export default function VolunteersPage() {
       await api.post(`/volunteers/${activeVolunteer?.id}/services`, sForm);
       toast({
         title: 'Success',
-        description: `Service log added for ${activeVolunteer?.fullName}`,
+        description: `Service log added for ${activeVolunteer?.firstName} ${activeVolunteer?.lastName}`,
       });
       setServiceDrawerVisible(false);
       setTimeout(() => { setServiceDrawerMounted(false); setServiceDrawerOpen(false); }, 300);
@@ -352,13 +356,8 @@ export default function VolunteersPage() {
     }
   };
 
-  const initials = (name: string) => {
-    return name
-      .split(' ')
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const initials = (firstName: string, lastName: string) => {
+    return (firstName[0] + lastName[0]).toUpperCase();
   };
 
   return (
@@ -463,10 +462,10 @@ export default function VolunteersPage() {
                     <TableCell className="py-4 px-6 font-medium text-foreground">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border border-border shadow-sm bg-primary/5 text-primary">
-                          <AvatarFallback className="font-bold bg-transparent">{initials(vol.fullName)}</AvatarFallback>
+                          <AvatarFallback className="font-bold bg-transparent">{initials(vol.firstName, vol.lastName)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-semibold text-foreground">{vol.fullName}</div>
+                          <div className="font-semibold text-foreground">{vol.firstName} {vol.lastName}</div>
                           <div className="text-xs text-muted-foreground">Joined {new Date(vol.createdAt).toLocaleDateString()}</div>
                         </div>
                       </div>
@@ -586,16 +585,29 @@ export default function VolunteersPage() {
 
               <ScrollArea className="flex-1 px-6 py-4">
                 <form onSubmit={handleVSave} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="v-name" className="text-foreground font-semibold">Full Name *</Label>
-                    <Input
-                      id="v-name"
-                      required
-                      placeholder="e.g. Abebe Kebede"
-                      value={vForm.fullName}
-                      onChange={(e) => setVForm({ ...vForm, fullName: e.target.value })}
-                      className="rounded-xl border-border focus-visible:ring-primary h-11"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="v-firstName" className="text-foreground font-semibold">First Name *</Label>
+                      <Input
+                        id="v-firstName"
+                        required
+                        placeholder="e.g. Abebe"
+                        value={vForm.firstName}
+                        onChange={(e) => setVForm({ ...vForm, firstName: e.target.value })}
+                        className="rounded-xl border-border focus-visible:ring-primary h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="v-lastName" className="text-foreground font-semibold">Last Name *</Label>
+                      <Input
+                        id="v-lastName"
+                        required
+                        placeholder="e.g. Kebede"
+                        value={vForm.lastName}
+                        onChange={(e) => setVForm({ ...vForm, lastName: e.target.value })}
+                        className="rounded-xl border-border focus-visible:ring-primary h-11"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -708,7 +720,7 @@ export default function VolunteersPage() {
                     Log Service Provided
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Record a service activity for <strong className="text-foreground">{activeVolunteer?.fullName}</strong>
+                    Record a service activity for <strong className="text-foreground">{activeVolunteer?.firstName} {activeVolunteer?.lastName}</strong>
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={closeServiceDrawer}>
@@ -833,7 +845,7 @@ export default function VolunteersPage() {
               <div>
                 <h3 className="font-semibold text-foreground">Remove Volunteer</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Are you sure you want to remove <strong>{deletingVolunteer.fullName}</strong>?
+                  Are you sure you want to remove <strong>{deletingVolunteer.firstName} {deletingVolunteer.lastName}</strong>?
                   This action cannot be undone.
                 </p>
               </div>
@@ -844,7 +856,7 @@ export default function VolunteersPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleDeleteVolunteer(deletingVolunteer.id, deletingVolunteer.fullName)}
+                onClick={() => handleDeleteVolunteer(deletingVolunteer.id, `${deletingVolunteer.firstName} ${deletingVolunteer.lastName}`)}
               >
                 Remove
               </Button>
@@ -897,7 +909,7 @@ export default function VolunteersPage() {
                   Service History
                 </h2>
                 <p className="text-xs text-muted-foreground mt-1">
-                  List of services logged for <strong className="text-foreground">{historyVolunteer.fullName}</strong>
+                  List of services logged for <strong className="text-foreground">{historyVolunteer.firstName} {historyVolunteer.lastName}</strong>
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={() => setHistoryVolunteer(null)}>
@@ -912,7 +924,7 @@ export default function VolunteersPage() {
                     <div key={service.id} className="p-4 rounded-xl border border-border bg-muted/20 relative hover:border-border/80 transition-colors">
                       <button
                         title="Delete record"
-                        onClick={() => setDeletingServiceRecord({ id: service.id, name: historyVolunteer.fullName })}
+                        onClick={() => setDeletingServiceRecord({ id: service.id, name: `${historyVolunteer.firstName} ${historyVolunteer.lastName}` })}
                         className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />

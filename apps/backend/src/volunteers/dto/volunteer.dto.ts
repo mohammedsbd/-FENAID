@@ -3,7 +3,11 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-v
 export class CreateVolunteerDto {
   @IsString()
   @IsNotEmpty()
-  fullName!: string;
+  firstName!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  lastName!: string;
 
   @IsEmail()
   @IsNotEmpty()
@@ -25,7 +29,11 @@ export class CreateVolunteerDto {
 export class UpdateVolunteerDto {
   @IsString()
   @IsOptional()
-  fullName?: string;
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
 
   @IsEmail()
   @IsOptional()
