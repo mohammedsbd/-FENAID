@@ -1,30 +1,36 @@
-import Cookies from 'js-cookie';
-
 export interface UserSession {
   id: string;
   fullName: string;
-  email: string;
+  email?: string;
   role: string;
-  mustChangePassword: boolean;
+  phone?: string;
+  photoUrl?: string;
+  mustChangePassword?: boolean;
 }
 
 export function getSession(): UserSession | null {
-  const user = Cookies.get('user');
-  if (!user) return null;
   try {
-    return JSON.parse(user);
+    const raw = document.cookie.split('; ').find((c) => c.startsWith('session='));
+    if (!raw) return null;
+    return JSON.parse(decodeURIComponent(raw.slice(8)));
   } catch {
     return null;
   }
 }
 
-export function isAuthenticated(): boolean {
-  return !!Cookies.get('token');
+export async function fetchSession(): Promise<UserSession | null> {
+  try {
+    const { default: api } = await import('./api');
+    const res = await api.get('/auth/me');
+    return res.data;
+  } catch {
+    return null;
+  }
 }
 
 export function logout() {
-  Cookies.remove('token', { path: '/' });
-  Cookies.remove('user', { path: '/' });
+  const { default: api } = require('./api');
+  api.post('/auth/logout').catch(() => {});
   if (typeof window !== 'undefined') {
     window.location.href = '/login';
   }
