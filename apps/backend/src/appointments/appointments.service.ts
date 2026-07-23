@@ -63,6 +63,7 @@ export class AppointmentsService {
 
   async findAll(user: JwtPayload, query: ListAppointmentsDto) {
     const where: Prisma.AppointmentWhereInput = {
+      deletedAt: null,
       ...(user.role !== StaffRole.SUPER_ADMIN ? { staffId: user.staffId } : {}),
       ...(query.staffId && { staffId: query.staffId }),
       ...(query.childId && { childId: query.childId }),
@@ -102,6 +103,7 @@ export class AppointmentsService {
     const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
     const where: Prisma.AppointmentWhereInput = {
+      deletedAt: null,
       scheduledAt: {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -161,8 +163,8 @@ export class AppointmentsService {
   }
 
   private async findById(id: string) {
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { id },
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { id, deletedAt: null },
       include: {
         staff: { select: { fullName: true, id: true } },
         child: { select: { fullName: true, id: true, photoUrl: true } },
@@ -218,8 +220,11 @@ export class AppointmentsService {
 
   async remove(staffId: string, id: string) {
     const existing = await this.findById(id);
-    await this.prisma.appointment.delete({ where: { id } });
-    await this.logAudit(staffId, 'DELETE', 'Appointment', id, null, existing);
+    const updated = await this.prisma.appointment.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    await this.logAudit(staffId, 'DELETE', 'Appointment', id, updated, existing);
     return { success: true };
   }
 

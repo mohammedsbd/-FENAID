@@ -114,6 +114,7 @@ export class ChildrenService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ChildWhereInput = {
+      deletedAt: null,
       ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       ...(query.search
         ? {
@@ -202,6 +203,7 @@ export class ChildrenService {
     const child = await this.prisma.child.findFirst({
       where: {
         id,
+        deletedAt: null,
         ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       },
       include: {
@@ -385,24 +387,23 @@ export class ChildrenService {
   async remove(staffId: string, id: string) {
     const existing = await this.findChildForAudit(id);
 
-    const newStatus = existing.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
-
     const child = await this.prisma.child.update({
       where: { id },
       data: {
-        status: newStatus as ChildStatus,
+        deletedAt: new Date(),
+        status: 'INACTIVE' as ChildStatus,
       },
     });
 
     await this.logAudit({
       staffId,
-      action: 'UPDATE',
+      action: 'DELETE',
       entityId: child.id,
       changes: this.diffChild(existing, child),
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: this.i18n.t('notification.childStatusChanged', { childName: existing.fullName, status: newStatus }),
+      message: this.i18n.t('notification.childStatusChanged', { childName: existing.fullName, status: 'INACTIVE' }),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -518,6 +519,8 @@ export class ChildrenService {
     };
   }
 
+  private SENSITIVE_FIELDS = new Set(['medicalHistory', 'medications', 'internalNotes']);
+
   private diffChild(before: ChildAuditSnapshot | null, after: ChildAuditSnapshot) {
     const changes: Record<string, Prisma.InputJsonValue> = {};
     const fields: Array<keyof ChildAuditSnapshot> = [
@@ -528,12 +531,9 @@ export class ChildrenService {
       'disabilityType',
       'disabilityCategory',
       'severityLevel',
-      'medicalHistory',
-      'medications',
       'schoolEnrollmentStatus',
       'communicationAbility',
       'status',
-      'internalNotes',
       'parentId',
       'assignedStaffId',
     ];
@@ -577,7 +577,7 @@ export class ChildrenService {
 
   private async logAudit(input: {
     staffId: string;
-    action: 'CREATE' | 'UPDATE';
+    action: 'CREATE' | 'UPDATE' | 'DELETE';
     entityId: string;
     changes: Prisma.InputJsonValue;
   }) {

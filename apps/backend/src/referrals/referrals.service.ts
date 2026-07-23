@@ -96,6 +96,7 @@ export class ReferralsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ReferralWhereInput = {
+      deletedAt: null,
       ...(query.status && { status: query.status }),
       ...(query.parentId && { parentId: query.parentId }),
       ...(query.childId && { childId: query.childId }),
@@ -142,8 +143,8 @@ export class ReferralsService {
   }
 
   async findOne(id: string) {
-    const referral = await this.prisma.referral.findUnique({
-      where: { id },
+    const referral = await this.prisma.referral.findFirst({
+      where: { id, deletedAt: null },
       include: {
         parent: { select: { id: true, fullName: true, photoUrl: true } },
         child: { select: { id: true, fullName: true, photoUrl: true } },
@@ -192,12 +193,13 @@ export class ReferralsService {
   async remove(staffId: string, id: string) {
     const existing = await this.findOne(id);
 
-    await this.prisma.referral.delete({
+    const updated = await this.prisma.referral.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
-    await this.logAudit(staffId, 'DELETE', id, null, existing);
-    return { message: 'Referral deleted successfully' };
+    await this.logAudit(staffId, 'DELETE', id, updated, existing);
+    return { success: true };
   }
 
   private async logAudit(

@@ -175,6 +175,7 @@ export class ProgressTrackingService {
     return this.prisma.goal.findMany({
       where: {
         childId,
+        deletedAt: null,
         ...(query.type && { type: query.type }),
       },
       orderBy: { createdAt: 'desc' },
@@ -182,7 +183,7 @@ export class ProgressTrackingService {
   }
 
   async updateGoal(staffId: string, id: string, dto: UpdateGoalDto) {
-    const existing = await this.prisma.goal.findUnique({ where: { id } });
+    const existing = await this.prisma.goal.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundException('error.progress.goalNotFound');
 
     const updated = await this.prisma.goal.update({
@@ -212,12 +213,15 @@ export class ProgressTrackingService {
   }
 
   async removeGoal(staffId: string, id: string) {
-    const existing = await this.prisma.goal.findUnique({ where: { id } });
+    const existing = await this.prisma.goal.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundException('error.progress.goalNotFound');
 
-    await this.prisma.goal.delete({ where: { id } });
+    const updated = await this.prisma.goal.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
-    await this.logAudit(staffId, 'DELETE', 'Goal', id, null, existing);
+    await this.logAudit(staffId, 'DELETE', 'Goal', id, updated, existing);
     return { success: true };
   }
 

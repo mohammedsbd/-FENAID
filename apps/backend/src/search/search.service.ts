@@ -30,7 +30,6 @@ export class SearchService {
       OR: [
         { fullName: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { idTag: { contains: search, mode: Prisma.QueryMode.insensitive } },
-        { nationalId: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { phone: { contains: search, mode: Prisma.QueryMode.insensitive } },
         { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
       ],
@@ -68,7 +67,6 @@ export class SearchService {
           idTag: true,
           fullName: true,
           phone: true,
-          nationalId: true,
           status: true,
           assignedStaff: {
             select: { fullName: true },
@@ -112,7 +110,7 @@ export class SearchService {
         title: parent.fullName,
         subtitle: `${parent.phone} · ${parent._count.children} child${parent._count.children === 1 ? '' : 'ren'}`,
         status: parent.status,
-        meta: parent.nationalId,
+        meta: parent.idTag || '',
         assignedStaffName: parent.assignedStaff.fullName,
         href: `/dashboard/parents/${parent.id}`,
       })),

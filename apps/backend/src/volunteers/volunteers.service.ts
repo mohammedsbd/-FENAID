@@ -16,7 +16,8 @@ export class VolunteersService {
 
     const volunteer = await this.prisma.volunteer.create({
       data: {
-        fullName: dto.fullName,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
         email: dto.email,
         phone: dto.phone,
         serviceTypes: dto.serviceTypes,
@@ -30,16 +31,16 @@ export class VolunteersService {
   }
 
   async findAll(search?: string) {
-    const where = search
-      ? {
-          OR: [
-            { fullName: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search, mode: 'insensitive' as const } },
-            { serviceTypes: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const where: any = { deletedAt: null };
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' as const } },
+        { lastName: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+        { phone: { contains: search, mode: 'insensitive' as const } },
+        { serviceTypes: { contains: search, mode: 'insensitive' as const } },
+      ];
+    }
 
     return this.prisma.volunteer.findMany({
       where,
@@ -58,15 +59,16 @@ export class VolunteersService {
           },
         },
       },
-      orderBy: {
-        fullName: 'asc',
-      },
+      orderBy: [
+        { firstName: 'asc' },
+        { lastName: 'asc' },
+      ],
     });
   }
 
   async findOne(id: string) {
-    const volunteer = await this.prisma.volunteer.findUnique({
-      where: { id },
+    const volunteer = await this.prisma.volunteer.findFirst({
+      where: { id, deletedAt: null },
       include: {
         services: {
           include: {
@@ -114,10 +116,11 @@ export class VolunteersService {
 
   async remove(staffId: string, id: string) {
     const existing = await this.findOne(id);
-    await this.prisma.volunteer.delete({
+    const updated = await this.prisma.volunteer.update({
       where: { id },
+      data: { deletedAt: new Date(), status: 'INACTIVE' },
     });
-    await this.logAudit(staffId, 'DELETE', id, null, existing);
+    await this.logAudit(staffId, 'DELETE', id, updated, existing);
     return { success: true };
   }
 

@@ -102,6 +102,7 @@ export class ParentsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ParentWhereInput = {
+      deletedAt: null,
       ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       ...(query.search
         ? {
@@ -203,6 +204,7 @@ export class ParentsService {
     const parent = await this.prisma.parent.findFirst({
       where: {
         id,
+        deletedAt: null,
         ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       },
       include: {
@@ -339,24 +341,23 @@ export class ParentsService {
   async remove(staffId: string, id: string) {
     const existing = await this.findParentForAudit(id);
 
-    const newStatus = existing.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
-
     const parent = await this.prisma.parent.update({
       where: { id },
       data: {
-        status: newStatus as ParentStatus,
+        deletedAt: new Date(),
+        status: 'INACTIVE' as ParentStatus,
       },
     });
 
     await this.logAudit({
       staffId,
-      action: 'UPDATE',
+      action: 'DELETE',
       entityId: parent.id,
       changes: this.diffParent(existing, parent),
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: this.i18n.t('notification.parentStatusChanged', { parentName: existing.fullName, status: newStatus }),
+      message: this.i18n.t('notification.parentStatusChanged', { parentName: existing.fullName, status: 'INACTIVE' }),
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -515,7 +516,7 @@ export class ParentsService {
 
   private async logAudit(input: {
     staffId: string;
-    action: 'CREATE' | 'UPDATE';
+    action: 'CREATE' | 'UPDATE' | 'DELETE';
     entityId: string;
     changes: Prisma.InputJsonValue;
   }) {

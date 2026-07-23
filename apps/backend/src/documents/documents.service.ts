@@ -57,6 +57,7 @@ export class DocumentsService {
   async findByParent(user: JwtPayload, parentId: string) {
     return this.prisma.document.findMany({
       where: {
+        deletedAt: null,
         parentId,
         ...(user.role !== StaffRole.SUPER_ADMIN
           ? {
@@ -75,6 +76,7 @@ export class DocumentsService {
   async findByChild(user: JwtPayload, childId: string) {
     return this.prisma.document.findMany({
       where: {
+        deletedAt: null,
         childId,
         ...(user.role !== StaffRole.SUPER_ADMIN
           ? {
@@ -91,11 +93,14 @@ export class DocumentsService {
   }
 
   async remove(staffId: string, id: string) {
-    const existing = await this.prisma.document.findUnique({ where: { id } });
+    const existing = await this.prisma.document.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundException('error.document.notFound');
 
-    await this.prisma.document.delete({ where: { id } });
-    await this.logAudit(staffId, 'DELETE', id, null, existing);
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    await this.logAudit(staffId, 'DELETE', id, updated, existing);
     return { success: true };
   }
 
