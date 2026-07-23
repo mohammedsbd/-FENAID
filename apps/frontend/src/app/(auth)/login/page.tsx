@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Cookies from 'js-cookie';
 import Image from 'next/image';
 import { Eye, EyeOff, Loader2, LogIn, User, Lock, Languages } from 'lucide-react';
 
@@ -53,35 +52,11 @@ export default function LoginPage() {
     },
   });
 
-  // Clear any existing stale auth data when arriving at login page
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      Cookies.remove('token', { path: '/' });
-      Cookies.remove('user', { path: '/' });
-      localStorage.removeItem('user');
-    }
-  });
-
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
       const response = await api.post('/auth/login', data);
-      const { accessToken, user, mustChangePassword } = response.data;
-
-      // Ensure fresh state by clearing old data first
-      Cookies.remove('token');
-      Cookies.remove('user');
-      localStorage.removeItem('user');
-
-      // Set secure cookies
-      const cookieOptions = {
-        expires: rememberMe ? 7 : 1,
-        path: '/',
-        secure: true,
-        sameSite: 'strict' as const,
-      };
-      Cookies.set('token', accessToken, { ...cookieOptions, httpOnly: false });
-      Cookies.set('user', JSON.stringify(user), { ...cookieOptions, httpOnly: false });
+      const { user, mustChangePassword } = response.data;
 
       toast({
         title: t('auth.login.loginSuccessful', 'Login Successful'),
@@ -280,7 +255,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="h-12 w-full bg-primary text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/25 active:bg-primary/80"
+              className="h-12 w-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/25 active:bg-primary/80"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

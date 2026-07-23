@@ -1,19 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { User, ShieldCheck, History, Activity, Globe, Settings2 } from 'lucide-react';
+import { User, ShieldCheck, Activity, Globe, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MyAccountClient } from '@/components/dashboard/my-account-client';
 import { SystemSettingsClient } from '@/components/dashboard/system-settings-client';
 import { LanguageSwitcher } from '@/components/dashboard/language-switcher';
 import { useLocale } from '@/components/providers/locale-provider';
 
-type Tab = 'profile' | 'security' | 'sessions' | 'activity' | 'language' | 'system';
+type Tab = 'profile' | 'security' | 'activity' | 'language' | 'system';
 
 const TAB_ICONS: Record<Tab, typeof User> = {
   profile: User,
   security: ShieldCheck,
-  sessions: History,
   activity: Activity,
   language: Globe,
   system: Settings2,
@@ -26,7 +25,6 @@ export default function SettingsPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'profile', label: t('settings.tab.profile', 'Profile') },
     { key: 'security', label: t('settings.tab.security', 'Security') },
-    { key: 'sessions', label: t('settings.tab.sessions', 'Sessions') },
     { key: 'activity', label: t('settings.tab.activity', 'Activity') },
     { key: 'language', label: t('settings.tab.language', 'Language') },
     { key: 'system', label: t('settings.tab.system', 'System') },
@@ -60,7 +58,7 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {(tab === 'profile' || tab === 'security' || tab === 'sessions' || tab === 'activity') && (
+      {(tab === 'profile' || tab === 'security' || tab === 'activity') && (
         <MyAccountClient tab={tab} />
       )}
       {tab === 'language' && <LanguageSwitcher />}

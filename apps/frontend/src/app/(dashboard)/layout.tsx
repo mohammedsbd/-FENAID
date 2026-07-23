@@ -9,10 +9,8 @@ import type { ReactNode } from 'react';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const cookieStore = cookies();
-  const userCookie = cookieStore.get('user')?.value;
   const localeCookie = cookieStore.get('locale')?.value;
   const initialLocale = localeCookie || 'en';
-  let user = null;
 
   const dictPath = path.join(process.cwd(), 'public', 'locales', `${initialLocale}.json`);
   let initialDictionary: Record<string, string> | undefined;
@@ -22,21 +20,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     // fall back to client-side fetch
   }
 
-  if (userCookie) {
-    try {
-      user = JSON.parse(decodeURIComponent(userCookie));
-    } catch (e) {
-      // Ignore parse errors
-    }
-  }
-
   return (
     <CalendarSettingsProvider>
       <LocaleProvider initialLocale={initialLocale} initialDictionary={initialDictionary}>
         <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-neutral-900">
-          <Sidebar user={user} />
+          <Sidebar />
           <div className="flex flex-1 flex-col overflow-hidden">
-            <Topbar user={user} />
+            <Topbar />
             <main className="flex-1 overflow-y-auto p-6">
               {children}
             </main>
