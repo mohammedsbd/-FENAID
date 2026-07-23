@@ -39,7 +39,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/components/providers/locale-provider';
 import api from '../../../lib/api';
-import { getSession } from '../../../lib/auth';
+import { fetchSession } from '../../../lib/auth';
 import { format } from 'date-fns';
 import { cn } from '../../../lib/utils';
 import Link from 'next/link';
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchDashboard = async () => {
-      const session = getSession();
+      const session = await fetchSession();
       const endpoint =
         session?.role === 'SUPER_ADMIN' ? '/dashboard/admin' : '/dashboard/staff';
       try {
