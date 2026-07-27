@@ -369,7 +369,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                 <div className="text-sm">
                   {format(new Date(app.scheduledAt), 'MMM d, yyyy')}
                   <div className="text-xs text-muted-foreground flex items-center">
-                    <Clock className="w-3 h-3 mr-1" /> {format(new Date(app.scheduledAt), 'h:mm a')} ({app.durationMinutes}m)
+                    <Clock className="w-3 h-3 mr-1" /> {format(new Date(app.scheduledAt), 'h:mm a')} ({app.durationMinutes}{t('appointments.minutes', 'm')})
                   </div>
                 </div>
               </TableCell>
@@ -379,7 +379,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                     <div className="flex items-center space-x-2">
                       <Avatar className="w-6 h-6">
                         <AvatarImage src={app.child.photoUrl} />
-                        <AvatarFallback>C</AvatarFallback>
+                        <AvatarFallback>{t('appointments.initials.child', 'C')}</AvatarFallback>
                       </Avatar>
                       <div className="text-xs">
                         <div className="font-medium">{app.child.fullName}</div>
@@ -391,7 +391,7 @@ function ListView({ appointments, onEdit, onView }: any) {
                     <div className="flex items-center space-x-2">
                       <Avatar className="w-6 h-6">
                         <AvatarImage src={app.parent.photoUrl} />
-                        <AvatarFallback>P</AvatarFallback>
+                        <AvatarFallback>{t('appointments.initials.parent', 'P')}</AvatarFallback>
                       </Avatar>
                       <div className="text-xs">
                         <div className="font-medium">{app.parent.fullName}</div>

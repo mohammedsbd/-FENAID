@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 type Notification = {
   id: string;
   message: string;
+  notificationKey?: string | null;
+  params?: Record<string, string | number> | null;
   type: string;
   entityType?: string | null;
   entityId?: string | null;
@@ -254,13 +256,15 @@ export default function NotificationsPage() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-4">
                               <p
-                                className={cn(
-                                  'text-sm leading-5',
-                                  !notification.isRead ? 'font-semibold text-foreground' : 'text-muted-foreground',
-                                )}
-                              >
-                                {notification.message}
-                              </p>
+                                  className={cn(
+                                    'text-sm leading-5',
+                                    !notification.isRead ? 'font-semibold text-foreground' : 'text-muted-foreground',
+                                  )}
+                                >
+                                  {notification.notificationKey
+                                    ? t(notification.notificationKey, notification.message, notification.params ?? undefined)
+                                    : notification.message}
+                                </p>
                               {!notification.isRead && (
                                 <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
                               )}

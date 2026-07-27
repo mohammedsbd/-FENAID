@@ -157,8 +157,8 @@ export default function VolunteersPage() {
       setChildren(res.data?.data || []);
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to load children list for dropdown',
+        title: t('common.error', 'Error'),
+        description: t('volunteers.toast.errorLoadChildren', 'Failed to load children list for dropdown'),
         variant: 'destructive',
       });
     } finally {
@@ -217,8 +217,8 @@ export default function VolunteersPage() {
     e.preventDefault();
     if (!vForm.firstName || !vForm.lastName || !vForm.email || !vForm.phone) {
       toast({
-        title: 'Validation Error',
-        description: 'First name, last name, email, and phone are required',
+        title: t('common.validationError', 'Validation Error'),
+        description: t('volunteers.toast.requiredFields', 'First name, last name, email, and phone are required'),
         variant: 'destructive',
       });
       return;
@@ -229,14 +229,14 @@ export default function VolunteersPage() {
       if (editingVolunteer) {
         await api.patch(`/volunteers/${editingVolunteer.id}`, vForm);
         toast({
-          title: 'Success',
-          description: 'Volunteer details updated successfully',
+          title: t('common.success', 'Success'),
+          description: t('volunteers.toast.updated', 'Volunteer details updated successfully'),
         });
       } else {
         await api.post('/volunteers', vForm);
         toast({
-          title: 'Success',
-          description: 'Volunteer registered successfully',
+          title: t('common.success', 'Success'),
+          description: t('volunteers.toast.registered', 'Volunteer registered successfully'),
         });
       }
       setDrawerVisible(false);
@@ -244,8 +244,8 @@ export default function VolunteersPage() {
       fetchVolunteers();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to save volunteer details',
+        title: t('common.error', 'Error'),
+        description: err.response?.data?.message || t('volunteers.toast.saveFailed', 'Failed to save volunteer details'),
         variant: 'destructive',
       });
     } finally {
@@ -286,8 +286,8 @@ export default function VolunteersPage() {
     e.preventDefault();
     if (!sForm.serviceType || !sForm.serviceDate) {
       toast({
-        title: 'Validation Error',
-        description: 'Service type and date are required',
+        title: t('common.validationError', 'Validation Error'),
+        description: t('volunteers.toast.serviceRequired', 'Service type and date are required'),
         variant: 'destructive',
       });
       return;
@@ -297,16 +297,16 @@ export default function VolunteersPage() {
     try {
       await api.post(`/volunteers/${activeVolunteer?.id}/services`, sForm);
       toast({
-        title: 'Success',
-        description: `Service log added for ${activeVolunteer?.firstName} ${activeVolunteer?.lastName}`,
+        title: t('common.success', 'Success'),
+        description: t('volunteers.toast.serviceSaved', 'Service log added for {name}').replace('{name}', `${activeVolunteer?.firstName} ${activeVolunteer?.lastName}`),
       });
       setServiceDrawerVisible(false);
       setTimeout(() => { setServiceDrawerMounted(false); setServiceDrawerOpen(false); }, 300);
       fetchVolunteers();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to save service log',
+        title: t('common.error', 'Error'),
+        description: err.response?.data?.message || t('volunteers.toast.serviceSaveFailed', 'Failed to save service log'),
         variant: 'destructive',
       });
     } finally {
@@ -320,14 +320,14 @@ export default function VolunteersPage() {
     try {
       await api.delete(`/volunteers/${id}`);
       toast({
-        title: 'Success',
-        description: 'Volunteer removed successfully',
+        title: t('common.success', 'Success'),
+        description: t('volunteers.toast.deleted', 'Volunteer removed successfully'),
       });
       fetchVolunteers();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to remove volunteer',
+        title: t('common.error', 'Error'),
+        description: err.response?.data?.message || t('volunteers.toast.deleteFailed', 'Failed to remove volunteer'),
         variant: 'destructive',
       });
     }
@@ -339,8 +339,8 @@ export default function VolunteersPage() {
     try {
       await api.delete(`/volunteers/services/${serviceId}`);
       toast({
-        title: 'Success',
-        description: 'Service record deleted',
+        title: t('common.success', 'Success'),
+        description: t('volunteers.toast.serviceDeleted', 'Service record deleted'),
       });
       if (historyVolunteer) {
         const res = await api.get(`/volunteers/${historyVolunteer.id}`);
@@ -349,8 +349,8 @@ export default function VolunteersPage() {
       fetchVolunteers();
     } catch (err: any) {
       toast({
-        title: 'Error',
-        description: err.response?.data?.message || 'Failed to delete service record',
+        title: t('common.error', 'Error'),
+        description: err.response?.data?.message || t('volunteers.toast.serviceDeleteFailed', 'Failed to delete service record'),
         variant: 'destructive',
       });
     }
@@ -466,7 +466,7 @@ export default function VolunteersPage() {
                         </Avatar>
                         <div>
                           <div className="font-semibold text-foreground">{vol.firstName} {vol.lastName}</div>
-                          <div className="text-xs text-muted-foreground">Joined {new Date(vol.createdAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-muted-foreground">{t('volunteers.joined', 'Joined')} {new Date(vol.createdAt).toLocaleDateString()}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -488,7 +488,7 @@ export default function VolunteersPage() {
                           {vol.serviceTypes}
                         </p>
                       ) : (
-                        <span className="text-xs text-muted-foreground italic">None specified</span>
+                        <span className="text-xs text-muted-foreground italic">{t('volunteers.noneSpecified', 'None specified')}</span>
                       )}
                     </TableCell>
                     <TableCell className="py-4 px-6">
@@ -513,7 +513,7 @@ export default function VolunteersPage() {
                             className="h-8 text-xs font-semibold hover:text-primary hover:bg-primary/5 rounded-lg px-2 gap-1"
                             onClick={() => setHistoryVolunteer(vol)}
                           >
-                            View History
+                            {t('volunteers.viewHistory', 'View History')}
                             <ChevronRight className="h-3 w-3" />
                           </Button>
                         )}
@@ -522,7 +522,7 @@ export default function VolunteersPage() {
                     <TableCell className="py-4 px-6 text-right">
                       <div className="flex justify-end items-center gap-2">
                         <Button
-                          title="Log Service"
+                          title={t('volunteers.logService', 'Log Service')}
                           size="icon"
                           variant="ghost"
                           onClick={() => openServiceLog(vol)}
@@ -531,7 +531,7 @@ export default function VolunteersPage() {
                           <HeartHandshake className="h-4 w-4" />
                         </Button>
                         <Button
-                          title="Edit Details"
+                          title={t('volunteers.editDetails', 'Edit Details')}
                           size="icon"
                           variant="ghost"
                           onClick={() => openEditVolunteer(vol)}
@@ -540,7 +540,7 @@ export default function VolunteersPage() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
-                          title="Remove Volunteer"
+                          title={t('volunteers.removeVolunteer', 'Remove Volunteer')}
                           size="icon"
                           variant="ghost"
                           onClick={() => setDeletingVolunteer(vol)}
@@ -572,10 +572,10 @@ export default function VolunteersPage() {
                 <div>
                   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
-                    {editingVolunteer ? 'Edit Volunteer' : 'Register Volunteer'}
+                    {editingVolunteer ? t('volunteers.drawer.editTitle', 'Edit Volunteer') : t('volunteers.drawer.registerTitle', 'Register Volunteer')}
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {editingVolunteer ? 'Update active profile details' : 'Create a new volunteer profile'}
+                    {editingVolunteer ? t('volunteers.drawer.editSubtitle', 'Update active profile details') : t('volunteers.drawer.registerSubtitle', 'Create a new volunteer profile')}
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={closeDrawer}>
@@ -587,22 +587,22 @@ export default function VolunteersPage() {
                 <form onSubmit={handleVSave} className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="v-firstName" className="text-foreground font-semibold">First Name *</Label>
+                      <Label htmlFor="v-firstName" className="text-foreground font-semibold">{t('volunteers.form.firstName', 'First Name')} *</Label>
                       <Input
                         id="v-firstName"
                         required
-                        placeholder="e.g. Abebe"
+                        placeholder={t('volunteers.form.firstNamePlaceholder', 'e.g. Abebe')}
                         value={vForm.firstName}
                         onChange={(e) => setVForm({ ...vForm, firstName: e.target.value })}
                         className="rounded-xl border-border focus-visible:ring-primary h-11"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="v-lastName" className="text-foreground font-semibold">Last Name *</Label>
+                      <Label htmlFor="v-lastName" className="text-foreground font-semibold">{t('volunteers.form.lastName', 'Last Name')} *</Label>
                       <Input
                         id="v-lastName"
                         required
-                        placeholder="e.g. Kebede"
+                        placeholder={t('volunteers.form.lastNamePlaceholder', 'e.g. Kebede')}
                         value={vForm.lastName}
                         onChange={(e) => setVForm({ ...vForm, lastName: e.target.value })}
                         className="rounded-xl border-border focus-visible:ring-primary h-11"
@@ -611,12 +611,12 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-email" className="text-foreground font-semibold">Email Address *</Label>
+                    <Label htmlFor="v-email" className="text-foreground font-semibold">{t('volunteers.form.email', 'Email Address')} *</Label>
                     <Input
                       id="v-email"
                       type="email"
                       required
-                      placeholder="e.g. abebe@email.com"
+                      placeholder={t('volunteers.form.emailPlaceholder', 'e.g. abebe@email.com')}
                       value={vForm.email}
                       onChange={(e) => setVForm({ ...vForm, email: e.target.value })}
                       className="rounded-xl border-border focus-visible:ring-primary h-11"
@@ -624,11 +624,11 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-phone" className="text-foreground font-semibold">Phone Number *</Label>
+                    <Label htmlFor="v-phone" className="text-foreground font-semibold">{t('volunteers.form.phone', 'Phone Number')} *</Label>
                     <Input
                       id="v-phone"
                       required
-                      placeholder="e.g. +251 911 000 000"
+                      placeholder={t('volunteers.form.phonePlaceholder', 'e.g. +251 911 000 000')}
                       value={vForm.phone}
                       onChange={(e) => setVForm({ ...vForm, phone: e.target.value })}
                       className="rounded-xl border-border focus-visible:ring-primary h-11"
@@ -636,23 +636,23 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-status" className="text-foreground font-semibold">Status</Label>
+                    <Label htmlFor="v-status" className="text-foreground font-semibold">{t('volunteers.form.status', 'Status')}</Label>
                     <select
                       id="v-status"
                       value={vForm.status}
                       onChange={(e) => setVForm({ ...vForm, status: e.target.value })}
                       className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="ACTIVE">{t('volunteers.form.active', 'ACTIVE')}</option>
+                      <option value="INACTIVE">{t('volunteers.form.inactive', 'INACTIVE')}</option>
                     </select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-serviceTypes" className="text-foreground font-semibold">Service Types</Label>
+                    <Label htmlFor="v-serviceTypes" className="text-foreground font-semibold">{t('volunteers.form.serviceTypes', 'Service Types')}</Label>
                     <textarea
                       id="v-serviceTypes"
-                      placeholder="e.g. Teaching, Health Assessment, Counseling, Home Visit, Fundraising..."
+                      placeholder={t('volunteers.form.serviceTypesPlaceholder', 'e.g. Teaching, Health Assessment, Counseling, Home Visit, Fundraising...')}
                       rows={3}
                       value={vForm.serviceTypes}
                       onChange={(e) => setVForm({ ...vForm, serviceTypes: e.target.value })}
@@ -661,10 +661,10 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="v-notes" className="text-foreground font-semibold">Internal Notes</Label>
+                    <Label htmlFor="v-notes" className="text-foreground font-semibold">{t('volunteers.form.internalNotes', 'Internal Notes')}</Label>
                     <textarea
                       id="v-notes"
-                      placeholder="General notes or observations about this volunteer..."
+                      placeholder={t('volunteers.form.internalNotesPlaceholder', 'General notes or observations about this volunteer...')}
                       rows={3}
                       value={vForm.notes}
                       onChange={(e) => setVForm({ ...vForm, notes: e.target.value })}
@@ -681,10 +681,10 @@ export default function VolunteersPage() {
                       {vSaving ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Saving...
+                          {t('volunteers.form.saving', 'Saving...')}
                         </>
                       ) : (
-                        'Save Profile'
+                        t('volunteers.form.saveProfile', 'Save Profile')
                       )}
                     </Button>
                     <Button
@@ -693,7 +693,7 @@ export default function VolunteersPage() {
                       onClick={closeDrawer}
                       className="h-11 rounded-xl border-border text-foreground font-semibold px-4"
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </Button>
                   </div>
                 </form>
@@ -717,10 +717,10 @@ export default function VolunteersPage() {
                 <div>
                   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <HeartHandshake className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    Log Service Provided
+                    {t('volunteers.serviceDrawer.title', 'Log Service Provided')}
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Record a service activity for <strong className="text-foreground">{activeVolunteer?.firstName} {activeVolunteer?.lastName}</strong>
+                    {t('volunteers.serviceDrawer.subtitle', 'Record a service activity for')} <strong className="text-foreground">{activeVolunteer?.firstName} {activeVolunteer?.lastName}</strong>
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={closeServiceDrawer}>
@@ -731,11 +731,11 @@ export default function VolunteersPage() {
               <ScrollArea className="flex-1 px-6 py-4">
                 <form onSubmit={handleSSave} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="s-type" className="text-foreground font-semibold">Service Type / Activity *</Label>
+                    <Label htmlFor="s-type" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.serviceType', 'Service Type / Activity')} *</Label>
                     <Input
                       id="s-type"
                       required
-                      placeholder="e.g. Special tutoring, Health assessment, Counseling"
+                      placeholder={t('volunteers.serviceDrawer.serviceTypePlaceholder', 'e.g. Special tutoring, Health assessment, Counseling')}
                       value={sForm.serviceType}
                       onChange={(e) => setSForm({ ...sForm, serviceType: e.target.value })}
                       className="rounded-xl border-border focus-visible:ring-primary h-11"
@@ -743,11 +743,11 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-child" className="text-foreground font-semibold">Target Recipient</Label>
+                    <Label htmlFor="s-child" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.targetRecipient', 'Target Recipient')}</Label>
                     {childrenLoading ? (
                       <div className="h-11 flex items-center justify-center border rounded-xl bg-muted/30">
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                        <span className="text-xs text-muted-foreground">Loading child options...</span>
+                        <span className="text-xs text-muted-foreground">{t('volunteers.serviceDrawer.loadingChildren', 'Loading child options...')}</span>
                       </div>
                     ) : (
                       <select
@@ -756,7 +756,7 @@ export default function VolunteersPage() {
                         onChange={(e) => setSForm({ ...sForm, childId: e.target.value })}
                         className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                       >
-                        <option value="">All Children / General Service</option>
+                        <option value="">{t('volunteers.serviceDrawer.allChildren', 'All Children / General Service')}</option>
                         {children.map((child) => (
                           <option key={child.id} value={child.id}>
                             {child.fullName}
@@ -767,7 +767,7 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-date" className="text-foreground font-semibold">Service Date *</Label>
+                    <Label htmlFor="s-date" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.serviceDate', 'Service Date')} *</Label>
                     <Input
                       id="s-date"
                       type="date"
@@ -779,10 +779,10 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-desc" className="text-foreground font-semibold">Activity Description</Label>
+                    <Label htmlFor="s-desc" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.activityDescription', 'Activity Description')}</Label>
                     <textarea
                       id="s-desc"
-                      placeholder="Describe what the volunteer did during this service activity..."
+                      placeholder={t('volunteers.serviceDrawer.activityDescriptionPlaceholder', 'Describe what the volunteer did during this service activity...')}
                       rows={4}
                       value={sForm.description}
                       onChange={(e) => setSForm({ ...sForm, description: e.target.value })}
@@ -791,10 +791,10 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-notes" className="text-foreground font-semibold">Additional Notes</Label>
+                    <Label htmlFor="s-notes" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.additionalNotes', 'Additional Notes')}</Label>
                     <textarea
                       id="s-notes"
-                      placeholder="Notes on outcome, observations, or follow-ups needed..."
+                      placeholder={t('volunteers.serviceDrawer.additionalNotesPlaceholder', 'Notes on outcome, observations, or follow-ups needed...')}
                       rows={3}
                       value={sForm.notes}
                       onChange={(e) => setSForm({ ...sForm, notes: e.target.value })}
@@ -811,10 +811,10 @@ export default function VolunteersPage() {
                       {sSaving ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Saving...
+                          {t('volunteers.serviceDrawer.saving', 'Saving...')}
                         </>
                       ) : (
-                        'Save Service Log'
+                        t('volunteers.serviceDrawer.saveLog', 'Save Service Log')
                       )}
                     </Button>
                     <Button
@@ -823,7 +823,7 @@ export default function VolunteersPage() {
                       onClick={closeServiceDrawer}
                       className="h-11 rounded-xl border-border text-foreground font-semibold px-4"
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </Button>
                   </div>
                 </form>
@@ -843,22 +843,21 @@ export default function VolunteersPage() {
                 <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Remove Volunteer</h3>
+                <h3 className="font-semibold text-foreground">{t('volunteers.deleteModal.title', 'Remove Volunteer')}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Are you sure you want to remove <strong>{deletingVolunteer.firstName} {deletingVolunteer.lastName}</strong>?
-                  This action cannot be undone.
+                  {t('volunteers.deleteModal.description', 'Are you sure you want to remove {name}? This action cannot be undone.').replace('{name}', `${deletingVolunteer.firstName} ${deletingVolunteer.lastName}`)}
                 </p>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setDeletingVolunteer(null)}>
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteVolunteer(deletingVolunteer.id, `${deletingVolunteer.firstName} ${deletingVolunteer.lastName}`)}
               >
-                Remove
+                {t('volunteers.deleteModal.remove', 'Remove')}
               </Button>
             </div>
           </div>
@@ -875,22 +874,21 @@ export default function VolunteersPage() {
                 <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Delete Service Record</h3>
+                <h3 className="font-semibold text-foreground">{t('volunteers.deleteServiceModal.title', 'Delete Service Record')}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Are you sure you want to delete this service record for <strong>{deletingServiceRecord.name}</strong>?
-                  This action cannot be undone.
+                  {t('volunteers.deleteServiceModal.description', 'Are you sure you want to delete this service record for {name}? This action cannot be undone.').replace('{name}', deletingServiceRecord.name)}
                 </p>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setDeletingServiceRecord(null)}>
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteService(deletingServiceRecord.id, deletingServiceRecord.name)}
               >
-                Delete
+                {t('volunteers.deleteServiceModal.delete', 'Delete')}
               </Button>
             </div>
           </div>
@@ -906,10 +904,10 @@ export default function VolunteersPage() {
               <div>
                 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" />
-                  Service History
+                  {t('volunteers.historyDialog.title', 'Service History')}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-1">
-                  List of services logged for <strong className="text-foreground">{historyVolunteer.firstName} {historyVolunteer.lastName}</strong>
+                  {t('volunteers.historyDialog.subtitle', 'List of services logged for')} <strong className="text-foreground">{historyVolunteer.firstName} {historyVolunteer.lastName}</strong>
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent" onClick={() => setHistoryVolunteer(null)}>
@@ -923,7 +921,7 @@ export default function VolunteersPage() {
                   {historyVolunteer.services.map((service) => (
                     <div key={service.id} className="p-4 rounded-xl border border-border bg-muted/20 relative hover:border-border/80 transition-colors">
                       <button
-                        title="Delete record"
+                        title={t('volunteers.historyDialog.deleteRecord', 'Delete record')}
                         onClick={() => setDeletingServiceRecord({ id: service.id, name: `${historyVolunteer.firstName} ${historyVolunteer.lastName}` })}
                         className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                       >
@@ -933,11 +931,11 @@ export default function VolunteersPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-foreground text-base">{service.serviceType}</span>
                           <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 rounded-lg dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-950/40">
-                            {service.child ? `For Child: ${service.child.fullName}` : 'All Children'}
+                            {service.child ? `${t('volunteers.historyDialog.forChild', 'For Child')}: ${service.child.fullName}` : t('volunteers.historyDialog.allChildren', 'All Children')}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground font-medium">
-                          Performed on {new Date(service.serviceDate).toLocaleDateString()}
+                          {t('volunteers.historyDialog.performedOn', 'Performed on')} {new Date(service.serviceDate).toLocaleDateString()}
                         </div>
                         {service.description && (
                           <p className="text-sm text-foreground bg-card p-2.5 rounded-lg border border-border mt-1 shadow-sm whitespace-pre-wrap leading-relaxed">
@@ -946,7 +944,7 @@ export default function VolunteersPage() {
                         )}
                         {service.notes && (
                           <div className="text-xs text-muted-foreground mt-1.5 flex gap-1 items-start bg-blue-50/20 border border-blue-50/40 p-2 rounded-lg dark:bg-blue-950/20 dark:border-blue-950/30">
-                            <strong className="shrink-0 text-blue-600 dark:text-blue-400">Internal notes:</strong>
+                            <strong className="shrink-0 text-blue-600 dark:text-blue-400">{t('volunteers.historyDialog.internalNotes', 'Internal notes')}:</strong>
                             <span className="italic">{service.notes}</span>
                           </div>
                         )}
@@ -957,13 +955,13 @@ export default function VolunteersPage() {
               ) : (
                 <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3">
                   <Calendar className="h-10 w-10 text-muted-foreground/30" />
-                  <p className="font-medium">No service records registered yet.</p>
+                  <p className="font-medium">{t('volunteers.historyDialog.noRecords', 'No service records registered yet.')}</p>
                 </div>
               )}
             </ScrollArea>
             <div className="px-6 py-4 border-t border-border flex justify-end">
               <Button onClick={() => setHistoryVolunteer(null)} className="rounded-xl px-5">
-                Close
+                {t('common.close', 'Close')}
               </Button>
             </div>
           </Card>

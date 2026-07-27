@@ -119,7 +119,7 @@ function AdminDashboardView({ data }: { data: any }) {
         />
         <StatCard
           title={t('dashboard.allocatedFunds', 'Allocated Funds')}
-          value={`${Number(data.stats.totalFundsAllocated).toLocaleString()} ETB`}
+          value={`${Number(data.stats.totalFundsAllocated).toLocaleString()} ${t('common.etb', 'ETB')}`}
           subtitle={t('dashboard.allocatedFundsSubtitle', 'Total support committed')}
           icon={HandCoins}
           color="text-blue-600 dark:text-blue-400"
@@ -127,7 +127,7 @@ function AdminDashboardView({ data }: { data: any }) {
         />
         <StatCard
           title={t('dashboard.disbursedFunds', 'Disbursed Funds')}
-          value={`${Number(data.stats.totalFundsDisbursed).toLocaleString()} ETB`}
+          value={`${Number(data.stats.totalFundsDisbursed).toLocaleString()} ${t('common.etb', 'ETB')}`}
           subtitle={t('dashboard.disbursedFundsSubtitle', 'Total support delivered')}
           icon={HandCoins}
           color="text-emerald-600 dark:text-emerald-400"
@@ -135,7 +135,7 @@ function AdminDashboardView({ data }: { data: any }) {
         />
         <StatCard
           title={t('dashboard.totalDonations', 'Total Donations')}
-          value={`${Number(data.stats.totalDonationsThisYear).toLocaleString()} ETB`}
+          value={`${Number(data.stats.totalDonationsThisYear).toLocaleString()} ${t('common.etb', 'ETB')}`}
           subtitle={t('dashboard.totalDonationsSubtitle', 'This year')}
           icon={HeartHandshake}
           color="text-purple-600 dark:text-purple-400"
@@ -281,7 +281,7 @@ function AdminDashboardView({ data }: { data: any }) {
                       <span className="text-[10px] text-muted-foreground">{format(new Date(alloc.allocationDate), 'MMM dd, yyyy')}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-slate-900 dark:text-neutral-100">{Number(alloc.amount).toLocaleString()} ETB</div>
+                      <div className="font-bold text-slate-900 dark:text-neutral-100">{Number(alloc.amount).toLocaleString()} {t('common.etb', 'ETB')}</div>
                       <Badge variant="ghost" className="text-[9px] text-emerald-600 px-0 h-fit">{t('dashboard.readyStatus', 'Ready')}</Badge>
                     </div>
                   </div>
