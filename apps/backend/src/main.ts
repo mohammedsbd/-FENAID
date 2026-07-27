@@ -5,6 +5,13 @@ import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { I18nMiddleware } from './i18n/i18n.middleware';
+import { JsonLogger } from './common/logger/json-logger.service';
+
+const CSRF_MSG: Record<string, string> = {
+  en: 'CSRF validation failed',
+  am: 'የCSRF ማረጋገጫ አልተሳካም',
+  om: 'Mirkannoon CSRF hin milkoofne',
+};
 
 function simpleCookieParser(req: any, _res: any, next: () => void) {
   req.cookies = {};
@@ -33,12 +40,15 @@ function csrfProtection(req: any, res: any, next: () => void) {
   const matches = (value: string) => allowed.some((a: string) => value.startsWith(a));
   if (origin && matches(origin)) return next();
   if (referer && matches(referer)) return next();
-  res.status(403).json({ message: 'CSRF validation failed' });
+  const locale = (req.headers['accept-language'] || 'en').slice(0, 2);
+  res.status(403).json({ message: CSRF_MSG[locale] || CSRF_MSG['en'] });
 }
 
 async function bootstrap() {
+  const logger = new JsonLogger();
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
+    logger,
   });
 
   const configService = app.get(ConfigService);

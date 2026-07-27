@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
     "module": "CommonJS",
     "moduleResolution": "Node",
     "outDir": "dist",
-    "baseUrl": ".",
     "paths": {},
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

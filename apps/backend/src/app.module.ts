@@ -1,11 +1,14 @@
-import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HealthController } from './health/health.controller';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { I18nModule } from './i18n/i18n.module';
 import { AuthModule } from './auth/auth.module';
 import { ChildrenModule } from './children/children.module';
@@ -59,7 +62,7 @@ import { ReferralsModule } from './referrals/referrals.module';
     VolunteersModule,
     ReferralsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     {
@@ -70,6 +73,14 @@ import { ReferralsModule } from './referrals/referrals.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}
