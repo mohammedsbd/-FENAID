@@ -296,7 +296,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                   className={cn(
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'PARENT'
-                      ? 'bg-amber-50 border-amber-200 text-amber-700'
+                      ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300'
                       : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
@@ -308,7 +308,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                   className={cn(
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'CHILD'
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
+                      ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300'
                       : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
@@ -342,7 +342,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                           type="button"
                           onClick={() => setSelectedParent(p)}
                           className={cn(
-                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors',
+                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors',
                             selectedParent?.id === p.id && 'bg-primary/5'
                           )}
                         >
@@ -396,7 +396,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                           type="button"
                           onClick={() => setSelectedChild(c)}
                           className={cn(
-                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors',
+                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors',
                             selectedChild?.id === c.id && 'bg-primary/5'
                           )}
                         >
@@ -492,7 +492,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                 <Label>{t('services.assign.deliveryMethod', 'Delivery Method')} *</Label>
                 <div className="space-y-2">
                   {(['ON_SITE', 'HOME_VISIT', 'REFERRAL'] as const).map((m) => (
-                    <label key={m} className="flex items-center gap-3 rounded-md border px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                    <label key={m} className="flex items-center gap-3 rounded-md border px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
                       <input
                         type="radio"
                         name="deliveryMethod"
@@ -542,19 +542,19 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                 <p className="text-sm text-muted-foreground mb-4">{t('services.assign.confirmDesc', 'Please review the details before confirming.')}</p>
               </div>
 
-              <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+              <div className="space-y-4 border rounded-lg p-4 bg-slate-50 dark:bg-neutral-800/50">
                 {/* Recipient */}
                 <div>
                   <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('services.assign.recipient', 'Recipient')}</Label>
                   <p className="text-sm font-medium mt-1">
                     {targetType === 'PARENT' ? selectedParent?.fullName : selectedChild?.fullName}
                   </p>
-                  <Badge variant="outline" className={cn('mt-1 text-[10px]', targetType === 'PARENT' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700')}>
+                  <Badge variant="outline" className={cn('mt-1 text-[10px]', targetType === 'PARENT' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800')}>
                     {targetType === 'PARENT' ? t('services.assign.parent', 'Parent') : t('services.assign.child', 'Child')}
                   </Badge>
                 </div>
 
-                <div className="h-px bg-slate-200" />
+                <div className="h-px bg-slate-200 dark:bg-neutral-700" />
 
                 {/* Service */}
                 <div>
@@ -563,7 +563,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                   <Badge variant="secondary" className="mt-1 text-[10px]">{selectedService?.category}</Badge>
                 </div>
 
-                <div className="h-px bg-slate-200" />
+                <div className="h-px bg-slate-200 dark:bg-neutral-700" />
 
                 {/* Details */}
                 <div className="grid grid-cols-2 gap-3">
@@ -585,7 +585,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                   </div>
                 </div>
 
-                <div className="h-px bg-slate-200" />
+                <div className="h-px bg-slate-200 dark:bg-neutral-700" />
 
                 {/* Staff */}
                 <div>                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('services.assign.assignedStaff', 'Assigned Staff')}</Label>
@@ -594,7 +594,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
 
                 {assignmentNotes && (
                   <>
-                    <div className="h-px bg-slate-200" />
+                    <div className="h-px bg-slate-200 dark:bg-neutral-700" />
                     <div>
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('services.assign.notes', 'Notes')}</Label>
                       <p className="text-sm mt-1 text-muted-foreground">{assignmentNotes}</p>
@@ -633,7 +633,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
 function SelectedPersonCard({ name, status, staffName }: { name: string; status: string; staffName?: string }) {
   const { t } = useLocale();
   return (
-    <div className="flex items-center gap-3 rounded-md border bg-white p-3 mt-2">
+    <div className="flex items-center gap-3 rounded-md border bg-white dark:bg-neutral-900 p-3 mt-2">
       <Avatar className="h-9 w-9">
         <AvatarFallback className="text-xs">{initials(name)}</AvatarFallback>
       </Avatar>
@@ -645,9 +645,9 @@ function SelectedPersonCard({ name, status, staffName }: { name: string; status:
       </div>
       <Badge variant="outline" className={cn(
         'text-[10px]',
-        status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-        status === 'INACTIVE' ? 'bg-slate-100 text-slate-600 border-slate-200' :
-        'bg-amber-50 text-amber-700 border-amber-200'
+        status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' :
+        status === 'INACTIVE' ? 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700' :
+        'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
       )}>
         {status.replace('_', ' ')}
       </Badge>

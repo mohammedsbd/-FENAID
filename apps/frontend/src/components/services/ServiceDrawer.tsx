@@ -203,12 +203,12 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
               placeholder={t('services.catalog.categoryPlaceholder', 'e.g. Therapy, Education, Nutrition')}
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-md shadow-lg max-h-40 overflow-y-auto">
                 {filteredSuggestions.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                     onMouseDown={() => {
                       setCategory(s);
                       setShowSuggestions(false);
@@ -230,7 +230,7 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
                 className={cn(
                   'flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                   targetType === 'PARENT'
-                    ? 'bg-amber-50 border-amber-200 text-amber-700'
+                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300'
                     : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                 )}                >
                 {t('services.catalog.forParents', 'For Parents')}
@@ -241,7 +241,7 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
                 className={cn(
                   'flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                   targetType === 'CHILD'
-                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300'
                     : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                 )}                >
                 {t('services.catalog.forChildren', 'For Children')}

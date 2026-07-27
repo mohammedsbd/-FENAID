@@ -47,7 +47,7 @@ export function StatisticsOverview() {
     const res = await api.get('/data-query/statistics/export');
     const stats = res.data;
     const body = `
-      <h2>Key Metrics</h2>
+      <h2>{t('stats.keyMetrics', 'Key Metrics')}</h2>
       <ul>
         <li>${t('stats.activeChildren', 'Active Children')}: ${stats.totalActiveChildren}</li>
         <li>${t('stats.activeParents', 'Active Parents')}: ${stats.totalActiveParents}</li>

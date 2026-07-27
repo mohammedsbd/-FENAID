@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Loader2, Search, Check, Calendar } from 'lucide-react';
+import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -276,7 +277,7 @@ export function ReferralDrawer({
         onClick={onClose}
       />
       <div
-        className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-xl bg-white shadow-xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-50 !mt-0 w-full max-w-xl bg-white dark:bg-neutral-900 shadow-xl flex flex-col transition-transform duration-300 ease-out ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -318,8 +319,8 @@ export function ReferralDrawer({
                   className={cn(
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'PARENT'
-                      ? 'bg-amber-50 border-amber-200 text-amber-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300'
+                      : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
                   {t('services.assign.parent', 'Parent')}
@@ -334,8 +335,8 @@ export function ReferralDrawer({
                   className={cn(
                     'flex-1 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors',
                     targetType === 'CHILD'
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300'
+                      : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
                   )}
                 >
                   {t('services.assign.child', 'Child')}
@@ -368,7 +369,7 @@ export function ReferralDrawer({
                           type="button"
                           onClick={() => setSelectedParent(p)}
                           className={cn(
-                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors',
+                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors',
                             selectedParent?.id === p.id && 'bg-primary/5'
                           )}
                         >
@@ -421,7 +422,7 @@ export function ReferralDrawer({
                           type="button"
                           onClick={() => setSelectedChild(c)}
                           className={cn(
-                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors',
+                            'w-full text-left px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors',
                             selectedChild?.id === c.id && 'bg-primary/5'
                           )}
                         >
@@ -475,8 +476,8 @@ export function ReferralDrawer({
                     className={cn(
                       'text-[10px] mt-0.5',
                       targetType === 'PARENT'
-                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                        : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
                     )}
                   >
                     {targetType === 'PARENT'
@@ -489,7 +490,7 @@ export function ReferralDrawer({
           )}
 
           {/* Divider */}
-          <div className="h-px bg-slate-200" />
+          <div className="h-px bg-slate-200 dark:bg-neutral-700" />
 
           {/* Referral Details */}
           <div className="space-y-4">
@@ -535,20 +536,18 @@ export function ReferralDrawer({
                 <Label>
                   {t('services.referrals.drawer.referralDate', 'Referral Date')} *
                 </Label>
-                <Input
-                  type="date"
+                <CalendarDatePicker
                   value={referralDate}
-                  onChange={(e) => setReferralDate(e.target.value)}
+                  onChange={setReferralDate}
                 />
               </div>
               <div className="space-y-2">
                 <Label>
                   {t('services.referrals.drawer.followUpDate', 'Follow-up Date')}
                 </Label>
-                <Input
-                  type="date"
+                <CalendarDatePicker
                   value={followUpDate}
-                  onChange={(e) => setFollowUpDate(e.target.value)}
+                  onChange={setFollowUpDate}
                 />
               </div>
             </div>
@@ -635,14 +634,14 @@ export function ReferralDrawer({
 
 function SelectedPersonCard({ name }: { name: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-md border bg-white p-3 mt-2">
+    <div className="flex items-center gap-3 rounded-md border bg-white dark:bg-neutral-900 p-3 mt-2">
       <Avatar className="h-9 w-9">
         <AvatarFallback className="text-xs">{initials(name)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium truncate">{name}</div>
       </div>
-      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-[10px]">
         Selected
       </Badge>
     </div>
