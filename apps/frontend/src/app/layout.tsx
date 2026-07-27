@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   title: 'Fikir',
   description: 'Fikir frontend',
   icons: {
-    icon: '/logo.svg',
-    apple: '/logo.svg',
+    icon: '/fikirlogo.jpg',
+    apple: '/fikirlogo.jpg',
   },
 };
 

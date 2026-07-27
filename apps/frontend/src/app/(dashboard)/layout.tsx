@@ -20,6 +20,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     // fall back to client-side fetch
   }
 
+  function t(key: string, fallback: string): string {
+    return initialDictionary?.[key] ?? fallback;
+  }
+
   return (
     <CalendarSettingsProvider>
       <LocaleProvider initialLocale={initialLocale} initialDictionary={initialDictionary}>
@@ -35,7 +39,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <footer className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-3 dark:border-neutral-800 dark:bg-neutral-950">
               <div className="flex items-center justify-end gap-4 text-[11px] text-muted-foreground/60">
                 <span>
-                  Developed by{' '}
+                  {t('layout.developedBy', 'Developed by')}{' '}
                   <a href="https://www.afrodigital.dev" target="_blank" rel="noopener noreferrer" className="font-medium text-muted-foreground transition-colors hover:text-primary">Afro Digital</a>
                 </span>
                 <span className="text-muted-foreground/40">Fenaid v0.1.0</span>
