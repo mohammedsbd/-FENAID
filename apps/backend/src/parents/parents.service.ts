@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateParentDto } from './dto/create-parent.dto';
 import { ListParentsDto } from './dto/list-parents.dto';
 import { UpdateParentDto } from './dto/update-parent.dto';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
@@ -52,34 +53,42 @@ export class ParentsService {
     }
     const idTag = `FKP-${String(nextNum).padStart(4, '0')}`;
 
-    const parent = await this.prisma.parent.create({
-      data: {
-        ...dto,
-        idTag,
-        dateOfBirth: new Date(dto.dateOfBirth),
-        status: dto.status ?? ParentStatus.ACTIVE,
-      },
-      include: {
-        assignedStaff: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
+    const parent = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.parent.create({
+        data: {
+          ...dto,
+          idTag,
+          dateOfBirth: new Date(dto.dateOfBirth),
+          status: dto.status ?? ParentStatus.ACTIVE,
+        },
+        include: {
+          assignedStaff: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'CREATE',
-      entityId: parent.id,
-      changes: this.diffParent(null, parent),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Parent',
+          entityId: p.id,
+          changes: this.diffParent(null, p),
+        },
+      });
+
+      return p;
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: this.i18n.t('notification.parentRegistered', { parentName: parent.fullName, idTag: parent.idTag, staffName: parent.assignedStaff.fullName }),
+      notificationKey: 'notification.parentRegistered',
+      params: { parentName: parent.fullName, idTag: parent.idTag, staffName: parent.assignedStaff.fullName },
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -98,7 +107,7 @@ export class ParentsService {
 
   async findAll(user: JwtPayload, query: ListParentsDto) {
     const page = query.page ?? 1;
-    const limit = Math.min(query.limit ?? 20, 100000);
+    const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ParentWhereInput = {
@@ -284,6 +293,8 @@ export class ParentsService {
   async update(staffId: string, id: string, dto: UpdateParentDto) {
     const existing = await this.findParentForAudit(id);
 
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Parent');
+
     if (dto.assignedStaffId) {
       await this.ensureAssignedStaffExists(dto.assignedStaffId);
     }
@@ -306,30 +317,37 @@ export class ParentsService {
       dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
     });
 
-    const parent = await this.prisma.parent.update({
-      where: { id },
-      data,
-      include: {
-        assignedStaff: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
+    const parent = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.parent.update({
+        where: { id },
+        data,
+        include: {
+          assignedStaff: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'UPDATE',
-      entityId: parent.id,
-      changes: this.diffParent(existing, parent),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Parent',
+          entityId: p.id,
+          changes: this.diffParent(existing, p),
+        },
+      });
+
+      return p;
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: this.parentUpdateMessage(existing, parent),
+      ...this.parentUpdateMessage(existing, parent),
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -341,23 +359,31 @@ export class ParentsService {
   async remove(staffId: string, id: string) {
     const existing = await this.findParentForAudit(id);
 
-    const parent = await this.prisma.parent.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: 'INACTIVE' as ParentStatus,
-      },
-    });
+    const parent = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.parent.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: 'INACTIVE' as ParentStatus,
+        },
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'DELETE',
-      entityId: parent.id,
-      changes: this.diffParent(existing, parent),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE',
+          entity: 'Parent',
+          entityId: p.id,
+          changes: this.diffParent(existing, p),
+        },
+      });
+
+      return p;
     });
 
     await this.notifications.notifyStaffAndAdmins([parent.assignedStaffId], {
-      message: this.i18n.t('notification.parentStatusChanged', { parentName: existing.fullName, status: 'INACTIVE' }),
+      notificationKey: 'notification.parentStatusChanged',
+      params: { parentName: existing.fullName, status: 'INACTIVE' },
       type: NotificationType.GENERAL,
       entityType: 'Parent',
       entityId: parent.id,
@@ -367,15 +393,11 @@ export class ParentsService {
   }
 
   private parentUpdateMessage(existing: ParentAuditSnapshot, parent: Parent) {
-    if (existing.assignedStaffId !== parent.assignedStaffId) {
-      return `Parent reassigned: ${parent.fullName} (${parent.idTag}) has a new assigned staff member.`;
-    }
-
-    if (existing.status !== parent.status) {
-      return `Parent status changed: ${parent.fullName} (${parent.idTag}) is now ${parent.status}.`;
-    }
-
-    return `Parent profile updated: ${parent.fullName} (${parent.idTag}).`;
+    if (existing.assignedStaffId !== parent.assignedStaffId)
+      return { notificationKey: 'notification.parentReassigned', params: { parentName: parent.fullName, idTag: parent.idTag } };
+    if (existing.status !== parent.status)
+      return { notificationKey: 'notification.parentStatusChangedTo', params: { parentName: parent.fullName, idTag: parent.idTag, status: parent.status } };
+    return { notificationKey: 'notification.parentProfileUpdated', params: { parentName: parent.fullName, idTag: parent.idTag } };
   }
 
   private async ensureAssignedStaffExists(assignedStaffId: string) {
@@ -514,20 +536,4 @@ export class ParentsService {
     ) as T;
   }
 
-  private async logAudit(input: {
-    staffId: string;
-    action: 'CREATE' | 'UPDATE' | 'DELETE';
-    entityId: string;
-    changes: Prisma.InputJsonValue;
-  }) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId: input.staffId,
-        action: input.action,
-        entity: 'Parent',
-        entityId: input.entityId,
-        changes: input.changes,
-      },
-    });
-  }
 }

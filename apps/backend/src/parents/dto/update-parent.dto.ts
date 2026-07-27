@@ -118,4 +118,8 @@ export class UpdateParentDto {
   @IsString()
   @MinLength(1)
   assignedStaffId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }

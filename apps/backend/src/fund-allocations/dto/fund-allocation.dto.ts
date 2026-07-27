@@ -47,11 +47,19 @@ export class UpdateFundAllocationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class AcknowledgeFundAllocationDto {
   @IsNotEmpty()
   acknowledged!: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListFundAllocationsDto {

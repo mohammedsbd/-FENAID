@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FundAllocationStatus, NotificationType, Prisma, StaffRole } from '@prisma/client';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -30,30 +31,43 @@ export class FundAllocationsService {
     const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
     const reference = `FA-${datePart}-${randomPart}`;
 
-    const allocation = await this.prisma.fundAllocation.create({
-      data: {
-        parentId: dto.parentId,
-        allocatedById: staffId,
-        amount: new Prisma.Decimal(dto.amount),
-        purpose: dto.purpose,
-        allocationDate: new Date(dto.allocationDate),
-        status: dto.status ?? FundAllocationStatus.ALLOCATED,
-        notes: dto.notes ? `${reference} | ${dto.notes}` : reference,
-      },
-      include: {
-        parent: {
-          select: { fullName: true, photoUrl: true, assignedStaffId: true },
+    const allocation = await this.prisma.$transaction(async (tx) => {
+      const a = await tx.fundAllocation.create({
+        data: {
+          parentId: dto.parentId,
+          allocatedById: staffId,
+          amount: new Prisma.Decimal(dto.amount),
+          purpose: dto.purpose,
+          allocationDate: new Date(dto.allocationDate),
+          status: dto.status ?? FundAllocationStatus.ALLOCATED,
+          notes: dto.notes ? `${reference} | ${dto.notes}` : reference,
         },
-        allocatedBy: {
-          select: { fullName: true },
+        include: {
+          parent: {
+            select: { fullName: true, photoUrl: true, assignedStaffId: true },
+          },
+          allocatedBy: {
+            select: { fullName: true },
+          },
         },
-      },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'FundAllocation',
+          entityId: a.id,
+          changes: { after: JSON.parse(JSON.stringify(a)) },
+        },
+      });
+
+      return a;
     });
 
-    await this.logAudit(staffId, 'CREATE', allocation.id, allocation);
-
     await this.notifications.notifyStaffAndAdmins([allocation.parent.assignedStaffId], {
-      message: this.i18n.t('notification.fundAllocated', { amount: allocation.amount, parentName: allocation.parent.fullName, purpose: allocation.purpose }),
+      notificationKey: 'notification.fundAllocated',
+      params: { amount: allocation.amount, parentName: allocation.parent.fullName, purpose: allocation.purpose },
       type: NotificationType.FUND_REMINDER,
       entityType: 'FundAllocation',
       entityId: allocation.id,
@@ -88,6 +102,7 @@ export class FundAllocationsService {
 
     return this.prisma.fundAllocation.findMany({
       where,
+      take: 1000,
       include: {
         parent: { select: { fullName: true, photoUrl: true } },
         allocatedBy: { select: { fullName: true } },
@@ -180,12 +195,11 @@ export class FundAllocationsService {
 
   async update(staffId: string, id: string, dto: UpdateFundAllocationDto) {
     const existing = await this.findById(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'FundAllocation');
 
     // Business rule: Once a FundAllocation is marked as DISBURSED and parentAcknowledged is true, it cannot be edited or deleted.
     if (existing.status === FundAllocationStatus.DISBURSED && existing.parentAcknowledged) {
-      throw new ForbiddenException(
-        'This record is finalized and cannot be modified.',
-      );
+      throw new ForbiddenException('error.fund.finalized');
     }
 
     const data: Prisma.FundAllocationUpdateInput = {
@@ -194,21 +208,37 @@ export class FundAllocationsService {
       ...(dto.notes && { notes: dto.notes }),
     };
 
-    const updated = await this.prisma.fundAllocation.update({
-      where: { id },
-      data,
-      include: {
-        parent: { select: { fullName: true, assignedStaffId: true } },
-      },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.fundAllocation.update({
+        where: { id },
+        data,
+        include: {
+          parent: { select: { fullName: true, assignedStaffId: true } },
+        },
+      });
 
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'FundAllocation',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
+    });
 
     if (dto.status || dto.receiptUrl) {
       await this.notifications.notifyStaffAndAdmins(
         [updated.parent.assignedStaffId],
         {
-          message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status }),
+          notificationKey: 'notification.fundStatusUpdated',
+          params: { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status },
           type: NotificationType.FUND_REMINDER,
           entityType: 'FundAllocation',
           entityId: updated.id,
@@ -221,29 +251,46 @@ export class FundAllocationsService {
 
   async acknowledge(staffId: string, id: string, dto: AcknowledgeFundAllocationDto) {
     const existing = await this.prisma.fundAllocation.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Fund allocation not found');
+    if (!existing) throw new NotFoundException('error.fund.notFound');
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'FundAllocation');
 
     if (existing.status === FundAllocationStatus.DISBURSED && existing.parentAcknowledged) {
-      throw new ForbiddenException('This record is finalized and cannot be modified.');
+      throw new ForbiddenException('error.fund.finalized');
     }
 
-    const updated = await this.prisma.fundAllocation.update({
-      where: { id },
-      data: {
-        parentAcknowledged: dto.acknowledged,
-        acknowledgedAt: dto.acknowledged ? new Date() : null,
-      },
-      include: {
-        parent: { select: { fullName: true, assignedStaffId: true } },
-      },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.fundAllocation.update({
+        where: { id },
+        data: {
+          parentAcknowledged: dto.acknowledged,
+          acknowledgedAt: dto.acknowledged ? new Date() : null,
+        },
+        include: {
+          parent: { select: { fullName: true, assignedStaffId: true } },
+        },
+      });
 
-    await this.logAudit(staffId, 'ACKNOWLEDGE', id, updated, existing);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'ACKNOWLEDGE',
+          entity: 'FundAllocation',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
+    });
 
     await this.notifications.notifyStaffAndAdmins(
       [updated.parent.assignedStaffId],
       {
-        message: this.i18n.t('notification.fundStatusUpdated', { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status, acknowledged: updated.parentAcknowledged ? ' and acknowledged' : '' }),
+        notificationKey: 'notification.fundStatusUpdated',
+        params: { parentName: updated.parent.fullName, amount: updated.amount, status: updated.status, acknowledged: updated.parentAcknowledged ? ' and acknowledged' : '' },
         type: NotificationType.FUND_REMINDER,
         entityType: 'FundAllocation',
         entityId: updated.id,
@@ -253,24 +300,4 @@ export class FundAllocationsService {
     return updated;
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'FundAllocation',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: JSON.parse(JSON.stringify(after)),
-        },
-      },
-    });
-  }
 }
