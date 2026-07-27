@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Cookies from 'js-cookie';
-import { Loader2, CheckCircle2, Circle } from 'lucide-react';
+import { Loader2, CheckCircle2, Circle, Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,9 @@ export default function ChangePasswordPage() {
   const { toast } = useToast();
   const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const changePasswordSchema = z
     .object({
@@ -109,13 +112,18 @@ export default function ChangePasswordPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="currentPassword">{t('auth.changePassword.currentPasswordLabel', 'Current Password')}</Label>
-            <Input
-              id="currentPassword"
-              type="password"
-              {...register('currentPassword')}
-              className={errors.currentPassword ? 'border-destructive' : ''}
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <Input
+                id="currentPassword"
+                type={showCurrent ? 'text' : 'password'}
+                {...register('currentPassword')}
+                className={errors.currentPassword ? 'border-destructive pr-10' : 'pr-10'}
+                disabled={isLoading}
+              />
+              <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             {errors.currentPassword && (
               <p className="text-xs text-destructive">{errors.currentPassword.message}</p>
             )}
@@ -123,13 +131,18 @@ export default function ChangePasswordPage() {
 
           <div className="space-y-2">
             <Label htmlFor="newPassword">{t('auth.changePassword.newPasswordLabel', 'New Password')}</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              {...register('newPassword')}
-              className={errors.newPassword ? 'border-destructive' : ''}
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <Input
+                id="newPassword"
+                type={showNew ? 'text' : 'password'}
+                {...register('newPassword')}
+                className={errors.newPassword ? 'border-destructive pr-10' : 'pr-10'}
+                disabled={isLoading}
+              />
+              <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             
             <div className="mt-2 space-y-1">
               <div className="flex items-center justify-between text-[10px] uppercase font-bold text-muted-foreground">
@@ -161,13 +174,18 @@ export default function ChangePasswordPage() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{t('auth.changePassword.confirmPasswordLabel', 'Confirm New Password')}</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              {...register('confirmPassword')}
-              className={errors.confirmPassword ? 'border-destructive' : ''}
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirm ? 'text' : 'password'}
+                {...register('confirmPassword')}
+                className={errors.confirmPassword ? 'border-destructive pr-10' : 'pr-10'}
+                disabled={isLoading}
+              />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             {errors.confirmPassword && (
               <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
             )}
