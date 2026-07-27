@@ -319,7 +319,7 @@ export default function ParentProfilePage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('parents.detail.membership', 'Membership Fee')}</p>
                   <p className="mt-1 text-lg font-bold text-slate-900">
-                    {parent.membershipFee != null ? `${Number(parent.membershipFee).toLocaleString()} ETB` : t('parents.detail.notSet', 'Not set')}
+                    {parent.membershipFee != null ? `${Number(parent.membershipFee).toLocaleString()} ${t('common.etb', 'ETB')}` : t('parents.detail.notSet', 'Not set')}
                   </p>
                 </div>
                 <MembershipStatusBadge status={parent.membershipStatus} />
@@ -857,12 +857,13 @@ function StatusBadge({ status }: { status: ParentStatus }) {
 }
 
 function MembershipStatusBadge({ status }: { status: MembershipStatus }) {
+  const { t } = useLocale();
   const isPaid = status === 'PAID';
   const className = isPaid
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
     : 'border-amber-200 bg-amber-50 text-amber-700';
 
-  return <Badge className={className}>{isPaid ? 'Paid' : 'Unpaid'}</Badge>;
+  return <Badge className={className}>{isPaid ? t('parents.membership.paid', 'Paid') : t('parents.membership.unpaid', 'Unpaid')}</Badge>;
 }
 
 function parseIncome(notes?: string | null) {

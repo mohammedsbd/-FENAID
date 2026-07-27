@@ -195,20 +195,20 @@ export default function ChildProfilePage() {
         title: t('children.detail.export.personalInfo', 'Personal Information'),
         fields: [
           [t('children.detail.export.fullName', 'Full Name'), child.fullName],
-          [t('children.detail.export.gender', 'Gender'), child.gender],
+          [t('children.detail.export.gender', 'Gender'), t('enum.gender.' + (child.gender || '').toLowerCase(), child.gender)],
           [t('children.detail.export.dateOfBirth', 'Date of Birth'), formatDate(child.dateOfBirth, calendarSystem)],
           [t('children.detail.export.age', 'Age'), `${calculateAge(child.dateOfBirth)} ${t('children.detail.export.years', 'years')}`],
-          [t('children.detail.export.communication', 'Communication'), formatEnum(child.communicationAbility)],
-          [t('children.detail.export.status', 'Status'), formatEnum(child.status)],
+          [t('children.detail.export.communication', 'Communication'), t('enum.communication.' + (child.communicationAbility || '').toLowerCase(), formatEnum(child.communicationAbility))],
+          [t('children.detail.export.status', 'Status'), t('enum.childStatus.' + (child.status || '').toLowerCase(), formatEnum(child.status))],
         ] as [string, string][],
       },
       {
         title: t('children.detail.export.disabilityEducation', 'Disability & Education'),
         fields: [
-          [t('children.detail.export.type', 'Type'), formatEnum(child.disabilityType)],
+          [t('children.detail.export.type', 'Type'), t('enum.disabilityType.' + (child.disabilityType || '').toLowerCase(), formatEnum(child.disabilityType))],
           [t('children.detail.export.category', 'Category'), child.disabilityCategory],
-          [t('children.detail.export.severity', 'Severity'), formatEnum(child.severityLevel)],
-          [t('children.detail.export.schoolStatus', 'School Status'), formatEnum(child.schoolEnrollmentStatus)],
+          [t('children.detail.export.severity', 'Severity'), t('enum.severity.' + (child.severityLevel || '').toLowerCase(), formatEnum(child.severityLevel))],
+          [t('children.detail.export.schoolStatus', 'School Status'), t('enum.schoolStatus.' + (child.schoolEnrollmentStatus || '').toLowerCase(), formatEnum(child.schoolEnrollmentStatus))],
         ] as [string, string][],
       },
       {
@@ -311,7 +311,7 @@ export default function ChildProfilePage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <DisabilityIcon type={child.disabilityType as any} />
-                    {formatEnum(child.disabilityType)}
+                    {t('enum.disabilityType.' + (child.disabilityType || '').toLowerCase(), formatEnum(child.disabilityType))}
                   </span>
                   <span className="flex items-center gap-1">
                     <UserRound className="h-4 w-4" />
@@ -429,21 +429,21 @@ function ProfileTab({
       icon: UserRound,
       fields: [
         [t('children.detail.profileTab.fullName', 'Full Name'), child.fullName],
-        [t('children.detail.profileTab.gender', 'Gender'), child.gender],
+        [t('children.detail.profileTab.gender', 'Gender'), t('enum.gender.' + (child.gender || '').toLowerCase(), child.gender)],
         [t('children.detail.profileTab.dob', 'Date of Birth'), formatDate(child.dateOfBirth, calendarSystem)],
         [t('children.detail.profileTab.age', 'Age'), `${calculateAge(child.dateOfBirth)} ${t('children.detail.profileTab.years', 'years')}`],
-        [t('children.detail.profileTab.communication', 'Communication'), formatEnum(child.communicationAbility)],
-        [t('children.detail.profileTab.status', 'Status'), formatEnum(child.status)],
+        [t('children.detail.profileTab.communication', 'Communication'), t('enum.communication.' + (child.communicationAbility || '').toLowerCase(), formatEnum(child.communicationAbility))],
+        [t('children.detail.profileTab.status', 'Status'), t('enum.childStatus.' + (child.status || '').toLowerCase(), formatEnum(child.status))],
       ],
     },
     {
       title: t('children.detail.profileTab.disabilityEducation', 'Disability & Education'),
       icon: Accessibility,
       fields: [
-        [t('children.detail.profileTab.type', 'Type'), formatEnum(child.disabilityType)],
+        [t('children.detail.profileTab.type', 'Type'), t('enum.disabilityType.' + (child.disabilityType || '').toLowerCase(), formatEnum(child.disabilityType))],
         [t('children.detail.profileTab.category', 'Category'), child.disabilityCategory],
-        [t('children.detail.profileTab.severity', 'Severity'), formatEnum(child.severityLevel)],
-        [t('children.detail.profileTab.schoolStatus', 'School Status'), formatEnum(child.schoolEnrollmentStatus)],
+        [t('children.detail.profileTab.severity', 'Severity'), t('enum.severity.' + (child.severityLevel || '').toLowerCase(), formatEnum(child.severityLevel))],
+        [t('children.detail.profileTab.schoolStatus', 'School Status'), t('enum.schoolStatus.' + (child.schoolEnrollmentStatus || '').toLowerCase(), formatEnum(child.schoolEnrollmentStatus))],
       ],
     },
   ];
@@ -558,7 +558,7 @@ function ProgressTab({
                       )}
                       <span className="text-sm font-medium">{ms.title}</span>
                     </div>
-                    <Badge variant="secondary" className="text-[10px]">{formatEnum(ms.status)}</Badge>
+                    <Badge variant="secondary" className="text-[10px]">{t('enum.milestoneStatus.' + (ms.status || '').toLowerCase(), formatEnum(ms.status))}</Badge>
                   </div>
                 ))}
               </div>
@@ -587,9 +587,9 @@ function ProgressTab({
                      goal.type === 'SHORT_TERM' ? "bg-blue-500" : "bg-purple-500"
                    )} />
                    <div className="flex items-center justify-between">
-                     <Badge className={goal.type === 'SHORT_TERM' ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300"}>
-                       {formatEnum(goal.type)}
-                     </Badge>
+<Badge className={goal.type === 'SHORT_TERM' ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" : "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300"}>
+                        {t('enum.goalType.' + (goal.type || '').toLowerCase(), formatEnum(goal.type))}
+                      </Badge>
                      <span className="text-[10px] text-muted-foreground">{formatDate(goal.createdAt, calendarSystem)}</span>
                    </div>
                    <h4 className="text-sm font-bold">{goal.title}</h4>
@@ -634,7 +634,7 @@ function ServicesTab({
                 <TableRow key={sa.id}>
                   <TableCell className="font-semibold">{sa.service.name}</TableCell>
                   <TableCell>{sa.assignedStaff?.fullName || t('children.detail.servicesTab.na', 'N/A')}</TableCell>
-                  <TableCell>{formatEnum(sa.frequency)}</TableCell>
+                  <TableCell>{t('enum.frequency.' + (sa.frequency || '').toLowerCase(), formatEnum(sa.frequency))}</TableCell>
                   <TableCell>{formatDate(sa.startDate, calendarSystem)}</TableCell>
                   <TableCell>{sa.endDate ? formatDate(sa.endDate, calendarSystem) : t('children.detail.servicesTab.ongoing', 'Ongoing')}</TableCell>
                   <TableCell><GenericStatusBadge status={sa.status} /></TableCell>
@@ -683,7 +683,7 @@ function AppointmentsTab({
                   <div>
                     <h4 className="text-sm font-bold">{apt.title}</h4>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(apt.scheduledAt, calendarSystem)} at {format(new Date(apt.scheduledAt), 'hh:mm a')} / {apt.staff?.fullName}
+                      {formatDate(apt.scheduledAt, calendarSystem)} {t('appointments.at', 'at')} {format(new Date(apt.scheduledAt), 'hh:mm a')} / {apt.staff?.fullName}
                     </p>
                   </div>
                 </div>
@@ -887,7 +887,7 @@ function SeverityBadge({ level }: { level: 'MILD' | 'MODERATE' | 'SEVERE' }) {
     MODERATE: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
     SEVERE: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
   };
-  return <Badge className={classes[level]}>{formatEnum(level)}</Badge>;
+  return <Badge className={classes[level]}>{tI18n('enum.severity.' + level.toLowerCase(), formatEnum(level))}</Badge>;
 }
 
 function StatusBadge({ status }: { status: 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED' | 'INACTIVE' | 'DECEASED' }) {
@@ -898,7 +898,7 @@ function StatusBadge({ status }: { status: 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED
     INACTIVE: 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 border-slate-200 dark:border-neutral-700',
     DECEASED: 'bg-red-950 text-white border-red-900',
   };
-  return <Badge className={classes[status]}>{formatEnum(status)}</Badge>;
+  return <Badge className={classes[status]}>{tI18n('enum.childStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
 }
 
 function GenericStatusBadge({ status }: { status: string }) {
@@ -908,7 +908,7 @@ function GenericStatusBadge({ status }: { status: string }) {
     : ['PENDING', 'ALLOCATED', 'IN_PROGRESS', 'SCHEDULED'].includes(normalized)
       ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
       : 'border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400';
-  return <Badge className={className}>{formatEnum(status)}</Badge>;
+  return <Badge className={className}>{tI18n('enum.serviceAssignmentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
 }
 
 function EmptyState({ message }: { message: string }) {

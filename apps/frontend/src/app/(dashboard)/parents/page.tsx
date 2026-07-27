@@ -433,7 +433,7 @@ export default function ParentsPage() {
             <FilterSelect label={t('parents.filter.membership', 'Membership')} value={membershipStatus} onChange={setMembershipStatus}>
               <option value="">{t('parents.filter.membershipAll', 'All')}</option>
               {membershipStatusOptions.map((option) => (
-                <option key={option} value={option}>{formatEnum(option)}</option>
+                <option key={option} value={option}>{t(`enum.membershipStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
             <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={setFinancialBracket}>
@@ -696,6 +696,7 @@ function BracketBadge({ bracket }: { bracket: FinancialBracket }) {
 }
 
 function MembershipBadge({ status, fee, onToggle }: { status: MembershipStatus; fee?: number | null; onToggle?: () => void }) {
+  const { t } = useLocale();
   const isPaid = status === 'PAID';
   const numericFee = fee != null ? Number(fee) : null;
   return (
@@ -707,13 +708,13 @@ function MembershipBadge({ status, fee, onToggle }: { status: MembershipStatus; 
           onToggle?.();
         }}
         className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all hover:opacity-80 active:scale-95"
-        title={isPaid ? 'Click to mark as unpaid' : 'Click to mark as paid'}
+        title={isPaid ? t('parents.membership.markUnpaid', 'Click to mark as unpaid') : t('parents.membership.markPaid', 'Click to mark as paid')}
       >
         <span className={`h-1.5 w-1.5 rounded-full ${isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-        {isPaid ? 'Paid' : 'Unpaid'}
+        {isPaid ? t('parents.membership.paid', 'Paid') : t('parents.membership.unpaid', 'Unpaid')}
       </button>
       {numericFee != null && (
-        <span className="text-[11px] font-medium text-slate-500">{numericFee.toLocaleString()} ETB</span>
+        <span className="text-[11px] font-medium text-slate-500">{numericFee.toLocaleString()} {t('common.etb', 'ETB')}</span>
       )}
     </div>
   );
