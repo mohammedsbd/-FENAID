@@ -82,6 +82,10 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsEnum(AppointmentStatus)
   status?: AppointmentStatus;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListAppointmentsDto {
