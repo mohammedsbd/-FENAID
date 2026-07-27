@@ -1,6 +1,7 @@
 import { GoalType, MilestoneStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
+  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -61,6 +62,10 @@ export class UpdateMilestoneDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 // Goals DTOs
@@ -97,6 +102,10 @@ export class UpdateGoalDto {
 
   @IsOptional()
   isAchieved?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListGoalsDto {

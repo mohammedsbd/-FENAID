@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationType, Prisma } from '@prisma/client';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { I18nService } from '../i18n/i18n.service';
@@ -52,36 +53,49 @@ export class ReferralsService {
       }
     }
 
-    const referral = await this.prisma.referral.create({
-      data: {
-        parentId: dto.parentId,
-        childId: dto.childId,
-        referredTo: dto.referredTo,
-        referralReason: dto.referralReason,
-        referralDate: new Date(dto.referralDate),
-        status: dto.status ?? 'PENDING',
-        notes: dto.notes,
-        outcome: dto.outcome,
-        followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : null,
-        referredById: staffId,
-      },
-      include: {
-        parent: { select: { id: true, fullName: true, photoUrl: true } },
-        child: { select: { id: true, fullName: true, photoUrl: true } },
-        staff: { select: { id: true, fullName: true } },
-      },
-    });
+    const referral = await this.prisma.$transaction(async (tx) => {
+      const r = await tx.referral.create({
+        data: {
+          parentId: dto.parentId,
+          childId: dto.childId,
+          referredTo: dto.referredTo,
+          referralReason: dto.referralReason,
+          referralDate: new Date(dto.referralDate),
+          status: dto.status ?? 'PENDING',
+          notes: dto.notes,
+          outcome: dto.outcome,
+          followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : null,
+          referredById: staffId,
+        },
+        include: {
+          parent: { select: { id: true, fullName: true, photoUrl: true } },
+          child: { select: { id: true, fullName: true, photoUrl: true } },
+          staff: { select: { id: true, fullName: true } },
+        },
+      });
 
-    await this.logAudit(staffId, 'CREATE', referral.id, referral);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Referral',
+          entityId: r.id,
+          changes: { after: JSON.parse(JSON.stringify(r)) },
+        },
+      });
+
+      return r;
+    });
 
     const targetName =
       referral.child?.fullName ?? referral.parent?.fullName ?? 'Unknown';
 
     await this.notifications.notifyStaffAndAdmins([staffId], {
-      message: this.i18n.t('notification.referralMade', {
+      notificationKey: 'notification.referralMade',
+      params: {
         targetName,
         organization: referral.referredTo,
-      }),
+      },
       type: NotificationType.REFERRAL_MADE,
       entityType: 'Referral',
       entityId: referral.id,
@@ -92,7 +106,7 @@ export class ReferralsService {
 
   async findAll(query: ListReferralsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ReferralWhereInput = {
@@ -161,6 +175,7 @@ export class ReferralsService {
 
   async update(staffId: string, id: string, dto: UpdateReferralDto) {
     const existing = await this.findOne(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Referral');
 
     const updateData: Prisma.ReferralUpdateInput = {};
     if (dto.referredTo !== undefined) updateData.referredTo = dto.referredTo;
@@ -176,50 +191,62 @@ export class ReferralsService {
         ? new Date(dto.followUpDate)
         : null;
 
-    const updated = await this.prisma.referral.update({
-      where: { id },
-      data: updateData,
-      include: {
-        parent: { select: { id: true, fullName: true, photoUrl: true } },
-        child: { select: { id: true, fullName: true, photoUrl: true } },
-        staff: { select: { id: true, fullName: true } },
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.referral.update({
+        where: { id },
+        data: updateData,
+        include: {
+          parent: { select: { id: true, fullName: true, photoUrl: true } },
+          child: { select: { id: true, fullName: true, photoUrl: true } },
+          staff: { select: { id: true, fullName: true } },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Referral',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
     return updated;
   }
 
   async remove(staffId: string, id: string) {
     const existing = await this.findOne(id);
 
-    const updated = await this.prisma.referral.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.referral.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE',
+          entity: 'Referral',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'DELETE', id, updated, existing);
     return { success: true };
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'Referral',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: JSON.parse(JSON.stringify(after)),
-        },
-      },
-    });
-  }
 }

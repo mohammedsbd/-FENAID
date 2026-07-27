@@ -74,6 +74,10 @@ export class UpdateReferralDto {
   @IsOptional()
   @IsDateString()
   followUpDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListReferralsDto {

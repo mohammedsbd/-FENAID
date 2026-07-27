@@ -10,6 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { StaffRole } from '@prisma/client';
+import { Idempotent } from '../common/decorators/idempotent.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
@@ -26,6 +27,7 @@ export class ReferralsController {
   constructor(private readonly referralsService: ReferralsService) {}
 
   @Post()
+  @Idempotent()
   @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   create(
     @Req() req: AuthenticatedRequest,
