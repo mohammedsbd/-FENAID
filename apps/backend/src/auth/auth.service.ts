@@ -1,23 +1,34 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './types/jwt-payload.type';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly configService: ConfigService,
+    private readonly i18n: I18nService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(
@@ -139,6 +150,16 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
 
+      await tx.auditLog.create({
+        data: {
+          staffId: staff.id,
+          action: 'PASSWORD_CHANGED',
+          entity: 'Staff',
+          entityId: staff.id,
+          changes: {},
+        },
+      });
+
       return tx.staff.update({
         where: { id: staffId },
         data: {
@@ -158,7 +179,7 @@ export class AuthService {
 
     return {
       user: updatedStaff,
-      message: 'Password changed successfully. All other sessions have been revoked.',
+      message: this.i18n.t('error.success.changePassword'),
     };
   }
 
@@ -193,6 +214,123 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
     return { success: true };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+    const staff = await this.prisma.staff.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+
+    if (!staff || staff.deletedAt || !staff.isActive) {
+      return { message: this.i18n.t('error.success.forgotPassword') };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.passwordResetToken.create({
+      data: { staffId: staff.id, token, expiresAt },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        staffId: staff.id,
+        action: 'PASSWORD_RESET_REQUESTED',
+        entity: 'Staff',
+        entityId: staff.id,
+        changes: { email: staff.email },
+      },
+    });
+
+    const resetUrl = `${this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000')}/reset-password?token=${token}`;
+
+    await this.mailService.send({
+      to: staff.email,
+      subject: 'Fikir App - Password Reset',
+      text: `Reset your password here: ${resetUrl}\n\nThis link expires in 1 hour.`,
+      html: `<p>Reset your password <a href="${resetUrl}">here</a>.</p><p>This link expires in 1 hour.</p>`,
+    });
+
+    return { message: this.i18n.t('error.success.forgotPassword') };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('error.auth.passwordMismatch');
+    }
+
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { token: dto.token },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new BadRequestException('error.auth.invalidResetToken');
+    }
+
+    const staff = await this.prisma.staff.findUnique({
+      where: { id: record.staffId },
+      select: { passwordHash: true },
+    });
+    if (!staff) throw new NotFoundException('error.account.notFound');
+
+    await this.ensurePasswordNotReused(record.staffId, dto.newPassword, staff.passwordHash);
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordHistory.create({
+        data: {
+          staffId: record.staffId,
+          passwordHash: staff.passwordHash,
+        },
+      });
+
+      await tx.staff.update({
+        where: { id: record.staffId },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          passwordUpdatedAt: new Date(),
+        },
+      });
+
+      await tx.session.updateMany({
+        where: { staffId: record.staffId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+
+      await tx.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId: record.staffId,
+          action: 'PASSWORD_RESET_COMPLETED',
+          entity: 'Staff',
+          entityId: record.staffId,
+          changes: { method: 'reset_token' },
+        },
+      });
+    });
+
+    return { message: this.i18n.t('error.success.resetPassword') };
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanupExpiredTokens() {
+    const result = await this.prisma.passwordResetToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { usedAt: { not: null } },
+        ],
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(`Cleaned up ${result.count} expired/used password reset tokens`);
+    }
   }
 
   private async logLoginAttempt(input: {

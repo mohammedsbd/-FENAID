@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 
-const seedPassword = randomBytes(24).toString('hex');
+const seedPassword = 'password123';
 
 function date(value: string) {
   return new Date(value);
@@ -730,6 +730,7 @@ async function main() {
     });
   }
 
+  console.log('Seed password:', seedPassword);
   console.log('Seed completed for Fikir system.');
   console.log(
     `Staff: ${[admin1, admin2, caseworker1, caseworker2].length}`,
