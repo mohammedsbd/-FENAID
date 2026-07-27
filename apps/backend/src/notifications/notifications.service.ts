@@ -12,7 +12,9 @@ import { I18nService } from '../i18n/i18n.service';
 
 type NotificationInput = {
   staffId: string;
-  message: string;
+  message?: string;
+  notificationKey?: string;
+  params?: Record<string, unknown>;
   type: NotificationType;
   entityType?: string;
   entityId?: string;
@@ -81,10 +83,18 @@ export class NotificationsService {
       }
     }
 
+    const message =
+      data.message ||
+      (data.notificationKey
+        ? this.i18n.t(data.notificationKey, data.params)
+        : '');
+
     return this.prisma.notification.create({
       data: {
         staffId: data.staffId,
-        message: data.message,
+        message,
+        notificationKey: data.notificationKey,
+        params: (data.params ?? undefined) as any,
         type: data.type,
         entityType: data.entityType,
         entityId: data.entityId,
@@ -184,7 +194,8 @@ export class NotificationsService {
     for (const child of children) {
       await this.createNotification({
         staffId: child.assignedStaffId,
-        message: this.i18n.t('notification.progressOverdue', { childName: child.fullName }),
+        notificationKey: 'notification.progressOverdue',
+        params: { childName: child.fullName },
         type: NotificationType.PROGRESS_OVERDUE,
         entityType: 'Child',
         entityId: child.id,
@@ -214,10 +225,11 @@ export class NotificationsService {
     for (const assignment of assignments) {
       await this.createNotification({
         staffId: assignment.assignedStaffId,
-        message: this.i18n.t('notification.serviceExpiring', {
+        notificationKey: 'notification.serviceExpiring',
+        params: {
           serviceName: assignment.service.name,
           endDate: assignment.endDate?.toLocaleDateString() ?? '',
-        }),
+        },
         type: NotificationType.SERVICE_EXPIRY,
         entityType: 'ServiceAssignment',
         entityId: assignment.id,
@@ -252,10 +264,11 @@ export class NotificationsService {
           doc.child?.assignedStaffId ??
           doc.parent?.assignedStaffId ??
           doc.uploadedById,
-        message: this.i18n.t('notification.documentExpiring', {
+        notificationKey: 'notification.documentExpiring',
+        params: {
           docName: doc.name,
           expiryDate: doc.expiresAt?.toLocaleDateString() ?? '',
-        }),
+        },
         type: NotificationType.DOCUMENT_EXPIRY,
         entityType: 'Document',
         entityId: doc.id,
@@ -281,7 +294,8 @@ export class NotificationsService {
     let created = 0;
     for (const allocation of allocations) {
       created += await this.notifyAdmins({
-        message: this.i18n.t('notification.stagnantFund', { parentName: allocation.parent.fullName }),
+        notificationKey: 'notification.stagnantFund',
+        params: { parentName: allocation.parent.fullName },
         type: NotificationType.FUND_REMINDER,
         entityType: 'FundAllocation',
         entityId: allocation.id,
@@ -323,11 +337,12 @@ export class NotificationsService {
 
       await this.createNotification({
         staffId: appointment.staffId,
-        message: this.i18n.t('notification.appointmentReminder', {
+        notificationKey: 'notification.appointmentReminder',
+        params: {
           title: appointment.title,
           targetName,
           time: appointment.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }),
+        },
         type: NotificationType.GENERAL,
         entityType: 'Appointment',
         entityId: appointment.id,
@@ -354,7 +369,8 @@ export class NotificationsService {
     const summaryDate = new Date().toISOString().slice(0, 10);
 
     const sent = await this.notifyAdmins({
-      message: this.i18n.t('notification.weeklyDonationSummary', { count, amount }),
+      notificationKey: 'notification.weeklyDonationSummary',
+      params: { count, amount },
       type: NotificationType.GENERAL,
       entityType: 'DonationSummary',
       entityId: summaryDate,

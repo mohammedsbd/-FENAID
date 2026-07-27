@@ -543,14 +543,16 @@ model Document {
 }
 
 model Notification {
-  id         String           @id @default(cuid())
-  staffId    String
-  message    String
-  isRead     Boolean          @default(false)
-  type       NotificationType
-  entityType String?
-  entityId   String?
-  createdAt  DateTime         @default(now())
+  id              String           @id @default(cuid())
+  staffId         String
+  message         String
+  notificationKey String?
+  params          Json?
+  isRead          Boolean          @default(false)
+  type            NotificationType
+  entityType      String?
+  entityId        String?
+  createdAt       DateTime         @default(now())
 
   staff Staff @relation(fields: [staffId], references: [id])
 
@@ -708,6 +710,7 @@ model Staff {
   savedQueries             SavedQuery[]      @relation("SavedQueryCreator")
   dataExportLogs           DataExportLog[]   @relation("DataExportLogStaff")
   referrals                Referral[]
+  passwordResetTokens      PasswordResetToken[]
 
   @@index([role, isActive])
   @@index([createdAt])
@@ -776,4 +779,28 @@ model Referral {
   @@index([status])
   @@index([referralDate])
   @@index([referredById, status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  staffId   String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([token])
+  @@index([staffId])
+  @@index([expiresAt])
+}
+
+model IdempotencyRecord {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  response  Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
