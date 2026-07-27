@@ -99,90 +99,92 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold">{t('auth.changePassword.welcomeTitle', 'Welcome to Fikir')}</h2>
-        <p className="text-sm text-muted-foreground">{t('auth.changePassword.instruction', 'Please set your new password to continue.')}</p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="currentPassword">{t('auth.changePassword.currentPasswordLabel', 'Current Password')}</Label>
-          <Input
-            id="currentPassword"
-            type="password"
-            {...register('currentPassword')}
-            className={errors.currentPassword ? 'border-destructive' : ''}
-            disabled={isLoading}
-          />
-          {errors.currentPassword && (
-            <p className="text-xs text-destructive">{errors.currentPassword.message}</p>
-          )}
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:from-neutral-900 dark:to-neutral-950">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold">{t('auth.changePassword.welcomeTitle', 'Welcome to Fikir')}</h2>
+          <p className="text-sm text-muted-foreground">{t('auth.changePassword.instruction', 'Please set your new password to continue.')}</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="newPassword">{t('auth.changePassword.newPasswordLabel', 'New Password')}</Label>
-          <Input
-            id="newPassword"
-            type="password"
-            {...register('newPassword')}
-            className={errors.newPassword ? 'border-destructive' : ''}
-            disabled={isLoading}
-          />
-          
-          <div className="mt-2 space-y-1">
-            <div className="flex items-center justify-between text-[10px] uppercase font-bold text-muted-foreground">
-              <span>{t('auth.changePassword.strengthLabel', 'Strength: {label}', { label: strength.label })}</span>
-            </div>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
-              <div 
-                className={cn("h-full transition-all duration-300", strength.color)} 
-                style={{ width: strength.width }}
-              />
-            </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">{t('auth.changePassword.currentPasswordLabel', 'Current Password')}</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              {...register('currentPassword')}
+              className={errors.currentPassword ? 'border-destructive' : ''}
+              disabled={isLoading}
+            />
+            {errors.currentPassword && (
+              <p className="text-xs text-destructive">{errors.currentPassword.message}</p>
+            )}
           </div>
 
-          <div className="mt-3 space-y-1.5">
-            {passwordRequirements.map((req, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                {req.met ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <Circle className="h-3.5 w-3.5 text-slate-300" />
-                )}
-                <span className={req.met ? 'text-foreground' : 'text-muted-foreground'}>
-                  {req.label}
-                </span>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">{t('auth.changePassword.newPasswordLabel', 'New Password')}</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              {...register('newPassword')}
+              className={errors.newPassword ? 'border-destructive' : ''}
+              disabled={isLoading}
+            />
+            
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-muted-foreground">
+                <span>{t('auth.changePassword.strengthLabel', 'Strength: {label}', { label: strength.label })}</span>
               </div>
-            ))}
+              <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                <div 
+                  className={cn("h-full transition-all duration-300", strength.color)} 
+                  style={{ width: strength.width }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-1.5">
+              {passwordRequirements.map((req, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  {req.met ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Circle className="h-3.5 w-3.5 text-slate-300" />
+                  )}
+                  <span className={req.met ? 'text-foreground' : 'text-muted-foreground'}>
+                    {req.label}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">{t('auth.changePassword.confirmPasswordLabel', 'Confirm New Password')}</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            {...register('confirmPassword')}
-            className={errors.confirmPassword ? 'border-destructive' : ''}
-            disabled={isLoading}
-          />
-          {errors.confirmPassword && (
-            <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
-          )}
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">{t('auth.changePassword.confirmPasswordLabel', 'Confirm New Password')}</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              {...register('confirmPassword')}
+              className={errors.confirmPassword ? 'border-destructive' : ''}
+              disabled={isLoading}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+            )}
+          </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('auth.changePassword.updating', 'Updating...')}
-            </>
-          ) : (
-            t('auth.changePassword.buttonText', 'Set New Password')
-          )}
-        </Button>
-      </form>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('auth.changePassword.updating', 'Updating...')}
+              </>
+            ) : (
+              t('auth.changePassword.buttonText', 'Set New Password')
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

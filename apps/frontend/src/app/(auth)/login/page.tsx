@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { Eye, EyeOff, Loader2, LogIn, User, Lock, Languages } from 'lucide-react';
+import { Eye, EyeOff, Loader2, LogIn, User, Lock, Languages, Sun, Moon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLocale } from '@/components/providers/locale-provider';
+import { useTheme } from '@/components/providers/theme-provider';
 import api from '../../../lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t, locale, setLocale } = useLocale();
+  const { theme, setTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -96,7 +98,7 @@ export default function LoginPage() {
         <img
           src={defaultLoginImageUrl}
           alt="Fikir login background"
-          className="absolute inset-0 h-full w-full object-contain"
+          className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
@@ -132,8 +134,16 @@ export default function LoginPage() {
 
       {/* Right Side — Login Form */}
       <div className="relative flex w-full items-center justify-center bg-white p-8 lg:w-1/2 dark:bg-neutral-950">
-        {/* Top Right — Language Selector */}
-        <div className="absolute right-6 top-6">
+        {/* Top Right — Language Selector & Theme Toggle */}
+        <div className="absolute right-6 top-6 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white dark:border-neutral-700 dark:bg-neutral-900/90 dark:hover:bg-neutral-900"
+            aria-label={t('common.toggleTheme', 'Toggle theme')}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4 text-primary" /> : <Moon className="h-4 w-4 text-primary" />}
+          </button>
           <Select value={locale} onValueChange={handleLanguageChange}>
             <SelectTrigger
               aria-label={t('auth.login.selectLanguage', 'Select language')}
