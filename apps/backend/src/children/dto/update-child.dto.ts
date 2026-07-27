@@ -78,4 +78,8 @@ export class UpdateChildDto {
   @IsString()
   @MinLength(1)
   assignedStaffId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }

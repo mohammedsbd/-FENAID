@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateChildDto } from './dto/create-child.dto';
 import { ListChildrenDto } from './dto/list-children.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { JwtPayload } from '../auth/types/jwt-payload.type';
 import { I18nService } from '../i18n/i18n.service';
 
@@ -52,45 +53,53 @@ export class ChildrenService {
     }
     const idTag = `FKC-${String(nextNum).padStart(4, '0')}`;
 
-    const child = await this.prisma.child.create({
-      data: {
-        ...dto,
-        idTag,
-        dateOfBirth: new Date(dto.dateOfBirth),
-        status: dto.status ?? ChildStatus.ACTIVE,
-      },
-      include: {
-        parent: {
-          select: {
-            id: true,
-            fullName: true,
-            photoUrl: true,
-            nationalId: true,
-            phone: true,
-            financialBracket: true,
-            status: true,
+    const child = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.child.create({
+        data: {
+          ...dto,
+          idTag,
+          dateOfBirth: new Date(dto.dateOfBirth),
+          status: dto.status ?? ChildStatus.ACTIVE,
+        },
+        include: {
+          parent: {
+            select: {
+              id: true,
+              fullName: true,
+              photoUrl: true,
+              nationalId: true,
+              phone: true,
+              financialBracket: true,
+              status: true,
+            },
+          },
+          assignedStaff: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
           },
         },
-        assignedStaff: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'CREATE',
-      entityId: child.id,
-      changes: this.diffChild(null, child),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Child',
+          entityId: c.id,
+          changes: this.diffChild(null, c),
+        },
+      });
+
+      return c;
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: this.i18n.t('notification.childRegistered', { childName: child.fullName, idTag: child.idTag, staffName: child.assignedStaff.fullName }),
+      notificationKey: 'notification.childRegistered',
+      params: { childName: child.fullName, idTag: child.idTag, staffName: child.assignedStaff.fullName },
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -110,7 +119,7 @@ export class ChildrenService {
 
   async findAll(user: JwtPayload, query: ListChildrenDto) {
     const page = query.page ?? 1;
-    const limit = Math.min(query.limit ?? 20, 100000);
+    const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ChildWhereInput = {
@@ -330,6 +339,8 @@ export class ChildrenService {
   async update(staffId: string, id: string, dto: UpdateChildDto) {
     const existing = await this.findChildForAudit(id);
 
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Child');
+
     if (dto.parentId) {
       await this.ensureParentExists(dto.parentId);
     }
@@ -343,39 +354,46 @@ export class ChildrenService {
       dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
     });
 
-    const child = await this.prisma.child.update({
-      where: { id },
-      data,
-      include: {
-        parent: {
-          select: {
-            id: true,
-            fullName: true,
-            photoUrl: true,
-            nationalId: true,
-            phone: true,
+    const child = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.child.update({
+        where: { id },
+        data,
+        include: {
+          parent: {
+            select: {
+              id: true,
+              fullName: true,
+              photoUrl: true,
+              nationalId: true,
+              phone: true,
+            },
+          },
+          assignedStaff: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
           },
         },
-        assignedStaff: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'UPDATE',
-      entityId: child.id,
-      changes: this.diffChild(existing, child),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Child',
+          entityId: c.id,
+          changes: this.diffChild(existing, c),
+        },
+      });
+
+      return c;
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: this.childUpdateMessage(existing, child),
+      ...this.childUpdateMessage(existing, child),
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -387,23 +405,31 @@ export class ChildrenService {
   async remove(staffId: string, id: string) {
     const existing = await this.findChildForAudit(id);
 
-    const child = await this.prisma.child.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: 'INACTIVE' as ChildStatus,
-      },
-    });
+    const child = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.child.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: 'INACTIVE' as ChildStatus,
+        },
+      });
 
-    await this.logAudit({
-      staffId,
-      action: 'DELETE',
-      entityId: child.id,
-      changes: this.diffChild(existing, child),
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE',
+          entity: 'Child',
+          entityId: c.id,
+          changes: this.diffChild(existing, c),
+        },
+      });
+
+      return c;
     });
 
     await this.notifications.notifyStaffAndAdmins([child.assignedStaffId], {
-      message: this.i18n.t('notification.childStatusChanged', { childName: existing.fullName, status: 'INACTIVE' }),
+      notificationKey: 'notification.childStatusChanged',
+      params: { childName: existing.fullName, status: 'INACTIVE' },
       type: NotificationType.GENERAL,
       entityType: 'Child',
       entityId: child.id,
@@ -413,19 +439,13 @@ export class ChildrenService {
   }
 
   private childUpdateMessage(existing: ChildAuditSnapshot, child: Child) {
-    if (existing.assignedStaffId !== child.assignedStaffId) {
-      return `Child reassigned: ${child.fullName} (${child.idTag}) has a new assigned staff member.`;
-    }
-
-    if (existing.status !== child.status) {
-      return `Child status changed: ${child.fullName} (${child.idTag}) is now ${child.status}.`;
-    }
-
-    if (existing.severityLevel !== child.severityLevel) {
-      return `Child severity updated: ${child.fullName} (${child.idTag}) is now ${child.severityLevel}.`;
-    }
-
-    return `Child profile updated: ${child.fullName} (${child.idTag}).`;
+    if (existing.assignedStaffId !== child.assignedStaffId)
+      return { notificationKey: 'notification.childReassigned', params: { childName: child.fullName, idTag: child.idTag } };
+    if (existing.status !== child.status)
+      return { notificationKey: 'notification.childStatusChanged', params: { childName: child.fullName, idTag: child.idTag, status: child.status } };
+    if (existing.severityLevel !== child.severityLevel)
+      return { notificationKey: 'notification.childSeverityUpdated', params: { childName: child.fullName, idTag: child.idTag, severity: child.severityLevel } };
+    return { notificationKey: 'notification.childProfileUpdated', params: { childName: child.fullName, idTag: child.idTag } };
   }
 
   private async ensureParentExists(parentId: string) {
@@ -575,20 +595,4 @@ export class ChildrenService {
     ) as T;
   }
 
-  private async logAudit(input: {
-    staffId: string;
-    action: 'CREATE' | 'UPDATE' | 'DELETE';
-    entityId: string;
-    changes: Prisma.InputJsonValue;
-  }) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId: input.staffId,
-        action: input.action,
-        entity: 'Child',
-        entityId: input.entityId,
-        changes: input.changes,
-      },
-    });
-  }
 }
