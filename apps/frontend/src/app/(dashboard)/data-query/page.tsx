@@ -124,7 +124,7 @@ export default function DataQueryPage() {
       if (format === 'pdf') {
         exportQueryPdf('Custom Data Query', payload.results, payload.columns);
       } else {
-        exportQueryExcel(payload);
+        exportQueryExcel(payload, t);
       }
     } finally {
       setExporting(false);
