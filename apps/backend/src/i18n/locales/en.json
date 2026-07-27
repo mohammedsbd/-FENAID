@@ -9,6 +9,11 @@
       "invalidToken": "Invalid token: missing session ID",
       "sessionInactive": "Session is no longer active"
     },
+    "success": {
+      "forgotPassword": "If that email exists, a reset link has been sent.",
+      "resetPassword": "Password reset successfully. Please log in with your new password.",
+      "changePassword": "Password changed successfully. All other sessions have been revoked."
+    },
     "account": {
       "emailExists": "An account with this email already exists",
       "notFound": "Account not found",
@@ -42,14 +47,18 @@
       "childIdMustBeNull": "childId must be null for targetType PARENT",
       "parentIdMustBeNull": "parentId must be null for targetType CHILD",
       "assignmentNotFound": "Service assignment not found",
-      "duplicateName": "A service with this name already exists"
+      "duplicateName": "A service with this name already exists",
+      "activeAssignments": "Cannot deactivate a service with active assignments",
+      "targetTypeMismatch": "Service target type ({serviceTargetType}) does not match assignment target type ({assignmentTargetType})"
     },
     "donation": {
-      "notFound": "Donation not found"
+      "notFound": "Donation not found",
+      "restrictedFields": "Restricted donations require either a restrictedToChildId or restrictedToServiceId"
     },
     "fund": {
       "notFound": "Fund allocation not found",
-      "forbidden": "Only finance staff or higher can modify fund allocations"
+      "forbidden": "Only finance staff or higher can modify fund allocations",
+      "finalized": "This record is finalized and cannot be modified."
     },
     "document": {
       "notFound": "Document not found"
@@ -60,10 +69,18 @@
     },
     "dataQuery": {
       "viewerExportForbidden": "Viewers must use anonymized exports",
+      "invalidFilterStructure": "Invalid filter structure",
+      "exportLimit": "Export exceeds {limit} records. Please narrow your filters.",
       "invalidField": "Invalid field: {field} for entity {entity}",
       "savedQueryNotFound": "Saved query not found",
       "onlyCreatorCanUpdate": "Only the creator or super admin can update",
       "onlyCreatorCanDelete": "Only the creator or super admin can delete"
+    },
+    "volunteer": {
+      "notFound": "Volunteer not found",
+      "emailExists": "Email already registered for a volunteer",
+      "emailConflict": "Email already registered for another volunteer",
+      "serviceRecordNotFound": "Volunteer service record not found"
     },
     "internal": "Internal server error"
   },
@@ -94,7 +111,14 @@
     "donationReceived": "Donation received: {amount} ETB from {donorName}{target}.",
     "serviceAssigned": "Service assigned: {serviceName} for {targetName}.",
     "serviceAssignmentUpdated": "Service assignment updated: {serviceName} is now {status}.",
+    "parentReassigned": "Parent reassigned: {parentName} ({idTag}) has a new assigned staff member.",
+    "parentStatusChangedTo": "Parent status changed: {parentName} ({idTag}) is now {status}.",
+    "parentProfileUpdated": "Parent profile updated: {parentName} ({idTag}).",
     "welcome": "Welcome to Fikir, {staffName}.",
-    "passwordReset": "Your password has been reset."
+    "passwordReset": "Your password has been reset.",
+    "childReassigned": "Child reassigned: {childName} ({idTag}) has a new assigned staff member.",
+    "childSeverityUpdated": "Child severity updated: {childName} ({idTag}) is now {severity}.",
+    "childProfileUpdated": "Child profile updated: {childName} ({idTag}).",
+    "referralMade": "Referral made: {targetName} has been referred to {organization}."
   }
 }

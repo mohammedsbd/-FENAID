@@ -53,7 +53,7 @@ export function IsDataQueryFilters(validationOptions?: ValidationOptions) {
       name: 'IsDataQueryFilters',
       target: object.constructor,
       propertyName,
-      options: validationOptions || { message: 'Invalid filter structure' },
+      options: validationOptions || { message: 'error.dataQuery.invalidFilterStructure' },
       validator: {
         validate(value: unknown) {
           if (typeof value !== 'object' || value === null) return false;
@@ -80,7 +80,7 @@ export function IsDataQueryFilters(validationOptions?: ValidationOptions) {
           return true;
         },
         defaultMessage() {
-          return 'filters contains invalid structure or field types';
+          return 'error.dataQuery.invalidFilterStructure';
         },
       },
     });

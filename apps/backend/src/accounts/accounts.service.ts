@@ -7,6 +7,7 @@ import {
 import { AccessLevel, PermissionModule, Prisma, StaffRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
@@ -23,6 +24,7 @@ type AuditMeta = { ipAddress?: string; userAgent?: string };
 export class AccountsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
   ) {}
 
   async findAll(query: ListAccountsDto) {
@@ -123,7 +125,7 @@ export class AccountsService {
         data: {
           staffId: staff.id,
           type: 'GENERAL',
-          message: `Welcome to Fikir, ${staff.fullName}.`,
+          message: this.i18n.t('notification.welcome', { staffName: staff.fullName }),
         },
       });
     }
@@ -239,7 +241,7 @@ export class AccountsService {
         data: {
           staffId: staff.id,
           type: 'GENERAL',
-          message: 'Your password has been reset.',
+           message: this.i18n.t('notification.passwordReset'),
         },
       });
     }

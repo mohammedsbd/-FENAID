@@ -14,6 +14,7 @@ import {
   Prisma,
   StaffRole,
 } from '@prisma/client';
+import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RunQueryDto } from './dto/run-query.dto';
 import { SaveQueryDto, UpdateSavedQueryDto } from './dto/save-query.dto';
@@ -60,7 +61,10 @@ type QueryRow = ChildRow | ParentRow;
 
 @Injectable()
 export class DataQueryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async runQuery(
     staffId: string,
@@ -152,7 +156,7 @@ export class DataQueryService {
 
     if (total > MAX_EXPORT) {
       throw new BadRequestException(
-        'Export exceeds 5000 records. Please narrow your filters.',
+        this.i18n.t('error.dataQuery.exportLimit', { limit: MAX_EXPORT }),
       );
     }
 

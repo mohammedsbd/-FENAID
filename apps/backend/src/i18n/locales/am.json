@@ -4,13 +4,18 @@
       "invalidCredentials": "የተሳሳተ ኢሜይል ወይም የይለፍ ቃል",
       "staffInactive": "የሰራተኛ መለያ ንቁ አይደለም",
       "currentPasswordIncorrect": "የአሁኑ የይለፍ ቃል ትክክል አይደለም",
-      "passwordMismatch": "አዲስ የይለፍ ቃል እና ማረጋገጫ መዛመድ አለባቸው",
+      "passwordMismatch": "አዲስ የይለፍ ቃል እና ማረጋገጫው መዛመድ አለባቸው",
       "passwordHistory": "አዲሱ የይለፍ ቃል ካለፉት 3 የይለፍ ቃላት ጋር መመሳሰል የለበትም",
-      "invalidToken": "ልክ ያልሆነ ማስመሰያ፡ የክፍለ-ጊዜ መለያ የለም",
-      "sessionInactive": "ክፍለ-ጊዜ ንቁ አይደለም"
+      "invalidToken": "ህጋዊ ያልሆነ ማስመሰያ፡ የክፍለ-ጊዜ መለያ የለም",
+      "sessionInactive": "ክፍለ-ጊዜው ንቁ አይደለም"
+    },
+    "success": {
+      "forgotPassword": "ያ ኢሜይል በስርዓታችን ውስጥ ከተገኘ፣ የይለፍ ቃል መቀየሪያ አገናኝ ተልኳል።",
+      "resetPassword": "የይለፍ ቃል በተሳካ ሁኔታ ተቀይሯል። እባክዎ በአዲሱ የይለፍ ቃልዎ ይግቡ።",
+      "changePassword": "የይለፍ ቃል በተሳካ ሁኔታ ተቀይሯል። ሁሉም ሌሎች ክፍለ-ጊዜዎች ተሰርዘዋል።"
     },
     "account": {
-      "emailExists": "በዚህ ኢሜይል መለያ አስቀድሞ አለ",
+      "emailExists": "በዚህ ኢሜይል የተመዘገበ መለያ አስቀድሞ አለ",
       "notFound": "መለያ አልተገኘም",
       "targetNotFound": "የዒላማ መለያ አልተገኘም",
       "cannotDeleteSelf": "የራስዎን መለያ መሰረዝ አይችሉም",
@@ -27,12 +32,12 @@
     },
     "parent": {
       "notFound": "ወላጅ አልተገኘም",
-      "duplicateIdTag": "በዚህ መለያ መለያ ያለው ወላጅ አስቀድሞ አለ",
+      "duplicateIdTag": "በዚህ የመታወቂያ መለያ ወላጅ አስቀድሞ አለ",
       "invalidStaff": "assignedStaffId ንቁ ሰራተኛን ማመልከት አለበት"
     },
     "appointment": {
       "notFound": "ቀጠሮ አልተገኘም",
-      "invalidMonth": "ልክ ያልሆነ የወር ቅርጸት፡ ዓመት-ወር (YYYY-MM) ተጠቀም"
+      "invalidMonth": "ህጋዊ ያልሆነ የወር ቅርጸት፡ YYYY-MM ይጠቀሙ"
     },
     "service": {
       "notFound": "አገልግሎት አልተገኘም",
@@ -42,14 +47,18 @@
       "childIdMustBeNull": "childId ለ targetType PARENT ባዶ መሆን አለበት",
       "parentIdMustBeNull": "parentId ለ targetType CHILD ባዶ መሆን አለበት",
       "assignmentNotFound": "የአገልግሎት ምደባ አልተገኘም",
-      "duplicateName": "በዚህ ስም አገልግሎት አስቀድሞ አለ"
+      "duplicateName": "በዚህ ስም የተመዘገበ አገልግሎት አስቀድሞ አለ",
+      "activeAssignments": "ንቁ ምደባ ያለው አገልግሎትን ማቋረጥ አይቻልም",
+      "targetTypeMismatch": "የአገልግሎት ዒላማ አይነት ({serviceTargetType}) ከምደባ ዒላማ አይነት ({assignmentTargetType}) ጋር አይዛመድም"
     },
     "donation": {
-      "notFound": "ልገሳ አልተገኘም"
+      "notFound": "ልገሳ አልተገኘም",
+      "restrictedFields": "የተከለከለ ልገሳ restrictedToChildId ወይም restrictedToServiceId ያስፈልገዋል"
     },
     "fund": {
       "notFound": "የገንዘብ ድልድል አልተገኘም",
-      "forbidden": "የፋይናንስ ሰራተኞች ወይም ከፍ ያሉ ብቻ የገንዘብ ድልድል መቀየር ይችላሉ"
+      "forbidden": "የፋይናንስ ሰራተኞች ወይም ከዚያ በላይ ደረጃ ያላቸው ብቻ የገንዘብ ድልድል መቀየር ይችላሉ",
+      "finalized": "ይህ መዝገብ የተጠናቀቀ ስለሆነ ሊሻሻል አይችልም"
     },
     "document": {
       "notFound": "ሰነድ አልተገኘም"
@@ -60,20 +69,28 @@
     },
     "dataQuery": {
       "viewerExportForbidden": "ተመልካቾች ስም-አልባ ኤክስፖርቶችን መጠቀም አለባቸው",
-      "invalidField": "ልክ ያልሆነ መስክ፡ {field} ለ {entity}",
+      "invalidFilterStructure": "ህጋዊ ያልሆነ የማጣሪያ መዋቅር",
+      "exportLimit": "ኤክስፖርት ከ{limit} መዝገቦች ይበልጣል። እባክዎ ማጣሪያዎችዎን ያጥቡ",
+      "invalidField": "ህጋዊ ያልሆነ መስክ፡ {field} ለ {entity}",
       "savedQueryNotFound": "የተቀመጠ ጥያቄ አልተገኘም",
-      "onlyCreatorCanUpdate": "ፈጣሪ ወይም ሱፐር አድሚን ብቻ መዘመን ይችላል",
+      "onlyCreatorCanUpdate": "ፈጣሪ ወይም ሱፐር አድሚን ብቻ ማዘመን ይችላል",
       "onlyCreatorCanDelete": "ፈጣሪ ወይም ሱፐር አድሚን ብቻ መሰረዝ ይችላል"
+    },
+    "volunteer": {
+      "notFound": "በጎ ፈቃደኛ አልተገኘም",
+      "emailExists": "ኢሜይሉ ለበጎ ፈቃደኛ አስቀድሞ ተመዝግቧል",
+      "emailConflict": "ኢሜይሉ ለሌላ በጎ ፈቃደኛ አስቀድሞ ተመዝግቧል",
+      "serviceRecordNotFound": "የበጎ ፈቃደኛ አገልግሎት መዝገብ አልተገኘም"
     },
     "internal": "የውስጥ አገልጋይ ስህተት"
   },
   "notification": {
-    "progressOverdue": "ያለፈ የእድገት ማስታወሻ፡ {childName} ከ30 ቀናት በላይ የእድገት ማስታወሻ አልነበረውም።",
+    "progressOverdue": "ያለፈ የእድገት ማስታወሻ፡ {childName} ከ30 ቀናት በላይ የእድገት ማስታወሻ አልተጻፈለትም።",
     "serviceExpiring": "የሚያበቃ አገልግሎት፡ የ{serviceName} ምደባ በ{endDate} ያበቃል።",
     "documentExpiring": "የሚያበቃ ሰነድ፡ {docName} በ{expiryDate} ያበቃል።",
-    "stagnantFund": "የቆመ የገንዘብ ድልድል፡ {parentName} ከ14 ቀናት በላይ ያለ ክፍያ የተመደበለት ገንዘብ አለው።",
-    "appointmentReminder": "የቀጠሮ ማሳሰቢያ፡ {title} ለ{targetName} ነገ በ{time} ተይዞል።",
-    "weeklyDonationSummary": "ሳምንታዊ የልገሳ ማጠቃለያ፡ ባለፉት 7 ቀናት ውስጥ {count} ልገሳዎች {amount} ብር ተቀብሏል።",
+    "stagnantFund": "የቆመ የገንዘብ ድልድል፡ ለ{parentName} ከ14 ቀናት በላይ ያለ ክፍያ የተመደበ ገንዘብ አለ።",
+    "appointmentReminder": "የቀጠሮ ማሳሰቢያ፡ {title} ለ{targetName} ነገ በ{time} ተይዟል።",
+    "weeklyDonationSummary": "ሳምንታዊ የልገሳ ማጠቃለያ፡ ባለፉት 7 ቀናት ውስጥ {count} ልገሳዎች በድምሩ {amount} ብር ተቀብለዋል።",
     "childRegistered": "አዲስ ልጅ ተመዝግቧል፡ {childName} ({idTag}) ለ{staffName} ተመድቧል።",
     "childUpdated": "ልጅ ተዘምኗል፡ {childName} ({changes})",
     "childStatusChanged": "የልጅ ሁኔታ ተቀይሯል፡ {childName} አሁን {status} ነው።",
@@ -85,16 +102,23 @@
     "milestoneUpdated": "የምዕራፍ ነጥብ ተዘምኗል፡ {title} ለ{childName} አሁን {status} ነው።",
     "goalAdded": "ግብ ተጨምሯል፡ {title} ለ{childName}።",
     "goalUpdated": "ግብ ተዘምኗል፡ {title} ለ{childName}{achieved}።",
-    "appointmentScheduled": "ቀጠሮ ተይዞል፡ {title} ለ{targetName} በ{date}።",
-    "appointmentUpdated": "ቀጠሮ ተዘምኗል፡ {title} አሁን {status} ነው እና ለ{date} ተይዞል።",
+    "appointmentScheduled": "ቀጠሮ ተይዟል፡ {title} ለ{targetName} በ{date}።",
+    "appointmentUpdated": "ቀጠሮ ተዘምኗል፡ {title} አሁን {status} ነው፣ ለ{date} ተይዟል።",
     "attendanceLogged": "መገኘት ተመዝግቧል፡ {count} መዝገብ(ች) ለ{title}።",
     "documentUploaded": "ሰነድ ተሰቅሏል፡ {name} ለ{ownerName}።",
     "fundAllocated": "ገንዘብ ተመድቧል፡ {amount} ብር ለ{parentName} ({purpose})።",
-    "fundStatusUpdated": "የገንዘብ ሁኔታ ተዘምኗል፡ {parentName} {amount} ብር ድልድል አሁን {status}{acknowledged} ነው።",
+    "fundStatusUpdated": "የገንዘብ ሁኔታ ተዘምኗል፡ የ{parentName} {amount} ብር ድልድል አሁን {status}{acknowledged} ነው።",
     "donationReceived": "ልገሳ ተቀብሏል፡ {amount} ብር ከ{donorName}{target}።",
     "serviceAssigned": "አገልግሎት ተመድቧል፡ {serviceName} ለ{targetName}።",
     "serviceAssignmentUpdated": "የአገልግሎት ምደባ ተዘምኗል፡ {serviceName} አሁን {status} ነው።",
+    "parentReassigned": "ወላጅ እንደገና ተመድቧል፡ {parentName} ({idTag}) አዲስ የተመደበ ሰራተኛ አለው።",
+    "parentStatusChangedTo": "የወላጅ ሁኔታ ተቀይሯል፡ {parentName} ({idTag}) አሁን {status} ነው።",
+    "parentProfileUpdated": "የወላጅ መገለጫ ተዘምኗል፡ {parentName} ({idTag})።",
     "welcome": "እንኳን ወደ Fikir በደህና መጡ፣ {staffName}።",
-    "passwordReset": "የይለፍ ቃልዎ ተመልሷል።"
+    "passwordReset": "የይለፍ ቃልዎ ተመልሷል።",
+    "childReassigned": "ልጅ ተለዋውጧል፦ {childName} ({idTag}) አዲስ የተመደበለት ሰራተኛ አለው።",
+    "childSeverityUpdated": "የልጅ ክብደት ተለውጧል፦ {childName} ({idTag}) አሁን {severity} ነው።",
+    "childProfileUpdated": "የልጅ መገለጫ ተለውጧል፦ {childName} ({idTag})።",
+    "referralMade": "ሪፈራል ተደርጓል፦ {targetName} ወደ {organization} ተልኳል።"
   }
 }
