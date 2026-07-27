@@ -18,23 +18,35 @@ export class DocumentsService {
   async create(staffId: string, dto: CreateDocumentDto) {
     this.validateFileUrl(dto.fileUrl);
 
-    const document = await this.prisma.document.create({
-      data: {
-        name: dto.name,
-        category: dto.category,
-        fileUrl: dto.fileUrl,
-        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
-        uploadedById: staffId,
-        parentId: dto.parentId,
-        childId: dto.childId,
-      },
-      include: {
-        parent: { select: { fullName: true, assignedStaffId: true } },
-        child: { select: { fullName: true, assignedStaffId: true } },
-      },
-    });
+    const document = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.document.create({
+        data: {
+          name: dto.name,
+          category: dto.category,
+          fileUrl: dto.fileUrl,
+          expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+          uploadedById: staffId,
+          parentId: dto.parentId,
+          childId: dto.childId,
+        },
+        include: {
+          parent: { select: { fullName: true, assignedStaffId: true } },
+          child: { select: { fullName: true, assignedStaffId: true } },
+        },
+      });
 
-    await this.logAudit(staffId, 'CREATE', document.id, document);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Document',
+          entityId: d.id,
+          changes: { after: JSON.parse(JSON.stringify(d)) },
+        },
+      });
+
+      return d;
+    });
 
     const ownerName =
       document.child?.fullName ??
@@ -44,7 +56,8 @@ export class DocumentsService {
     await this.notifications.notifyStaffAndAdmins(
       [document.child?.assignedStaffId ?? document.parent?.assignedStaffId],
       {
-        message: this.i18n.t('notification.documentUploaded', { name: document.name, ownerName }),
+        notificationKey: 'notification.documentUploaded',
+        params: { name: document.name, ownerName },
         type: NotificationType.GENERAL,
         entityType: 'Document',
         entityId: document.id,
@@ -96,11 +109,28 @@ export class DocumentsService {
     const existing = await this.prisma.document.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundException('error.document.notFound');
 
-    const updated = await this.prisma.document.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.document.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE',
+          entity: 'Document',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
-    await this.logAudit(staffId, 'DELETE', id, updated, existing);
+
     return { success: true };
   }
 
@@ -128,24 +158,4 @@ export class DocumentsService {
     }
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'Document',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: after ? JSON.parse(JSON.stringify(after)) : null,
-        },
-      },
-    });
-  }
 }

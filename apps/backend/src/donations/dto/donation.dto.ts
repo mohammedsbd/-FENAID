@@ -56,6 +56,10 @@ export class UpdateDonationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListDonationsDto {

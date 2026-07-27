@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationType, Prisma } from '@prisma/client';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -24,9 +25,7 @@ export class DonationsService {
   async create(staffId: string, dto: CreateDonationDto) {
     if (dto.isRestricted) {
       if (!dto.restrictedToChildId && !dto.restrictedToServiceId) {
-        throw new BadRequestException(
-          'Restricted donations require either a restrictedToChildId or restrictedToServiceId',
-        );
+        throw new BadRequestException('error.donation.restrictedFields');
       }
     }
 
@@ -35,32 +34,44 @@ export class DonationsService {
     const randomPart = Math.floor(1000 + Math.random() * 9000);
     const receiptNumber = `DON-${year}-${randomPart}`;
 
-    const donation = await this.prisma.donation.create({
-      data: {
-        donorName: dto.donorName,
-        donorContact: dto.donorContact,
-        donorType: dto.donorType,
-        amount: new Prisma.Decimal(dto.amount),
-        donationDate: new Date(dto.donationDate),
-        purpose: dto.purpose,
-        isRestricted: dto.isRestricted ?? false,
-        restrictedToChildId: dto.restrictedToChildId,
-        restrictedToServiceId: dto.restrictedToServiceId,
-        receivedById: staffId,
-        receiptNumber,
-        notes: dto.notes,
-      },
-      include: {
-        restrictedToChild: {
-          select: { id: true, fullName: true, assignedStaffId: true },
+    const donation = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.donation.create({
+        data: {
+          donorName: dto.donorName,
+          donorContact: dto.donorContact,
+          donorType: dto.donorType,
+          amount: new Prisma.Decimal(dto.amount),
+          donationDate: new Date(dto.donationDate),
+          purpose: dto.purpose,
+          isRestricted: dto.isRestricted ?? false,
+          restrictedToChildId: dto.restrictedToChildId,
+          restrictedToServiceId: dto.restrictedToServiceId,
+          receivedById: staffId,
+          receiptNumber,
+          notes: dto.notes,
         },
-        restrictedToService: {
-          select: { id: true, name: true },
+        include: {
+          restrictedToChild: {
+            select: { id: true, fullName: true, assignedStaffId: true },
+          },
+          restrictedToService: {
+            select: { id: true, name: true },
+          },
         },
-      },
-    });
+      });
 
-    await this.logAudit(staffId, 'CREATE', donation.id, donation);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Donation',
+          entityId: d.id,
+          changes: { after: JSON.parse(JSON.stringify(d)) },
+        },
+      });
+
+      return d;
+    });
 
     const restrictedTarget = donation.restrictedToChild
       ? ` for ${donation.restrictedToChild.fullName}`
@@ -71,7 +82,8 @@ export class DonationsService {
     await this.notifications.notifyStaffAndAdmins(
       [donation.restrictedToChild?.assignedStaffId],
       {
-        message: this.i18n.t('notification.donationReceived', { amount: donation.amount, donorName: donation.donorName, target: restrictedTarget || '' }),
+        notificationKey: 'notification.donationReceived',
+        params: { amount: donation.amount, donorName: donation.donorName, target: restrictedTarget || '' },
         type: NotificationType.GENERAL,
         entityType: 'Donation',
         entityId: donation.id,
@@ -106,6 +118,7 @@ export class DonationsService {
 
     return this.prisma.donation.findMany({
       where,
+      take: 1000,
       include: {
         receivedBy: { select: { fullName: true } },
         restrictedToChild: { select: { fullName: true } },
@@ -134,15 +147,31 @@ export class DonationsService {
 
   async update(staffId: string, id: string, dto: UpdateDonationDto) {
     const existing = await this.findOne(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Donation');
 
-    const updated = await this.prisma.donation.update({
-      where: { id },
-      data: {
-        notes: dto.notes,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.donation.update({
+        where: { id },
+        data: {
+          notes: dto.notes,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Donation',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
-
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
 
     return updated;
   }
@@ -177,24 +206,4 @@ export class DonationsService {
     };
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'Donation',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: JSON.parse(JSON.stringify(after)),
-        },
-      },
-    });
-  }
 }
