@@ -152,7 +152,7 @@ export function MyAccountClient({ tab: activeTab }: { tab?: 'profile' | 'securit
                 <AvatarFallback className="bg-primary/5 text-primary text-2xl">{form.fullName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="text-center md:text-left space-y-1">
-                <h4 className="font-semibold">{t('myAccount.fullName', 'User Profile')}</h4>
+                <h4 className="font-semibold">{form.fullName || t('myAccount.fullName', 'User Profile')}</h4>
                 <p className="text-xs text-muted-foreground">{t(`enum.role.${profile?.role?.toLowerCase()}`, profile?.role?.replace(/_/g, ' ') || '')}</p>
               </div>
             </div>

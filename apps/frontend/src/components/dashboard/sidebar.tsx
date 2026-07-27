@@ -22,6 +22,12 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/components/providers/locale-provider';
 import { fetchSession } from '@/lib/auth';
@@ -47,7 +53,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [user, setUser] = useState<any>(null);
   const { t } = useLocale();
 
@@ -84,31 +90,41 @@ export function Sidebar() {
       <div className="mx-4 border-t border-gray-100 dark:border-neutral-800" />
 
       <ScrollArea className="flex-1 px-3">
-        <nav className="flex flex-col gap-2 py-6 min-h-full justify-center">
-          {navItems.map((item) => {
-            if (item.superAdminOnly && user?.role !== 'SUPER_ADMIN') return null;
-            if (item.roles && !item.roles.includes(user?.role)) return null;
-            const isActive = item.href === '/dashboard' 
-              ? pathname === '/dashboard' 
-              : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-4 rounded-xl px-5 py-3 text-base font-medium transition-all duration-150',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-slate-100 hover:text-foreground dark:hover:bg-neutral-800 dark:hover:text-neutral-100',
-                  isCollapsed && 'justify-center px-2'
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && <span>{t(item.label, item.label)}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+        <TooltipProvider delayDuration={0}>
+          <nav className="flex flex-col gap-2 py-6 min-h-full justify-center">
+            {navItems.map((item) => {
+              if (item.superAdminOnly && user?.role !== 'SUPER_ADMIN') return null;
+              if (item.roles && !item.roles.includes(user?.role)) return null;
+              const isActive = item.href === '/dashboard' 
+                ? pathname === '/dashboard' 
+                : pathname.startsWith(item.href);
+              return (
+                <TooltipRoot key={item.href}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-4 rounded-xl px-5 py-3 text-base font-medium transition-all duration-150',
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:bg-slate-100 hover:text-foreground dark:hover:bg-neutral-800 dark:hover:text-neutral-100',
+                        isCollapsed && 'justify-center px-2'
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!isCollapsed && <span>{t(item.label, item.label)}</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side="right" className="ml-2">
+                      {t(item.label, item.label)}
+                    </TooltipContent>
+                  )}
+                </TooltipRoot>
+              );
+            })}
+          </nav>
+        </TooltipProvider>
       </ScrollArea>
       <Button
         variant="ghost"

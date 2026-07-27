@@ -30,9 +30,7 @@ export function SystemSettingsClient() {
     setDraftCalendarSystem(calendarSystem);
   }, [calendarSystem]);
 
-  if (role !== 'SUPER_ADMIN') {
-    return null;
-  }
+  const isSuperAdmin = role === 'SUPER_ADMIN';
 
   async function save() {
     setSaving(true);
@@ -61,51 +59,53 @@ export function SystemSettingsClient() {
 
   return (
     <>
-      <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-muted-foreground">
-            <CalendarDays className="h-5 w-5" />
-          </span>
-          <div>
-            <CardTitle className="text-lg">{t('systemSettings.title', 'System calendar')}</CardTitle>
-            <CardDescription>
-              {t('systemSettings.description', 'Controls date entry and display across staff pages.')}
-            </CardDescription>
+      {isSuperAdmin && (
+        <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-muted-foreground">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div>
+              <CardTitle className="text-lg">{t('systemSettings.title', 'System calendar')}</CardTitle>
+              <CardDescription>
+                {t('systemSettings.description', 'Controls date entry and display across staff pages.')}
+              </CardDescription>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-3 md:grid-cols-2">
-          <CalendarOption
-            label={t('systemSettings.gregorian', 'Gregorian')}
-            description={t('systemSettings.gregorianDesc', 'Use standard Gregorian dates for staff screens.')}
-            checked={draftCalendarSystem === 'GREGORIAN'}
-            onClick={() => setDraftCalendarSystem('GREGORIAN')}
-          />
-          <CalendarOption
-            label={t('systemSettings.ethiopian', 'Ethiopian')}
-            description={t('systemSettings.ethiopianDesc', 'Use Ethiopian calendar dates for local workflows.')}
-            checked={draftCalendarSystem === 'ETHIOPIAN'}
-            onClick={() => setDraftCalendarSystem('ETHIOPIAN')}
-          />
-        </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-2">
+            <CalendarOption
+              label={t('systemSettings.gregorian', 'Gregorian')}
+              description={t('systemSettings.gregorianDesc', 'Use standard Gregorian dates for staff screens.')}
+              checked={draftCalendarSystem === 'GREGORIAN'}
+              onClick={() => setDraftCalendarSystem('GREGORIAN')}
+            />
+            <CalendarOption
+              label={t('systemSettings.ethiopian', 'Ethiopian')}
+              description={t('systemSettings.ethiopianDesc', 'Use Ethiopian calendar dates for local workflows.')}
+              checked={draftCalendarSystem === 'ETHIOPIAN'}
+              onClick={() => setDraftCalendarSystem('ETHIOPIAN')}
+            />
+          </div>
 
-        <div className="rounded-md border bg-muted/40 p-3 text-sm">
-          <Label className="text-xs uppercase text-muted-foreground">{t('systemSettings.preview', 'Preview')}</Label>
-          <p className="mt-1 font-medium">
-            {t('systemSettings.today', 'Today: {date}', { date: formatCalendarDate(new Date(), draftCalendarSystem) })}
-          </p>
-        </div>
+          <div className="rounded-md border bg-muted/40 p-3 text-sm">
+            <Label className="text-xs uppercase text-muted-foreground">{t('systemSettings.preview', 'Preview')}</Label>
+            <p className="mt-1 font-medium">
+              {t('systemSettings.today', 'Today: {date}', { date: formatCalendarDate(new Date(), draftCalendarSystem) })}
+            </p>
+          </div>
 
-        <Button onClick={save} disabled={saving || draftCalendarSystem === calendarSystem}>
-          <Save className="h-4 w-4" />
-          {saving ? t('systemSettings.saving', 'Saving...') : t('systemSettings.save', 'Save calendar setting')}
-        </Button>
-      </CardContent>
-    </Card>
+          <Button onClick={save} disabled={saving || draftCalendarSystem === calendarSystem}>
+            <Save className="h-4 w-4" />
+            {saving ? t('systemSettings.saving', 'Saving...') : t('systemSettings.save', 'Save calendar setting')}
+          </Button>
+        </CardContent>
+      </Card>
+      )}
 
-    <Card>
+      <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-muted-foreground">

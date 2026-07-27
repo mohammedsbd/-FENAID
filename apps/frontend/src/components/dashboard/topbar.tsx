@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/providers/locale-provider';
+import { t as tI18n } from '@/lib/i18n';
 import { useCalendarSettings } from '@/components/providers/calendar-settings-provider';
 import { fetchSession } from '@/lib/auth';
 import {
@@ -49,6 +50,8 @@ import Link from 'next/link';
 type Notification = {
   id: string;
   message: string;
+  notificationKey?: string | null;
+  params?: Record<string, string | number> | null;
   type: string;
   entityType?: string | null;
   entityId?: string | null;
@@ -669,7 +672,9 @@ function NotificationRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm leading-5 text-foreground">
-          {notification.message}
+          {notification.notificationKey
+            ? tI18n(notification.notificationKey, notification.message, notification.params ?? undefined)
+            : notification.message}
         </span>
         <span className="mt-1 block text-xs text-muted-foreground">
           {formatDistanceToNow(new Date(notification.createdAt), {
