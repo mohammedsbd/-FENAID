@@ -79,6 +79,10 @@ export class UpdateServiceAssignmentDto {
   @IsOptional()
   @IsEnum(ServiceFrequency)
   frequency?: ServiceFrequency;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class ListServiceAssignmentsDto {

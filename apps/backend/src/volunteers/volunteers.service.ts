@@ -1,32 +1,50 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
+import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVolunteerDto, UpdateVolunteerDto, CreateVolunteerServiceDto } from './dto/volunteer.dto';
 
 @Injectable()
 export class VolunteersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async create(staffId: string, dto: CreateVolunteerDto) {
     const existing = await this.prisma.volunteer.findUnique({
       where: { email: dto.email },
     });
     if (existing) {
-      throw new BadRequestException('Email already registered for a volunteer');
+      throw new BadRequestException('error.volunteer.emailExists');
     }
 
-    const volunteer = await this.prisma.volunteer.create({
-      data: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: dto.email,
-        phone: dto.phone,
-        serviceTypes: dto.serviceTypes,
-        notes: dto.notes,
-        status: 'ACTIVE',
-      },
+    const volunteer = await this.prisma.$transaction(async (tx) => {
+      const v = await tx.volunteer.create({
+        data: {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: dto.email,
+          phone: dto.phone,
+          serviceTypes: dto.serviceTypes,
+          notes: dto.notes,
+          status: 'ACTIVE',
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Volunteer',
+          entityId: v.id,
+          changes: { after: JSON.parse(JSON.stringify(v)) },
+        },
+      });
+
+      return v;
     });
 
-    await this.logAudit(staffId, 'CREATE', volunteer.id, volunteer);
     return volunteer;
   }
 
@@ -87,7 +105,7 @@ export class VolunteersService {
     });
 
     if (!volunteer) {
-      throw new NotFoundException('Volunteer not found');
+      throw new NotFoundException('error.volunteer.notFound');
     }
 
     return volunteer;
@@ -95,32 +113,66 @@ export class VolunteersService {
 
   async update(staffId: string, id: string, dto: UpdateVolunteerDto) {
     const existing = await this.findOne(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Volunteer');
 
     if (dto.email && dto.email !== existing.email) {
       const emailConflict = await this.prisma.volunteer.findUnique({
         where: { email: dto.email },
       });
       if (emailConflict) {
-        throw new BadRequestException('Email already registered for another volunteer');
+        throw new BadRequestException('error.volunteer.emailConflict');
       }
     }
 
-    const updated = await this.prisma.volunteer.update({
-      where: { id },
-      data: dto,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.volunteer.update({
+        where: { id },
+        data: dto,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Volunteer',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
     return updated;
   }
 
   async remove(staffId: string, id: string) {
     const existing = await this.findOne(id);
-    const updated = await this.prisma.volunteer.update({
-      where: { id },
-      data: { deletedAt: new Date(), status: 'INACTIVE' },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.volunteer.update({
+        where: { id },
+        data: { deletedAt: new Date(), status: 'INACTIVE' },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE',
+          entity: 'Volunteer',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
-    await this.logAudit(staffId, 'DELETE', id, updated, existing);
+
     return { success: true };
   }
 
@@ -132,30 +184,43 @@ export class VolunteersService {
         where: { id: dto.childId },
       });
       if (!child) {
-        throw new NotFoundException('Child not found');
+        throw new NotFoundException('error.child.notFound');
       }
     }
 
-    const service = await this.prisma.volunteerService.create({
-      data: {
-        volunteerId,
-        serviceType: dto.serviceType,
-        childId: dto.childId || null,
-        description: dto.description,
-        serviceDate: new Date(dto.serviceDate),
-        notes: dto.notes,
-      },
-      include: {
-        child: {
-          select: {
-            id: true,
-            fullName: true,
+    const service = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.volunteerService.create({
+        data: {
+          volunteerId,
+          serviceType: dto.serviceType,
+          childId: dto.childId || null,
+          description: dto.description,
+          serviceDate: new Date(dto.serviceDate),
+          notes: dto.notes,
+        },
+        include: {
+          child: {
+            select: {
+              id: true,
+              fullName: true,
+            },
           },
         },
-      },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE_VOLUNTEER_SERVICE',
+          entity: 'Volunteer',
+          entityId: s.id,
+          changes: { after: JSON.parse(JSON.stringify(s)) },
+        },
+      });
+
+      return s;
     });
 
-    await this.logAudit(staffId, 'CREATE_VOLUNTEER_SERVICE', service.id, service);
     return service;
   }
 
@@ -164,35 +229,29 @@ export class VolunteersService {
       where: { id: serviceId },
     });
     if (!existing) {
-      throw new NotFoundException('Volunteer service record not found');
+      throw new NotFoundException('error.volunteer.serviceRecordNotFound');
     }
 
-    await this.prisma.volunteerService.delete({
-      where: { id: serviceId },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.volunteerService.delete({
+        where: { id: serviceId },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DELETE_VOLUNTEER_SERVICE',
+          entity: 'Volunteer',
+          entityId: serviceId,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: null,
+          },
+        },
+      });
     });
 
-    await this.logAudit(staffId, 'DELETE_VOLUNTEER_SERVICE', serviceId, null, existing);
     return { success: true };
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'Volunteer',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: after ? JSON.parse(JSON.stringify(after)) : null,
-        },
-      },
-    });
-  }
 }

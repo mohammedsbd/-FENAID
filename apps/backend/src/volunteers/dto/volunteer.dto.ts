@@ -54,6 +54,10 @@ export class UpdateVolunteerDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
 }
 
 export class CreateVolunteerServiceDto {

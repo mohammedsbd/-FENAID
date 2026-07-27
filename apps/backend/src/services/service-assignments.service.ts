@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationType, Prisma, ServiceTargetType } from '@prisma/client';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -51,7 +52,10 @@ export class ServiceAssignmentsService {
 
     if (service.targetType !== dto.targetType) {
       throw new BadRequestException(
-        `Service targetType (${service.targetType}) does not match assignment targetType (${dto.targetType})`,
+        this.i18n.t('error.service.targetTypeMismatch', {
+          serviceTargetType: service.targetType,
+          assignmentTargetType: dto.targetType,
+        }),
       );
     }
 
@@ -74,29 +78,41 @@ export class ServiceAssignmentsService {
       );
     }
 
-    const assignment = await this.prisma.serviceAssignment.create({
-      data: {
-        serviceId: dto.serviceId,
-        targetType: dto.targetType,
-        parentId: dto.parentId,
-        childId: dto.childId,
-        assignedStaffId: dto.assignedStaffId,
-        startDate: new Date(dto.startDate),
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
-        frequency: dto.frequency,
-        deliveryMethod: dto.deliveryMethod,
-        status: dto.status ?? 'PENDING',
-        notes: dto.notes,
-      },
-      include: {
-        service: true,
-        parent: { select: { fullName: true, photoUrl: true } },
-        child: { select: { fullName: true, photoUrl: true } },
-        assignedStaff: { select: { fullName: true } },
-      },
-    });
+    const assignment = await this.prisma.$transaction(async (tx) => {
+      const a = await tx.serviceAssignment.create({
+        data: {
+          serviceId: dto.serviceId,
+          targetType: dto.targetType,
+          parentId: dto.parentId,
+          childId: dto.childId,
+          assignedStaffId: dto.assignedStaffId,
+          startDate: new Date(dto.startDate),
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          frequency: dto.frequency,
+          deliveryMethod: dto.deliveryMethod,
+          status: dto.status ?? 'PENDING',
+          notes: dto.notes,
+        },
+        include: {
+          service: true,
+          parent: { select: { fullName: true, photoUrl: true } },
+          child: { select: { fullName: true, photoUrl: true } },
+          assignedStaff: { select: { fullName: true } },
+        },
+      });
 
-    await this.logAudit(staffId, 'CREATE', assignment.id, assignment);
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'ServiceAssignment',
+          entityId: a.id,
+          changes: { after: JSON.parse(JSON.stringify(a)) },
+        },
+      });
+
+      return a;
+    });
 
     const targetName =
       assignment.child?.fullName ??
@@ -104,7 +120,8 @@ export class ServiceAssignmentsService {
       assignment.targetType.toLowerCase();
 
     await this.notifications.notifyStaffAndAdmins([assignment.assignedStaffId], {
-      message: this.i18n.t('notification.serviceAssigned', { serviceName: assignment.service.name, targetName }),
+      notificationKey: 'notification.serviceAssigned',
+      params: { serviceName: assignment.service.name, targetName },
       type: NotificationType.GENERAL,
       entityType: 'ServiceAssignment',
       entityId: assignment.id,
@@ -115,7 +132,7 @@ export class ServiceAssignmentsService {
 
   async findAll(query: ListServiceAssignmentsDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = Math.min(query.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
     const where: Prisma.ServiceAssignmentWhereInput = {
@@ -198,6 +215,7 @@ export class ServiceAssignmentsService {
 
   async update(staffId: string, id: string, dto: UpdateServiceAssignmentDto) {
     const existing = await this.findOne(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'ServiceAssignment');
 
     // Auto-set endDate to today if status changes to COMPLETED
     let endDate = dto.endDate ? new Date(dto.endDate) : undefined;
@@ -212,21 +230,37 @@ export class ServiceAssignmentsService {
     if (dto.deliveryMethod) updateData.deliveryMethod = dto.deliveryMethod;
     if (dto.frequency) updateData.frequency = dto.frequency;
 
-    const updated = await this.prisma.serviceAssignment.update({
-      where: { id },
-      data: updateData,
-      include: {
-        service: true,
-        parent: { select: { fullName: true, id: true, photoUrl: true } },
-        child: { select: { fullName: true, id: true, photoUrl: true } },
-        assignedStaff: { select: { fullName: true, id: true } },
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.serviceAssignment.update({
+        where: { id },
+        data: updateData,
+        include: {
+          service: true,
+          parent: { select: { fullName: true, id: true, photoUrl: true } },
+          child: { select: { fullName: true, id: true, photoUrl: true } },
+          assignedStaff: { select: { fullName: true, id: true } },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'ServiceAssignment',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
-
     await this.notifications.notifyStaffAndAdmins([existing.assignedStaff.id], {
-      message: this.i18n.t('notification.serviceAssignmentUpdated', { serviceName: existing.service.name, status: updated.status }),
+      notificationKey: 'notification.serviceAssignmentUpdated',
+      params: { serviceName: existing.service.name, status: updated.status },
       type: NotificationType.GENERAL,
       entityType: 'ServiceAssignment',
       entityId: updated.id,
@@ -235,24 +269,4 @@ export class ServiceAssignmentsService {
     return updated;
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'ServiceAssignment',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: JSON.parse(JSON.stringify(after)),
-        },
-      },
-    });
-  }
 }

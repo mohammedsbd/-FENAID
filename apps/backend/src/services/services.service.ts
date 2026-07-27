@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ServiceTargetType } from '@prisma/client';
+import { checkOptimisticLock } from '../common/utils/optimistic-lock';
+import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateServiceDto,
@@ -13,20 +15,36 @@ import {
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async create(staffId: string, dto: CreateServiceDto) {
-    const service = await this.prisma.service.create({
-      data: {
-        name: dto.name,
-        description: dto.description,
-        category: dto.category,
-        targetType: dto.targetType,
-        isActive: dto.isActive ?? true,
-      },
+    const service = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.service.create({
+        data: {
+          name: dto.name,
+          description: dto.description,
+          category: dto.category,
+          targetType: dto.targetType,
+          isActive: dto.isActive ?? true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'CREATE',
+          entity: 'Service',
+          entityId: s.id,
+          changes: { after: JSON.parse(JSON.stringify(s)) },
+        },
+      });
+
+      return s;
     });
 
-    await this.logAudit(staffId, 'CREATE', service.id, service);
     return service;
   }
 
@@ -80,19 +98,36 @@ export class ServicesService {
 
   async update(staffId: string, id: string, dto: UpdateServiceDto) {
     const existing = await this.findOne(id);
+    checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Service');
 
-    const updated = await this.prisma.service.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        category: dto.category,
-        targetType: dto.targetType,
-        isActive: dto.isActive,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.service.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          description: dto.description,
+          category: dto.category,
+          targetType: dto.targetType,
+          isActive: dto.isActive,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'UPDATE',
+          entity: 'Service',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'UPDATE', id, updated, existing);
     return updated;
   }
 
@@ -108,38 +143,32 @@ export class ServicesService {
     });
 
     if (activeAssignments > 0) {
-      throw new BadRequestException(
-        'Cannot deactivate a service with active assignments',
-      );
+      throw new BadRequestException('error.service.activeAssignments');
     }
 
-    const updated = await this.prisma.service.update({
-      where: { id },
-      data: { isActive: false },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.service.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'DEACTIVATE',
+          entity: 'Service',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(service)),
+            after: JSON.parse(JSON.stringify(u)),
+          },
+        },
+      });
+
+      return u;
     });
 
-    await this.logAudit(staffId, 'DEACTIVATE', id, updated, service);
     return updated;
   }
 
-  private async logAudit(
-    staffId: string,
-    action: string,
-    entityId: string,
-    after: any,
-    before?: any,
-  ) {
-    await this.prisma.auditLog.create({
-      data: {
-        staffId,
-        action,
-        entity: 'Service',
-        entityId,
-        changes: {
-          before: before ? JSON.parse(JSON.stringify(before)) : null,
-          after: JSON.parse(JSON.stringify(after)),
-        },
-      },
-    });
-  }
 }
