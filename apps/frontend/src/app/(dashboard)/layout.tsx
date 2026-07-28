@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <LocaleProvider initialLocale={initialLocale} initialDictionary={initialDictionary}>
         <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-neutral-900">
           <Sidebar />
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex flex-1 flex-col overflow-hidden pl-[70px]">
             <Topbar />
             <main className="flex-1 overflow-y-auto p-6">
               {children}

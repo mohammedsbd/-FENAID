@@ -15,7 +15,6 @@ import {
   Mail,
   Loader2,
   ChevronRight,
-  Sparkles,
   AlertTriangle,
 } from 'lucide-react';
 
@@ -570,8 +569,7 @@ export default function VolunteersPage() {
             }`}>
               <div className="px-6 py-5 border-b border-border bg-muted/30 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold text-foreground">
                     {editingVolunteer ? t('volunteers.drawer.editTitle', 'Edit Volunteer') : t('volunteers.drawer.registerTitle', 'Register Volunteer')}
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
