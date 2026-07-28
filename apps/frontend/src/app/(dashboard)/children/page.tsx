@@ -105,9 +105,11 @@ export default function ChildrenPage() {
       try {
         const res = await api.get('/dashboard/admin');
         const options = (res.data.caseWorkerWorkload || []).map(
-          (worker: { staffId: string; staffName: string }) => ({
+          (worker: { staffId: string; staffName: string; parentCount: number; childCount: number }) => ({
             id: worker.staffId,
             fullName: worker.staffName,
+            parentCount: worker.parentCount,
+            childCount: worker.childCount,
           }),
         );
         if (options.length) {

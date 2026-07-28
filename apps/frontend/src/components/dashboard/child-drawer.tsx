@@ -33,6 +33,8 @@ const statusOptions: ChildStatus[] = ['ACTIVE', 'GRADUATED', 'TRANSFERRED', 'INA
 const disabilityOptions: DisabilityType[] = ['PHYSICAL', 'INTELLECTUAL', 'MULTIPLE'];
 const severityOptions: SeverityLevel[] = ['MILD', 'MODERATE', 'SEVERE'];
 
+const WORKLOAD_LIMIT = 10;
+
 interface ChildDrawerProps {
   open: boolean;
   childId?: string;
@@ -382,10 +384,57 @@ export function ChildDrawer({
                     </div>
                   </FormField>
                   <FormField label={t('childDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
-                    <select className={selectClassName} value={form.assignedStaffId} onChange={(event) => updateField('assignedStaffId', event.target.value)}>
-                      <option value="">{t('childDrawer.selectStaff', 'Select staff')}</option>
-                      {staffOptions.map((worker) => <option key={worker.id} value={worker.id}>{worker.fullName}</option>)}
-                    </select>
+                    <div className="max-h-64 overflow-y-auto rounded-md border border-input">
+                      {staffOptions.length === 0 ? (
+                        <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                          {t('childDrawer.noStaffAvailable', 'No case workers available')}
+                        </div>
+                      ) : (
+                        staffOptions.map((worker) => {
+                          const workload = (worker.parentCount || 0) + (worker.childCount || 0);
+                          const atLimit = workload >= WORKLOAD_LIMIT;
+                          const isSelected = form.assignedStaffId === worker.id;
+                          return (
+                            <button
+                              key={worker.id}
+                              type="button"
+                              disabled={atLimit && !isSelected}
+                              onClick={() => !atLimit && updateField('assignedStaffId', worker.id)}
+                              className={cn(
+                                'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-input last:border-b-0 hover:bg-muted/50',
+                                isSelected && 'bg-primary/10 font-medium',
+                                atLimit && !isSelected && 'opacity-40 cursor-not-allowed',
+                              )}
+                            >
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                                {initials(worker.fullName)}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="block truncate font-medium">{worker.fullName}</span>
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {t('childDrawer.workload', '{count}/{limit} cases', { count: String(workload), limit: String(WORKLOAD_LIMIT) })}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <span className="shrink-0 rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  {t('childDrawer.selected', 'Selected')}
+                                </span>
+                              )}
+                              {atLimit && !isSelected && (
+                                <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                                  {t('childDrawer.full', 'Full')}
+                                </span>
+                              )}
+                              {workload >= WORKLOAD_LIMIT * 0.8 && workload < WORKLOAD_LIMIT && (
+                                <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                                  {t('childDrawer.nearLimit', 'Near limit')}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </FormField>
                   <FormField label={t('childDrawer.internalNotes', 'Internal Notes')}>
                     <textarea
