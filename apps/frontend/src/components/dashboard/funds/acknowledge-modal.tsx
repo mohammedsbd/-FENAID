@@ -43,8 +43,8 @@ export function AcknowledgeModal({ open, allocation, onClose, onSuccess }: Ackno
     if (!allocation) return;
     setLoading(true);
     try {
-      await api.patch(`/fund-allocations/${allocation.id}`, {
-        parentAcknowledged: true,
+      await api.post(`/fund-allocations/${allocation.id}/acknowledge`, {
+        acknowledged: true,
       });
       toast({ title: t('acknowledgeModal.success', 'Success'), description: t('acknowledgeModal.recorded', 'Parent acknowledgement recorded.') });
       onSuccess();
