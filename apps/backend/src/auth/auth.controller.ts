@@ -50,6 +50,7 @@ export class AuthController {
   ) {
     return this.authService.changePassword(
       request.user.staffId,
+      request.user.sessionId,
       changePasswordDto,
     );
   }

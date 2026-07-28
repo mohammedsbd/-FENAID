@@ -23,10 +23,10 @@ function getSystemTheme(): 'light' | 'dark' {
 }
 
 function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'system';
+  if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem('theme');
   if (stored === 'light' || stored === 'dark') return stored;
-  return 'system';
+  return 'light';
 }
 
 function applyTheme(resolved: 'light' | 'dark') {

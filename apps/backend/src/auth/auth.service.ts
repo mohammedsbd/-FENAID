@@ -112,7 +112,7 @@ export class AuthService {
     };
   }
 
-  async changePassword(staffId: string, dto: ChangePasswordDto) {
+  async changePassword(staffId: string, currentSessionId: string, dto: ChangePasswordDto) {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('error.auth.passwordMismatch');
     }
@@ -146,7 +146,7 @@ export class AuthService {
       });
 
       await tx.session.updateMany({
-        where: { staffId: staff.id, revokedAt: null },
+        where: { staffId: staff.id, revokedAt: null, tokenId: { not: currentSessionId } },
         data: { revokedAt: new Date() },
       });
 
