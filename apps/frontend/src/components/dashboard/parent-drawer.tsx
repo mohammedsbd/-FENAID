@@ -34,6 +34,39 @@ const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 const maritalOptions: MaritalStatus[] = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'];
 const employmentOptions: EmploymentStatus[] = ['EMPLOYED', 'UNEMPLOYED', 'SELF_EMPLOYED'];
 
+const subcityWoredas: Record<string, string[]> = {
+  'Addis Ketema': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
+  'Akaky Kaliti': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
+  'Arada': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
+  'Bole': Array.from({ length: 14 }, (_, i) => `Woreda ${i + 1}`),
+  'Gullele': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
+  'Kirkos': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
+  'Kolfe Keranio': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
+  'Lemi Kura': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
+  'Lideta': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
+  'Nifas Silk-Lafto': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
+  'Yeka': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
+};
+
+const WORKLOAD_LIMIT = 10;
+
+function parseIncomeRange(range: string): number | null {
+  const cleaned = range.replace(/,/g, '').replace(/\s+/g, ' ');
+  const match = cleaned.match(/(\d+)/g);
+  if (!match) return null;
+  const nums = match.map(Number).filter(n => n > 0);
+  if (nums.length === 0) return null;
+  return Math.max(...nums);
+}
+
+function bracketFromIncome(incomeRange: string): FinancialBracket | null {
+  const maxIncome = parseIncomeRange(incomeRange);
+  if (maxIncome === null) return null;
+  if (maxIncome <= 5000) return 'LOW';
+  if (maxIncome <= 15000) return 'MEDIUM';
+  return 'HIGH';
+}
+
 interface ParentDrawerProps {
   open: boolean;
   parentId?: string;
@@ -303,7 +336,26 @@ export function ParentDrawer({
                     />
                   </FormField>
                   <FormField label={t('parentDrawer.city', 'City')} error={errors.city}>
-                    <Input value={form.city} onChange={(event) => updateField('city', event.target.value)} />
+                    <select
+                      className={selectClassName}
+                      value={form.city}
+                      onChange={(event) => updateField('city', event.target.value)}
+                    >
+                      <option value="">{t('parentDrawer.selectCity', 'Select city')}</option>
+                      <option value="Addis Ababa">{t('parentDrawer.city.addisAbaba', 'Addis Ababa')}</option>
+                      <option value="Adama">{t('parentDrawer.city.adama', 'Adama')}</option>
+                      <option value="Bahir Dar">{t('parentDrawer.city.bahirDar', 'Bahir Dar')}</option>
+                      <option value="Dire Dawa">{t('parentDrawer.city.direDawa', 'Dire Dawa')}</option>
+                      <option value="Gondar">{t('parentDrawer.city.gondar', 'Gondar')}</option>
+                      <option value="Hawassa">{t('parentDrawer.city.hawassa', 'Hawassa')}</option>
+                      <option value="Jimma">{t('parentDrawer.city.jimma', 'Jimma')}</option>
+                      <option value="Mekelle">{t('parentDrawer.city.mekelle', 'Mekelle')}</option>
+                      <option value="Shashamane">{t('parentDrawer.city.shashamane', 'Shashamane')}</option>
+                      <option value="Arba Minch">{t('parentDrawer.city.arbaMinch', 'Arba Minch')}</option>
+                      <option value="Dessie">{t('parentDrawer.city.dessie', 'Dessie')}</option>
+                      <option value="Harar">{t('parentDrawer.city.harar', 'Harar')}</option>
+                      <option value="Jijiga">{t('parentDrawer.city.jijiga', 'Jijiga')}</option>
+                    </select>
                   </FormField>
                   <FormField label={t('parentDrawer.subcity', 'Subcity')} error={errors.subcity}>
                     <select
@@ -326,10 +378,19 @@ export function ParentDrawer({
                     </select>
                   </FormField>
                   <FormField label={t('parentDrawer.woreda', 'Woreda')} error={errors.woreda}>
-                    <Input
+                    <select
+                      className={selectClassName}
                       value={form.woreda}
                       onChange={(event) => updateField('woreda', event.target.value)}
-                    />
+                    >
+                      <option value="">{t('parentDrawer.selectWoreda', 'Select woreda')}</option>
+                      {(form.subcity && subcityWoredas[form.subcity]
+                        ? subcityWoredas[form.subcity]
+                        : []
+                      ).map((w) => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
+                    </select>
                   </FormField>
                   <FormField label={t('parentDrawer.maritalStatus', 'Marital Status')} error={errors.maritalStatus}>
                     <select
@@ -377,25 +438,44 @@ export function ParentDrawer({
                     </select>
                   </FormField>
                   <FormField label={t('parentDrawer.financialBracket', 'Financial Bracket')} error={errors.financialBracket}>
-                    <select
-                      className={selectClassName}
-                      value={form.financialBracket}
-                      onChange={(event) =>
-                        updateField('financialBracket', event.target.value as FinancialBracket)
-                      }
-                    >
-                      {bracketOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {formatEnum(option)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        className={cn(selectClassName, 'opacity-60')}
+                        value={form.financialBracket}
+                        disabled
+                      >
+                        {bracketOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {formatEnum(option)}
+                          </option>
+                        ))}
+                      </select>
+                      {form.monthlyIncomeRange.trim() && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground pointer-events-none">
+                          {t('parentDrawer.autoCalculated', 'auto')}
+                        </span>
+                      )}
+                    </div>
                   </FormField>
                   <FormField label={t('parentDrawer.monthlyIncome', 'Monthly Income Range')} error={errors.monthlyIncomeRange}>
                     <Input
                       placeholder={t('parentDrawer.monthlyIncomePlaceholder', 'e.g. 5,000 - 10,000 ETB')}
                       value={form.monthlyIncomeRange}
-                      onChange={(event) => updateField('monthlyIncomeRange', event.target.value)}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        const bracket = bracketFromIncome(val);
+                        setForm((current) => ({
+                          ...current,
+                          monthlyIncomeRange: val,
+                          financialBracket: bracket || current.financialBracket,
+                        }));
+                        setErrors((current) => {
+                          const next = { ...current };
+                          delete next.monthlyIncomeRange;
+                          delete next.financialBracket;
+                          return next;
+                        });
+                      }}
                     />
                   </FormField>
                   <FormField label={t('parentDrawer.dependents', 'Number of Dependents')} error={errors.numberOfDependents}>
@@ -437,18 +517,57 @@ export function ParentDrawer({
               {step === 3 && (
                 <div className="grid gap-4">
                   <FormField label={t('parentDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
-                    <select
-                      className={selectClassName}
-                      value={form.assignedStaffId}
-                      onChange={(event) => updateField('assignedStaffId', event.target.value)}
-                    >
-                      <option value="">{t('parentDrawer.selectStaff', 'Select staff')}</option>
-                      {staffOptions.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                          {worker.fullName}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="max-h-64 overflow-y-auto rounded-md border border-input">
+                      {staffOptions.length === 0 ? (
+                        <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                          {t('parentDrawer.noStaffAvailable', 'No case workers available')}
+                        </div>
+                      ) : (
+                        staffOptions.map((worker) => {
+                          const workload = (worker.parentCount || 0) + (worker.childCount || 0);
+                          const atLimit = workload >= WORKLOAD_LIMIT;
+                          const isSelected = form.assignedStaffId === worker.id;
+                          return (
+                            <button
+                              key={worker.id}
+                              type="button"
+                              disabled={atLimit && !isSelected}
+                              onClick={() => !atLimit && updateField('assignedStaffId', worker.id)}
+                              className={cn(
+                                'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors border-b border-input last:border-b-0 hover:bg-muted/50',
+                                isSelected && 'bg-primary/10 font-medium',
+                                atLimit && !isSelected && 'opacity-40 cursor-not-allowed',
+                              )}
+                            >
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                                {initials(worker.fullName)}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="block truncate font-medium">{worker.fullName}</span>
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {t('parentDrawer.workload', '{count}/{limit} cases', { count: String(workload), limit: String(WORKLOAD_LIMIT) })}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <span className="shrink-0 rounded bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  {t('parentDrawer.selected', 'Selected')}
+                                </span>
+                              )}
+                              {atLimit && !isSelected && (
+                                <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                                  {t('parentDrawer.full', 'Full')}
+                                </span>
+                              )}
+                              {workload >= WORKLOAD_LIMIT * 0.8 && workload < WORKLOAD_LIMIT && (
+                                <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                                  {t('parentDrawer.nearLimit', 'Near limit')}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </FormField>
                   <FormField label={t('parentDrawer.internalNotes', 'Internal Notes')}>
                     <textarea

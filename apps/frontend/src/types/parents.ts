@@ -10,6 +10,8 @@ export type StaffOption = {
   id: string;
   fullName: string;
   role?: string;
+  parentCount?: number;
+  childCount?: number;
 };
 
 export type ParentRow = {

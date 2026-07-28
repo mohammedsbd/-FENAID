@@ -8,3 +8,4 @@ coverage
 .codex/dev-logs
 *.tsbuildinfo
 pnpm-debug.log*
+recording.mkv
