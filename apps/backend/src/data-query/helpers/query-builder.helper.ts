@@ -352,7 +352,7 @@ export function buildPrismaWhereClause(
       const parentConditions: Prisma.ParentWhereInput[] = [];
       if (parentDemo) parentConditions.push(parentDemo);
       if (location) parentConditions.push(location);
-      childWhere.push({ parent: { AND: parentConditions } });
+      childWhere.push({ parents: { some: { parent: { AND: parentConditions } } } });
     }
 
     if (filters.services?.hasNoService) {
@@ -377,10 +377,10 @@ export function buildPrismaWhereClause(
       const financialFilter = buildFinancialFilter(filters.financial);
       if (financialFilter) {
         if ('id' in financialFilter && financialFilter.id === '__none__') {
-          childWhere.push({ parent: { fundAllocations: { none: {} } } });
+          childWhere.push({ parents: { none: { parent: { fundAllocations: { some: {} } } } } });
         } else {
           childWhere.push({
-            parent: { fundAllocations: { some: financialFilter } },
+            parents: { some: { parent: { fundAllocations: { some: financialFilter } } } },
           });
         }
       }
@@ -401,11 +401,11 @@ export function buildPrismaWhereClause(
     const childConditions: Prisma.ChildWhereInput[] = [];
     if (childDemo) childConditions.push(childDemo);
     if (progress) childConditions.push(progress);
-    parentWhere.push({ children: { some: { AND: childConditions } } });
+    parentWhere.push({ children: { some: { child: { AND: childConditions } } } });
   } else if (filters.child) {
     const childOnly = buildChildDemographics(filters.child);
     if (childOnly) {
-      parentWhere.push({ children: { some: childOnly } });
+      parentWhere.push({ children: { some: { child: childOnly } } });
     }
   }
 

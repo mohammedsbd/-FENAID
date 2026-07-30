@@ -31,13 +31,14 @@ export type ChildRow = {
   disabilityCategory: string;
   severityLevel: SeverityLevel;
   status: ChildStatus;
-  parentId: string;
   assignedStaffId: string;
   createdAt: string;
-  parent?: {
-    id: string;
-    fullName: string;
-  } | null;
+  parents: Array<{
+    parent: {
+      id: string;
+      fullName: string;
+    };
+  }>;
   assignedStaff?: StaffOption | null;
 };
 
@@ -54,7 +55,7 @@ export type ChildFormData = {
   medicalHistory: string;
   medications: string;
   schoolEnrollmentStatus: SchoolEnrollmentStatus;
-  parentId: string;
+  parentIds: string[];
   assignedStaffId: string;
   internalNotes: string;
   status: ChildStatus;
@@ -73,7 +74,7 @@ export const emptyChildForm: ChildFormData = {
   medicalHistory: '',
   medications: '',
   schoolEnrollmentStatus: 'NOT_ENROLLED',
-  parentId: '',
+  parentIds: [],
   assignedStaffId: '',
   internalNotes: '',
   status: 'ACTIVE',
@@ -99,7 +100,7 @@ export function childToForm(child: any): ChildFormData {
     medicalHistory: child.medicalHistory || '',
     medications: child.medications || '',
     schoolEnrollmentStatus: child.schoolEnrollmentStatus || 'NOT_ENROLLED',
-    parentId: child.parentId || '',
+    parentIds: (child.parents || []).map((cp: any) => cp.parent?.id).filter(Boolean),
     assignedStaffId: child.assignedStaffId || '',
     internalNotes: child.internalNotes || '',
     status: child.status || 'ACTIVE',
@@ -110,7 +111,17 @@ export function formToChildPayload(form: ChildFormData) {
   return {
     ...form,
     fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
-    parentId: form.parentId,
+    photoUrl: form.photoUrl || null,
+    dateOfBirth: form.dateOfBirth,
+    gender: form.gender,
+    disabilityType: form.disabilityType,
+    disabilityCategory: form.disabilityCategory,
+    severityLevel: form.severityLevel,
+    communicationAbility: form.communicationAbility,
+    medicalHistory: form.medicalHistory || null,
+    medications: form.medications || null,
+    schoolEnrollmentStatus: form.schoolEnrollmentStatus,
+    parentIds: form.parentIds,
     assignedStaffId: form.assignedStaffId,
   };
 }

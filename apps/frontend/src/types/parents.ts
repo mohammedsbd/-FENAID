@@ -79,15 +79,17 @@ export type ParentDetailResponse = ParentRow & {
   numberOfDependents?: number;
   internalNotes?: string | null;
   children: Array<{
-    id: string;
-    fullName: string;
-    photoUrl?: string | null;
-    dateOfBirth?: string;
-    gender?: string;
-    disabilityType: string;
-    disabilityCategory?: string;
-    severityLevel?: string;
-    status: string;
+    child: {
+      id: string;
+      fullName: string;
+      photoUrl?: string | null;
+      dateOfBirth?: string;
+      gender?: string;
+      disabilityType: string;
+      disabilityCategory?: string;
+      severityLevel?: string;
+      status: string;
+    };
   }>;
   serviceAssignments: any[];
   fundAllocations: any[];

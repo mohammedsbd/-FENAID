@@ -227,17 +227,21 @@ export class ParentsService {
         },
         children: {
           select: {
-            id: true,
-            fullName: true,
-            photoUrl: true,
-            dateOfBirth: true,
-            gender: true,
-            disabilityType: true,
-            disabilityCategory: true,
-            severityLevel: true,
-            status: true,
+            child: {
+              select: {
+                id: true,
+                fullName: true,
+                photoUrl: true,
+                dateOfBirth: true,
+                gender: true,
+                disabilityType: true,
+                disabilityCategory: true,
+                severityLevel: true,
+                status: true,
+              },
+            },
           },
-          orderBy: { fullName: 'asc' },
+          orderBy: { child: { fullName: 'asc' } },
         },
         serviceAssignments: {
           include: {

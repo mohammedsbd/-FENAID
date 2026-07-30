@@ -559,23 +559,26 @@ function ChildrenTab({ parent }: { parent: ParentDetailResponse }) {
       <CardContent>
         {parent.children.length ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            {parent.children.map((child: any) => (
-              <Link
-                key={child.id}
-                href={`/dashboard/children/${child.id}`}
-                className="flex items-center gap-3 rounded-lg border p-3 transition hover:bg-muted/50 dark:border-neutral-700"
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={child.photoUrl || undefined} />
-                  <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{child.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
-                </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
-              </Link>
-            ))}
+            {parent.children.map((cp: any) => {
+              const child = cp.child;
+              return (
+                <Link
+                  key={child.id}
+                  href={`/dashboard/children/${child.id}`}
+                  className="flex items-center gap-3 rounded-lg border p-3 transition hover:bg-muted/50 dark:border-neutral-700"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={child.photoUrl || undefined} />
+                    <AvatarFallback>{initials(child.fullName)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 overflow-hidden min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{child.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{t('enum.disabilityType.' + child.disabilityType.toLowerCase(), formatEnum(child.disabilityType))}</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{t('enum.childStatus.' + child.status.toLowerCase(), formatEnum(child.status))}</Badge>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <EmptyState message={t('parents.detail.noChildren', 'No children registered under this parent profile.')} />

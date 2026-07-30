@@ -231,7 +231,7 @@ model Parent {
   updatedAt         DateTime         @updatedAt
 
   assignedStaff      Staff               @relation("ParentAssignedStaff", fields: [assignedStaffId], references: [id])
-  children           Child[]
+  children           ChildParent[]
   serviceAssignments ServiceAssignment[]
   fundAllocations    FundAllocation[]
   appointments       Appointment[]
@@ -268,13 +268,12 @@ model Child {
   communicationAbility   CommunicationAbility
   status                 ChildStatus
   internalNotes          String?                @db.Text
-  parentId               String
   assignedStaffId        String
   deletedAt              DateTime?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
-  parent              Parent              @relation(fields: [parentId], references: [id])
+  parents             ChildParent[]
   assignedStaff       Staff               @relation("ChildAssignedStaff", fields: [assignedStaffId], references: [id])
   serviceAssignments  ServiceAssignment[]
   restrictedDonations Donation[]          @relation("DonationRestrictedToChild")
@@ -287,7 +286,6 @@ model Child {
   volunteerServices   VolunteerService[]
   referrals           Referral[]
 
-  @@index([parentId])
   @@index([assignedStaffId])
   @@index([status])
   @@index([createdAt])
@@ -296,8 +294,19 @@ model Child {
   @@index([disabilityType])
   @@index([severityLevel])
   @@index([dateOfBirth])
-  @@index([parentId, status])
   @@index([disabilityType, severityLevel, status])
+}
+
+model ChildParent {
+  childId      String
+  parentId     String
+  createdAt    DateTime @default(now())
+
+  child  Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@id([childId, parentId])
+  @@index([parentId])
 }
 
 model Service {

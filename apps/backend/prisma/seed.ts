@@ -27,6 +27,7 @@ async function main() {
   await prisma.donation.deleteMany();
   await prisma.fundAllocation.deleteMany();
   await prisma.serviceAssignment.deleteMany();
+  await prisma.childParent.deleteMany();
   await prisma.child.deleteMany();
   await prisma.parent.deleteMany();
   await prisma.service.deleteMany();
@@ -249,8 +250,10 @@ async function main() {
         communicationAbility: 'VERBAL',
         status: 'ACTIVE',
         internalNotes: 'Uses crutches and benefits from transport assistance.',
-        parentId: hana.id,
         assignedStaffId: caseworker1.id,
+        parents: {
+          create: [{ parentId: hana.id }],
+        },
       },
     }),
     prisma.child.create({
@@ -267,8 +270,10 @@ async function main() {
         communicationAbility: 'ASSISTED',
         status: 'ACTIVE',
         internalNotes: 'Ready for early learning assessment.',
-        parentId: hana.id,
         assignedStaffId: caseworker1.id,
+        parents: {
+          create: [{ parentId: hana.id }],
+        },
       },
     }),
     prisma.child.create({
@@ -286,8 +291,10 @@ async function main() {
         communicationAbility: 'NON_VERBAL',
         status: 'ACTIVE',
         internalNotes: 'Requires caregiver assistance during sessions.',
-        parentId: mulugeta.id,
         assignedStaffId: caseworker2.id,
+        parents: {
+          create: [{ parentId: mulugeta.id }],
+        },
       },
     }),
     prisma.child.create({
@@ -305,8 +312,10 @@ async function main() {
         communicationAbility: 'VERBAL',
         status: 'ACTIVE',
         internalNotes: 'Responds well to visual schedules.',
-        parentId: mulugeta.id,
         assignedStaffId: caseworker2.id,
+        parents: {
+          create: [{ parentId: mulugeta.id }],
+        },
       },
     }),
     prisma.child.create({
@@ -323,8 +332,10 @@ async function main() {
         communicationAbility: 'ASSISTED',
         status: 'ACTIVE',
         internalNotes: 'Needs assistive device maintenance.',
-        parentId: rahel.id,
         assignedStaffId: caseworker1.id,
+        parents: {
+          create: [{ parentId: rahel.id }],
+        },
       },
     }),
     prisma.child.create({
@@ -342,8 +353,10 @@ async function main() {
         communicationAbility: 'ASSISTED',
         status: 'ACTIVE',
         internalNotes: 'Parent requested home practice guidance.',
-        parentId: rahel.id,
         assignedStaffId: caseworker1.id,
+        parents: {
+          create: [{ parentId: rahel.id }],
+        },
       },
     }),
   ]);

@@ -37,7 +37,7 @@ export class ChildrenService {
   ) {}
 
   async create(staffId: string, dto: CreateChildDto) {
-    await this.ensureParentExists(dto.parentId);
+    await this.ensureParentsExist(dto.parentIds);
     await this.ensureAssignedStaffExists(dto.assignedStaffId);
 
     const latest = await this.prisma.child.findFirst({
@@ -53,24 +53,33 @@ export class ChildrenService {
     }
     const idTag = `FKC-${String(nextNum).padStart(4, '0')}`;
 
+    const { parentIds, ...childData } = dto;
+
     const child = await this.prisma.$transaction(async (tx) => {
       const c = await tx.child.create({
         data: {
-          ...dto,
+          ...childData,
           idTag,
           dateOfBirth: new Date(dto.dateOfBirth),
           status: dto.status ?? ChildStatus.ACTIVE,
+          parents: {
+            create: parentIds.map((pid) => ({ parentId: pid })),
+          },
         },
         include: {
-          parent: {
-            select: {
-              id: true,
-              fullName: true,
-              photoUrl: true,
-              nationalId: true,
-              phone: true,
-              financialBracket: true,
-              status: true,
+          parents: {
+            include: {
+              parent: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  photoUrl: true,
+                  nationalId: true,
+                  phone: true,
+                  financialBracket: true,
+                  status: true,
+                },
+              },
             },
           },
           assignedStaff: {
@@ -149,7 +158,9 @@ export class ChildrenService {
       ...(query.assignedStaffId
         ? { assignedStaffId: query.assignedStaffId }
         : {}),
-      ...(query.parentId ? { parentId: query.parentId } : {}),
+      ...(query.parentId
+        ? { parents: { some: { parentId: query.parentId } } }
+        : {}),
     };
 
     const [data, total] = await this.prisma.$transaction([
@@ -171,17 +182,20 @@ export class ChildrenService {
           schoolEnrollmentStatus: true,
           communicationAbility: true,
           status: true,
-          parentId: true,
           assignedStaffId: true,
           createdAt: true,
           updatedAt: true,
-          parent: {
+          parents: {
             select: {
-              id: true,
-              fullName: true,
-              photoUrl: true,
-              nationalId: true,
-              phone: true,
+              parent: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  photoUrl: true,
+                  nationalId: true,
+                  phone: true,
+                },
+              },
             },
           },
           assignedStaff: {
@@ -216,18 +230,22 @@ export class ChildrenService {
         ...(user.role !== StaffRole.SUPER_ADMIN ? { assignedStaffId: user.staffId } : {}),
       },
       include: {
-        parent: {
+        parents: {
           include: {
-            assignedStaff: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                role: true,
+            parent: {
+              include: {
+                assignedStaff: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                  },
+                },
+                fundAllocations: {
+                  orderBy: { allocationDate: 'desc' },
+                },
               },
-            },
-            fundAllocations: {
-              orderBy: { allocationDate: 'desc' },
             },
           },
         },
@@ -341,31 +359,44 @@ export class ChildrenService {
 
     checkOptimisticLock(existing.updatedAt, dto.expectedUpdatedAt, 'Child');
 
-    if (dto.parentId) {
-      await this.ensureParentExists(dto.parentId);
+    if (dto.parentIds) {
+      await this.ensureParentsExist(dto.parentIds);
     }
 
     if (dto.assignedStaffId) {
       await this.ensureAssignedStaffExists(dto.assignedStaffId);
     }
 
+    const { parentIds, ...scalarData } = dto;
+
     const data = this.compactUndefined({
-      ...dto,
+      ...scalarData,
       dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
     });
 
     const child = await this.prisma.$transaction(async (tx) => {
+      if (parentIds) {
+        await tx.childParent.deleteMany({ where: { childId: id } });
+        await tx.childParent.createMany({
+          data: parentIds.map((pid) => ({ childId: id, parentId: pid })),
+        });
+      }
+
       const c = await tx.child.update({
         where: { id },
         data,
         include: {
-          parent: {
+          parents: {
             select: {
-              id: true,
-              fullName: true,
-              photoUrl: true,
-              nationalId: true,
-              phone: true,
+              parent: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  photoUrl: true,
+                  nationalId: true,
+                  phone: true,
+                },
+              },
             },
           },
           assignedStaff: {
@@ -448,17 +479,24 @@ export class ChildrenService {
     return { notificationKey: 'notification.childProfileUpdated', params: { childName: child.fullName, idTag: child.idTag } };
   }
 
-  private async ensureParentExists(parentId: string) {
-    const parent = await this.prisma.parent.findFirst({
+  private async ensureParentsExist(parentIds: string[]) {
+    if (parentIds.length < 1 || parentIds.length > 2) {
+      throw new BadRequestException('error.child.invalidParentCount');
+    }
+
+    const parents = await this.prisma.parent.findMany({
       where: {
-        id: parentId,
+        id: { in: parentIds },
         status: { not: 'INACTIVE' },
       },
       select: { id: true },
     });
 
-    if (!parent) {
-      throw new BadRequestException('error.child.invalidParent');
+    const foundIds = new Set(parents.map((p) => p.id));
+    for (const pid of parentIds) {
+      if (!foundIds.has(pid)) {
+        throw new BadRequestException('error.child.invalidParent');
+      }
     }
   }
 
@@ -554,7 +592,6 @@ export class ChildrenService {
       'schoolEnrollmentStatus',
       'communicationAbility',
       'status',
-      'parentId',
       'assignedStaffId',
     ];
 

@@ -6,6 +6,9 @@ import {
   SeverityLevel,
 } from '@prisma/client';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -61,9 +64,11 @@ export class CreateChildDto {
   @IsString()
   internalNotes?: string;
 
-  @IsString()
-  @MinLength(1)
-  parentId!: string;
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(2)
+  parentIds!: string[];
 
   @IsString()
   @MinLength(1)

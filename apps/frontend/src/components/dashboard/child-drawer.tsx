@@ -60,7 +60,8 @@ export function ChildDrawer({
   const { t } = useLocale();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ChildFormData>(emptyChildForm);
-  const [parents, setParents] = useState<ParentOption[]>([]);
+  const [selectedParents, setSelectedParents] = useState<ParentOption[]>([]);
+  const [searchResults, setSearchResults] = useState<ParentOption[]>([]);
   const [parentSearch, setParentSearch] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -107,10 +108,20 @@ export function ChildDrawer({
       setLoading(true);
       api
         .get(`/children/${childId}`)
-        .then((res) => setForm(childToForm(res.data)))
+        .then((res) => {
+          const data = res.data;
+          setForm(childToForm(data));
+          const loadedParents: ParentOption[] = (data.parents || [])
+            .map((cp: any) => cp.parent)
+            .filter(Boolean);
+          setSelectedParents(loadedParents);
+        })
         .catch(() => {
           if (fallbackChild) {
             const nameParts = (fallbackChild.fullName || '').split(' ');
+            const parentList: ParentOption[] = (fallbackChild.parents || [])
+              .map((cp: any) => cp.parent)
+              .filter(Boolean);
             setForm({
               ...emptyChildForm,
               firstName: nameParts[0] || '',
@@ -121,9 +132,10 @@ export function ChildDrawer({
               disabilityCategory: fallbackChild.disabilityCategory,
               severityLevel: fallbackChild.severityLevel,
               status: fallbackChild.status,
-              parentId: fallbackChild.parentId,
+              parentIds: parentList.map((p) => p.id),
               assignedStaffId: fallbackChild.assignedStaffId,
             });
+            setSelectedParents(parentList);
           }
         })
         .finally(() => setLoading(false));
@@ -135,16 +147,22 @@ export function ChildDrawer({
       const fetchParents = async () => {
         try {
           const res = await api.get('/parents', { params: { search: parentSearch, limit: 10 } });
-          setParents(res.data.data || []);
+          const allResults: ParentOption[] = res.data.data || [];
+          const selectedIds = new Set(selectedParents.map((p) => p.id));
+          setSearchResults(allResults.filter((p) => !selectedIds.has(p.id)));
         } catch {
           // Ignore
         }
       };
       fetchParents();
     } else if (step === 3 && parentSearch.trim().length < 2) {
-      setParents([]);
+      setSearchResults([]);
     }
-  }, [step, parentSearch]);
+  }, [step, parentSearch, selectedParents]);
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, parentIds: selectedParents.map((p) => p.id) }));
+  }, [selectedParents]);
 
   if (!mounted) return null;
 
@@ -343,43 +361,79 @@ export function ChildDrawer({
 
               {step === 3 && (
                 <div className="grid gap-4">
-                  <FormField label={t('childDrawer.parent', 'Parent')} error={errors.parentId}>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('childDrawer.searchParents', 'Search parents...')}
-                        value={parentSearch}
-                        onChange={(e) => setParentSearch(e.target.value)}
-                        className="pl-9 h-11"
-                      />
-                    </div>
-                    <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-input">
-                      {parents.length > 0 ? (
-                        parents.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => updateField('parentId', p.id)}
-                            className={cn(
-                              'flex w-full items-center px-3 py-2.5 text-sm text-left transition-colors hover:bg-muted',
-                              form.parentId === p.id
-                                ? 'bg-primary/10 font-medium text-primary'
-                                : 'text-foreground'
-                            )}
-                          >
-                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mr-3">
-                              {initials(p.fullName)}
+                  <FormField label={t('childDrawer.parents', 'Parents (1-2)')} error={errors.parentIds}>
+                    <div className="space-y-3">
+                      {selectedParents.map((parent, index) => (
+                        <div key={parent.id} className="flex items-center justify-between rounded-md border border-input bg-primary/5 px-3 py-2.5">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0">
+                              {initials(parent.fullName)}
                             </span>
-                            <span className="font-medium">{p.fullName.split(' ')[0] || p.fullName}</span>
-                            <span className="text-muted-foreground ml-1">{p.fullName.split(' ').slice(1).join(' ') || ''}</span>
+                            <div className="min-w-0">
+                              <span className="text-xs text-muted-foreground">{t('childDrawer.parentNumber', 'Parent {n}', { n: String(index + 1) })}</span>
+                              <span className="block text-sm font-medium truncate">{parent.fullName}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedParents((prev) => prev.filter((p) => p.id !== parent.id));
+                              setParentSearch('');
+                              setSearchResults([]);
+                            }}
+                            className="ml-2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
                           </button>
-                        ))
-                      ) : (
-                        <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-                          {parentSearch.trim().length >= 1
-                            ? t('childDrawer.noParentsFound', 'No parents found')
-                            : t('childDrawer.typeToSearch', 'Type to search for parents')}
                         </div>
+                      ))}
+                      {selectedParents.length < 2 && (
+                        <div>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              placeholder={
+                                selectedParents.length === 0
+                                  ? t('childDrawer.searchFirstParent', 'Search for first parent...')
+                                  : t('childDrawer.searchSecondParent', 'Search for second parent...')
+                              }
+                              value={parentSearch}
+                              onChange={(e) => setParentSearch(e.target.value)}
+                              className="pl-9 h-11"
+                            />
+                          </div>
+                          {parentSearch.trim().length >= 2 && (
+                            <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-input">
+                              {searchResults.length > 0 ? (
+                                searchResults.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedParents((prev) => [...prev, p]);
+                                      setParentSearch('');
+                                      setSearchResults([]);
+                                    }}
+                                    className="flex w-full items-center px-3 py-2.5 text-sm text-left transition-colors hover:bg-muted text-foreground"
+                                  >
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mr-3">
+                                      {initials(p.fullName)}
+                                    </span>
+                                    <span className="font-medium">{p.fullName.split(' ')[0] || p.fullName}</span>
+                                    <span className="text-muted-foreground ml-1">{p.fullName.split(' ').slice(1).join(' ') || ''}</span>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                                  {t('childDrawer.noParentsFound', 'No parents found')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </FormField>
                       )}
                     </div>
                   </FormField>
@@ -495,7 +549,8 @@ function validateStep(step: number, form: ChildFormData, t: (key: string, fallba
     if (!String(form.disabilityCategory).trim()) errors.disabilityCategory = t('childDrawer.error.categoryRequired', 'Category is required.');
   }
   if (step === 3) {
-    if (!String(form.parentId).trim()) errors.parentId = t('childDrawer.error.parentRequired', 'Parent is required.');
+    if (!form.parentIds || form.parentIds.length < 1) errors.parentIds = t('childDrawer.error.parentRequired', 'At least one parent is required.');
+    if (form.parentIds && form.parentIds.length > 2) errors.parentIds = t('childDrawer.error.maxParents', 'Maximum 2 parents allowed.');
     if (!String(form.assignedStaffId).trim()) errors.assignedStaffId = t('childDrawer.error.staffRequired', 'Staff is required.');
   }
   return errors;

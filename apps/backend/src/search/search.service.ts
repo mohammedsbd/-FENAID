@@ -47,10 +47,14 @@ export class SearchService {
           },
         },
         {
-          parent: {
-            fullName: {
-              contains: search,
-              mode: Prisma.QueryMode.insensitive,
+          parents: {
+            some: {
+              parent: {
+                fullName: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
             },
           },
         },
@@ -87,11 +91,15 @@ export class SearchService {
           disabilityType: true,
           severityLevel: true,
           status: true,
-          parent: {
+          parents: {
             select: {
-              id: true,
-              fullName: true,
-              phone: true,
+              parent: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  phone: true,
+                },
+              },
             },
           },
           assignedStaff: {
@@ -119,15 +127,15 @@ export class SearchService {
         id: child.id,
         idTag: child.idTag,
         title: child.fullName,
-        subtitle: `${child.parent?.fullName || 'Unknown'} · ${child.disabilityType}`,
+        subtitle: `${child.parents[0]?.parent?.fullName || 'Unknown'} · ${child.disabilityType}`,
         status: child.status,
         meta: child.severityLevel,
         assignedStaffName: child.assignedStaff.fullName,
         href: `/dashboard/children/${child.id}`,
-        parent: child.parent ? {
-          id: child.parent.id,
-          fullName: child.parent.fullName,
-          phone: child.parent.phone,
+        parent: child.parents[0]?.parent ? {
+          id: child.parents[0].parent.id,
+          fullName: child.parents[0].parent.fullName,
+          phone: child.parents[0].parent.phone,
         } : null,
       })),
       total: parents.length + children.length,

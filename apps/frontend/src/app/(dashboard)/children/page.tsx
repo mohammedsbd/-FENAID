@@ -215,7 +215,7 @@ export default function ChildrenPage() {
           c.schoolEnrollmentStatus || '',
           c.communicationAbility || '',
           c.status || '',
-          c.parent?.fullName || '',
+          (c.parents || []).map((cp: any) => cp.parent?.fullName).filter(Boolean).join(' & ') || '',
           c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'),
           c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
         ]);
@@ -233,7 +233,7 @@ export default function ChildrenPage() {
           c.schoolEnrollmentStatus || '',
           c.communicationAbility || '',
           c.status || '',
-          c.parent?.fullName || '',
+          (c.parents || []).map((cp: any) => cp.parent?.fullName).filter(Boolean).join(' & ') || '',
           c.assignedStaff?.fullName || t('children.unassigned', 'Unassigned'),
           c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''
         ]);
@@ -476,14 +476,19 @@ export default function ChildrenPage() {
                       <StatusBadge status={child.status} />
                     </TableCell>
                     <TableCell>
-                      {child.parent ? (
-                        <Link 
-                          href={`/dashboard/parents/${child.parent.id}`} 
-                          className="text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {child.parent.fullName}
-                        </Link>
+                      {(child.parents || []).length > 0 ? (
+                        (child.parents || []).map((cp: any, i: number) => (
+                          <span key={cp.parent?.id}>
+                            {i > 0 && <span className="mx-1 text-muted-foreground">&</span>}
+                            <Link 
+                              href={`/dashboard/parents/${cp.parent?.id}`} 
+                              className="text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {cp.parent?.fullName}
+                            </Link>
+                          </span>
+                        ))
                       ) : (
                         t('children.table.na', 'N/A')
                       )}

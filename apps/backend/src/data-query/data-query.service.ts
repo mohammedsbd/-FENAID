@@ -23,9 +23,13 @@ import { buildPrismaWhereClause } from './helpers/query-builder.helper';
 const MAX_EXPORT = 5000;
 
 const childInclude = {
-  parent: {
+  parents: {
     include: {
-      fundAllocations: { orderBy: { allocationDate: 'desc' as const } },
+      parent: {
+        include: {
+          fundAllocations: { orderBy: { allocationDate: 'desc' as const } },
+        },
+      },
     },
   },
   assignedStaff: { select: { id: true, fullName: true } },
@@ -43,7 +47,13 @@ const childInclude = {
 
 const parentInclude = {
   assignedStaff: { select: { id: true, fullName: true } },
-  children: { include: { milestones: true } },
+  children: {
+    include: {
+      child: {
+        include: { milestones: true },
+      },
+    },
+  },
   serviceAssignments: {
     include: { service: true },
     orderBy: { startDate: 'desc' as const },
@@ -335,10 +345,19 @@ export class DataQueryService {
     const milestoneAchievementRate =
       totalMilestones > 0 ? Math.round((achieved / totalMilestones) * 100) : 0;
 
-    const subcityChildCounts = await this.prisma.child.groupBy({
-      by: ['parentId'],
-      _count: true,
+    const childParentRels = await this.prisma.childParent.findMany({
+      select: { childId: true, parentId: true },
     });
+    const childFirstParent = new Map<string, string>();
+    for (const cp of childParentRels) {
+      if (!childFirstParent.has(cp.childId)) {
+        childFirstParent.set(cp.childId, cp.parentId);
+      }
+    }
+    const parentCounts = new Map<string, number>();
+    for (const parentId of childFirstParent.values()) {
+      parentCounts.set(parentId, (parentCounts.get(parentId) ?? 0) + 1);
+    }
     const parentSubcities = await this.prisma.parent.findMany({
       select: { id: true, subcity: true },
     });
@@ -346,12 +365,11 @@ export class DataQueryService {
       parentSubcities.map((p) => [p.id, p.subcity]),
     );
     const childCountBySubcity = new Map<string, number>();
-    for (const row of subcityChildCounts) {
-      if (!row.parentId) continue;
-      const subcity = parentSubcityMap.get(row.parentId) ?? 'Unknown';
+    for (const [parentId, count] of parentCounts) {
+      const subcity = parentSubcityMap.get(parentId) ?? 'Unknown';
       childCountBySubcity.set(
         subcity,
-        (childCountBySubcity.get(subcity) ?? 0) + row._count,
+        (childCountBySubcity.get(subcity) ?? 0) + count,
       );
     }
 
@@ -635,10 +653,10 @@ export class DataQueryService {
 
     return rows.map((row) => {
       const result: Record<string, unknown> = {};
-      const isChildRow = 'parentId' in row;
+      const isChildRow = 'disabilityType' in row;
       const child = isChildRow ? (row as ChildRow) : null;
       const parent = isChildRow
-        ? (row as ChildRow).parent
+        ? (row as ChildRow).parents[0]?.parent ?? null
         : (row as ParentRow);
 
       for (const col of columns) {
@@ -659,8 +677,8 @@ export class DataQueryService {
             break;
           case 'age':
             if (child) result[col] = this.calcAge(child.dateOfBirth);
-            else if ((row as ParentRow).children?.[0]) {
-              result[col] = this.calcAge((row as ParentRow).children[0].dateOfBirth);
+            else if ((row as ParentRow).children?.[0]?.child) {
+              result[col] = this.calcAge((row as ParentRow).children[0].child.dateOfBirth);
             }
             break;
           case 'gender':
@@ -831,9 +849,9 @@ export class DataQueryService {
     const bracketMap = new Map<string, number>();
 
     for (const row of rows) {
-      const isChild = 'parentId' in row;
+      const isChild = 'disabilityType' in row;
       const child = isChild ? (row as ChildRow) : null;
-      const parent = isChild ? (row as ChildRow).parent : (row as ParentRow);
+      const parent = isChild ? (row as ChildRow).parents[0]?.parent ?? null : (row as ParentRow);
 
       const gender = (child?.gender ?? parent?.gender ?? '').toLowerCase();
       if (gender === 'male') genders.male += 1;
@@ -941,7 +959,7 @@ export class DataQueryService {
   private filterByMinSessions(rows: QueryRow[], min: number) {
     return rows.filter((row) => {
       const records =
-        'parentId' in row
+        'disabilityType' in row
           ? (row as ChildRow).attendanceRecords
           : (row as ParentRow).attendanceRecords;
       const present = records.filter((r) => r.status === AttendanceStatus.PRESENT)
@@ -953,7 +971,7 @@ export class DataQueryService {
   private filterByMinWorkshops(rows: QueryRow[], min: number) {
     return rows.filter((row) => {
       const records =
-        'parentId' in row
+        'disabilityType' in row
           ? (row as ChildRow).attendanceRecords
           : (row as ParentRow).attendanceRecords;
       const workshops = records.filter(
@@ -972,7 +990,7 @@ export class DataQueryService {
   ) {
     if (dataSubject === 'PARENT') {
       return rows.filter((row) => {
-        const children = (row as ParentRow).children ?? [];
+        const children = (row as ParentRow).children?.map((cp) => cp.child) ?? [];
         return children.some((child) => {
           const achieved =
             child.milestones?.filter((m) => m.status === MilestoneStatus.ACHIEVED)

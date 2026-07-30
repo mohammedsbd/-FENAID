@@ -83,14 +83,16 @@ type ChildProfile = {
   status: string;
   internalNotes?: string | null;
   createdAt: string;
-  parent: {
-    id: string;
-    fullName: string;
-    photoUrl?: string | null;
-    phone: string;
-    financialBracket: string;
-    fundAllocations: any[];
-  };
+  parents: Array<{
+    parent: {
+      id: string;
+      fullName: string;
+      photoUrl?: string | null;
+      phone: string;
+      financialBracket: string;
+      fundAllocations: any[];
+    };
+  }>;
   assignedStaff?: {
     id: string;
     fullName: string;
@@ -216,7 +218,7 @@ export default function ChildProfilePage() {
       {
         title: t('children.detail.export.medicalAssignment', 'Medical & Assignment'),
         fields: [
-          [t('children.detail.export.parent', 'Parent'), child.parent.fullName],
+          [t('children.detail.export.parent', 'Parent'), (child.parents || []).map((cp: any) => cp.parent?.fullName).filter(Boolean).join(', ')],
           [t('children.detail.export.caseWorker', 'Case Worker'), child.assignedStaff?.fullName || t('children.detail.export.unassigned', 'Unassigned')],
           [t('children.detail.export.registeredDate', 'Registered Date'), formatDate(child.createdAt, calendarSystem)],
         ] as [string, string][],
@@ -317,7 +319,12 @@ export default function ChildProfilePage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <UserRound className="h-4 w-4" />
-                    {t('children.detail.parentLabel', 'Parent')}: <Link href={`/dashboard/parents/${child.parent.id}`} className="text-primary hover:underline font-medium">{child.parent.fullName}</Link>
+                    {t('children.detail.parentLabel', 'Parent(s)')}: {(child.parents || []).map((cp: any, i: number) => (
+                      <span key={cp.parent?.id}>
+                        {i > 0 && <span className="mx-1 text-muted-foreground">&</span>}
+                        <Link href={`/dashboard/parents/${cp.parent?.id}`} className="text-primary hover:underline font-medium">{cp.parent?.fullName}</Link>
+                      </span>
+                    ))}
                   </span>
                 </div>
               </div>
@@ -710,7 +717,7 @@ function FinanceTab({
   calendarSystem: CalendarSystem;
 }) {
   const { t } = useLocale();
-  const allocations = child.parent.fundAllocations || [];
+  const allocations = (child.parents || []).flatMap((cp: any) => cp.parent?.fundAllocations || []);
 
   return (
     <Card>
@@ -918,6 +925,7 @@ function EmptyState({ message }: { message: string }) {
 }
 
 function profileToChildRow(child: ChildProfile): ChildRow {
+  const firstParent = child.parents?.[0]?.parent;
   return {
     id: child.id,
     idTag: child.idTag,
@@ -928,13 +936,11 @@ function profileToChildRow(child: ChildProfile): ChildRow {
     disabilityCategory: child.disabilityCategory,
     severityLevel: child.severityLevel as ChildRow['severityLevel'],
     status: child.status as ChildRow['status'],
-    parentId: child.parent.id,
     assignedStaffId: child.assignedStaff?.id || '',
     createdAt: child.createdAt,
-    parent: {
-      id: child.parent.id,
-      fullName: child.parent.fullName,
-    },
+    parents: (child.parents || []).map((cp: any) => ({
+      parent: { id: cp.parent?.id || '', fullName: cp.parent?.fullName || '' },
+    })),
     assignedStaff: child.assignedStaff
       ? {
           id: child.assignedStaff.id,

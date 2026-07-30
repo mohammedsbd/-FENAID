@@ -309,11 +309,11 @@ export class DashboardReportsService {
         return {
           parents: await this.prisma.parent.findMany({
             where: staffFilter,
-            include: { children: { select: { fullName: true, photoUrl: true } } },
+            include: { children: { select: { child: { select: { fullName: true, photoUrl: true } } } } },
           }),
           children: await this.prisma.child.findMany({
             where: staffFilter,
-            include: { parent: { select: { fullName: true, photoUrl: true } } },
+            include: { parents: { select: { parent: { select: { fullName: true, photoUrl: true } } } } },
           }),
         };
 

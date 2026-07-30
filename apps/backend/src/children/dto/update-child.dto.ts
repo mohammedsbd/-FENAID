@@ -6,6 +6,9 @@ import {
   SeverityLevel,
 } from '@prisma/client';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -70,9 +73,11 @@ export class UpdateChildDto {
   internalNotes?: string;
 
   @IsOptional()
-  @IsString()
-  @MinLength(1)
-  parentId?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(2)
+  parentIds?: string[];
 
   @IsOptional()
   @IsString()
