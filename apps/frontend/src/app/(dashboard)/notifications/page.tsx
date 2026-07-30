@@ -291,15 +291,9 @@ export default function NotificationsPage() {
 function getNotificationGroup(notification: Notification): NotificationGroup {
   const type = notification.type;
   const entityType = notification.entityType ?? '';
-  const message = notification.message.toLowerCase();
 
   if (type.includes('FUND') || type.includes('DONATION')) return 'Finance';
-  if (
-    entityType === 'Donation' ||
-    entityType === 'FundAllocation' ||
-    message.includes('donation') ||
-    message.includes('fund')
-  ) {
+  if (entityType === 'Donation' || entityType === 'FundAllocation') {
     return 'Finance';
   }
 
@@ -309,19 +303,14 @@ function getNotificationGroup(notification: Notification): NotificationGroup {
   if (
     type.includes('OVERDUE') ||
     type.includes('EXPIRY') ||
-    type.includes('REMINDER') ||
-    message.includes('overdue') ||
-    message.includes('expiring') ||
-    message.includes('reminder')
+    type.includes('REMINDER')
   ) {
     return 'Follow-up';
   }
 
   if (
     type.includes('ACCOUNT') ||
-    type.includes('SECURITY') ||
-    message.includes('password') ||
-    message.includes('welcome')
+    type.includes('SECURITY')
   ) {
     return 'Security';
   }
@@ -332,7 +321,6 @@ function getNotificationGroup(notification: Notification): NotificationGroup {
 function getNotificationIcon(notification: Notification, fallback: typeof Bell) {
   const type = notification.type;
   const entityType = notification.entityType ?? '';
-  const message = notification.message.toLowerCase();
 
   if (type.includes('FUND') || type.includes('DONATION')) return CircleDollarSign;
   if (entityType === 'Donation' || entityType === 'FundAllocation') {
@@ -351,10 +339,7 @@ function getNotificationIcon(notification: Notification, fallback: typeof Bell) 
   if (
     type.includes('PROGRESS') ||
     type.includes('GOAL') ||
-    type.includes('MILESTONE') ||
-    message.includes('progress') ||
-    message.includes('goal') ||
-    message.includes('milestone')
+    type.includes('MILESTONE')
   ) {
     return Activity;
   }
