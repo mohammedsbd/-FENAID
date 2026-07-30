@@ -719,7 +719,6 @@ function getNotificationGroup(notification: Notification): NotificationGroup {
 function getNotificationIcon(notification: Notification, fallback: typeof Bell) {
   const type = notification.type;
   const entityType = notification.entityType ?? '';
-  const message = notification.message.toLowerCase();
 
   if (type.includes('FUND') || type.includes('DONATION')) return CircleDollarSign;
   if (entityType === 'Donation' || entityType === 'FundAllocation') {
@@ -738,10 +737,7 @@ function getNotificationIcon(notification: Notification, fallback: typeof Bell) 
   if (
     type.includes('PROGRESS') ||
     type.includes('GOAL') ||
-    type.includes('MILESTONE') ||
-    message.includes('progress') ||
-    message.includes('goal') ||
-    message.includes('milestone')
+    type.includes('MILESTONE')
   ) {
     return Activity;
   }
