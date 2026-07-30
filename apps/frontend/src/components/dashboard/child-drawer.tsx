@@ -434,9 +434,6 @@ export function ChildDrawer({
                       )}
                     </div>
                   </FormField>
-                      )}
-                    </div>
-                  </FormField>
                   <FormField label={t('childDrawer.assignStaff', 'Assign Case Worker')} error={errors.assignedStaffId}>
                     <div className="max-h-64 overflow-y-auto rounded-md border border-input">
                       {staffOptions.length === 0 ? (

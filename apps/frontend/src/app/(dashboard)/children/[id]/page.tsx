@@ -23,6 +23,8 @@ import {
   Pencil,
   UserMinus,
   UserPlus,
+  Briefcase,
+  Plus,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -64,6 +66,12 @@ import {
   parseIsoDate,
   toIsoDateInputValue,
 } from '@/lib/calendar';
+import { AssignServiceDrawer } from '@/components/services/AssignServiceDrawer';
+import { ReferralDrawer } from '@/components/services/ReferralDrawer';
+import { AppointmentDrawer } from '@/components/dashboard/appointments/appointment-drawer';
+import { AllocationDrawer } from '@/components/dashboard/funds/allocation-drawer';
+import { DocumentUploadDrawer } from '@/components/dashboard/document-upload-drawer';
+import { getSession } from '@/lib/auth';
 
 // Types
 type ChildProfile = {
@@ -105,6 +113,7 @@ type ChildProfile = {
   goals: any[];
   appointments: any[];
   documents: any[];
+  fundAllocations?: any[];
 };
 
 const tabs = [
@@ -131,6 +140,12 @@ export default function ChildProfilePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [staff, setStaff] = useState<StaffOption[]>([]);
+  const [userRole, setUserRole] = useState('');
+  const [assignDrawerOpen, setAssignDrawerOpen] = useState(false);
+  const [appointmentDrawerOpen, setAppointmentDrawerOpen] = useState(false);
+  const [referralDrawerOpen, setReferralDrawerOpen] = useState(false);
+  const [allocationDrawerOpen, setAllocationDrawerOpen] = useState(false);
+  const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
 
   const fetchChild = useCallback(async () => {
     setLoading(true);
@@ -166,6 +181,11 @@ export default function ChildProfilePage() {
     void fetchChild();
     void fetchStaff();
   }, [fetchChild, fetchStaff]);
+
+  useEffect(() => {
+    const session = getSession();
+    setUserRole(session?.role ?? '');
+  }, []);
 
   const handleToggleStatus = async () => {
     if (!child) return;
@@ -382,11 +402,11 @@ export default function ChildProfilePage() {
       <div className="mt-6">
         {activeTab === 'Profile' && <ProfileTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Progress' && <ProgressTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Services' && <ServicesTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Appointments' && <AppointmentsTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Referrals' && <ReferralsTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Fund & Finance' && <FinanceTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Documents' && <DocumentsTab child={child} calendarSystem={calendarSystem} />}
+        {activeTab === 'Services' && <ServicesTab child={child} calendarSystem={calendarSystem} onAssignService={() => setAssignDrawerOpen(true)} />}
+        {activeTab === 'Appointments' && <AppointmentsTab child={child} calendarSystem={calendarSystem} onScheduleNew={() => setAppointmentDrawerOpen(true)} />}
+        {activeTab === 'Referrals' && <ReferralsTab child={child} calendarSystem={calendarSystem} onNewReferral={() => setReferralDrawerOpen(true)} />}
+        {activeTab === 'Fund & Finance' && <FinanceTab child={child} calendarSystem={calendarSystem} onNewAllocation={() => setAllocationDrawerOpen(true)} />}
+        {activeTab === 'Documents' && <DocumentsTab child={child} calendarSystem={calendarSystem} onUpload={() => setDocumentUploadOpen(true)} />}
       </div>
 
       <ChildDrawer
@@ -419,6 +439,36 @@ export default function ChildProfilePage() {
           onCancel={() => setShowDeactivateModal(false)}
         />
       )}
+
+      <AssignServiceDrawer
+        open={assignDrawerOpen}
+        onClose={() => setAssignDrawerOpen(false)}
+        onSaved={() => { setAssignDrawerOpen(false); fetchChild(); }}
+        userRole={userRole}
+      />
+      <AppointmentDrawer
+        open={appointmentDrawerOpen}
+        onClose={() => setAppointmentDrawerOpen(false)}
+        onSuccess={() => { setAppointmentDrawerOpen(false); fetchChild(); }}
+      />
+      <ReferralDrawer
+        open={referralDrawerOpen}
+        referral={null}
+        onClose={() => setReferralDrawerOpen(false)}
+        onSaved={() => { setReferralDrawerOpen(false); fetchChild(); }}
+        userRole={userRole}
+      />
+      <AllocationDrawer
+        open={allocationDrawerOpen}
+        onClose={() => setAllocationDrawerOpen(false)}
+        onSuccess={() => { setAllocationDrawerOpen(false); fetchChild(); }}
+      />
+      <DocumentUploadDrawer
+        open={documentUploadOpen}
+        onClose={() => setDocumentUploadOpen(false)}
+        onSuccess={() => { setDocumentUploadOpen(false); fetchChild(); }}
+        childId={child.id}
+      />
     </div>
   );
 }
@@ -618,13 +668,25 @@ function ProgressTab({
 function ServicesTab({
   child,
   calendarSystem,
+  onAssignService,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
+  onAssignService: () => void;
 }) {
   const { t } = useLocale();
   return (
     <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('children.detail.servicesTab.title', 'Assigned Services')}</CardTitle>
+        </div>
+        <Button size="sm" onClick={onAssignService}>
+          <Plus className="h-4 w-4" />
+          {t('children.detail.servicesTab.assignService', 'Assign Service')}
+        </Button>
+      </CardHeader>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
@@ -662,9 +724,11 @@ function ServicesTab({
 function AppointmentsTab({
   child,
   calendarSystem,
+  onScheduleNew,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
+  onScheduleNew: () => void;
 }) {
   const { t } = useLocale();
   return (
@@ -674,7 +738,7 @@ function AppointmentsTab({
            <CalendarDays className="h-5 w-5 text-primary" />
            <CardTitle className="text-base">{t('children.detail.appointmentsTab.upcoming', 'Upcoming Appointments')}</CardTitle>
          </div>
-         <Button size="sm">{t('children.detail.appointmentsTab.scheduleNew', 'Schedule New')}</Button>
+         <Button size="sm" onClick={onScheduleNew}>{t('children.detail.appointmentsTab.scheduleNew', 'Schedule New')}</Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -712,20 +776,28 @@ function AppointmentsTab({
 function FinanceTab({
   child,
   calendarSystem,
+  onNewAllocation,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
+  onNewAllocation: () => void;
 }) {
   const { t } = useLocale();
-  const allocations = (child.parents || []).flatMap((cp: any) => cp.parent?.fundAllocations || []);
+  const childAllocations = child.fundAllocations || [];
+  const parentAllocations = (child.parents || []).flatMap((cp: any) => cp.parent?.fundAllocations || []);
+  const allocations = [...childAllocations, ...parentAllocations];
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base">{t('children.detail.financeTab.fundAllocations', 'Fund Allocations (Parent Linked)')}</CardTitle>
+          <CardTitle className="text-base">{t('children.detail.financeTab.fundAllocations', 'Fund Allocations')}</CardTitle>
         </div>
+        <Button size="sm" variant="outline" onClick={onNewAllocation}>
+          <Plus className="h-4 w-4" />
+          {t('children.detail.financeTab.newAllocation', 'New Allocation')}
+        </Button>
       </CardHeader>
       <CardContent>
         {allocations.length ? (
@@ -746,12 +818,14 @@ function FinanceTab({
                     )}
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">{t('children.detail.financeTab.allocatedOn', 'Allocated on')} {formatDate(fund.allocationDate, calendarSystem)}</p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {fund.parentId ? t('children.detail.financeTab.allocatedOn', 'Allocated on') : t('children.detail.financeTab.directAllocation', 'Direct allocation on')} {formatDate(fund.allocationDate, calendarSystem)}
+                </p>
               </div>
             ))}
           </div>
         ) : (
-          <EmptyState message={t('children.detail.financeTab.noAllocations', 'No fund allocations linked to this child\'s parent.')} />
+          <EmptyState message={t('children.detail.financeTab.noAllocations', 'No fund allocations found for this child.')} />
         )}
       </CardContent>
     </Card>
@@ -761,14 +835,26 @@ function FinanceTab({
 function ReferralsTab({
   child,
   calendarSystem,
+  onNewReferral,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
+  onNewReferral: () => void;
 }) {
   const { t } = useLocale();
   const referrals = (child as any).referrals || [];
   return (
     <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ExternalLink className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">{t('children.detail.referralsTab.title', 'Referrals')}</CardTitle>
+        </div>
+        <Button size="sm" onClick={onNewReferral}>
+          <Plus className="h-4 w-4" />
+          {t('children.detail.referralsTab.newReferral', 'New Referral')}
+        </Button>
+      </CardHeader>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
@@ -814,9 +900,11 @@ function ReferralsTab({
 function DocumentsTab({
   child,
   calendarSystem,
+  onUpload,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
+  onUpload: () => void;
 }) {
   const { t } = useLocale();
   return (
@@ -826,7 +914,7 @@ function DocumentsTab({
           <Files className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('children.detail.documentsTab.documents', 'Documents')}</CardTitle>
         </div>
-        <Button size="sm"><FileUp className="h-4 w-4" /> {t('children.detail.documentsTab.upload', 'Upload')}</Button>
+        <Button size="sm" onClick={onUpload}><FileUp className="h-4 w-4" /> {t('children.detail.documentsTab.upload', 'Upload')}</Button>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

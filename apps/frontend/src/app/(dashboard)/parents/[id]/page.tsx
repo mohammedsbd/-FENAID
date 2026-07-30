@@ -52,6 +52,7 @@ import {
 } from '@/lib/export';
 import { ParentDetailResponse, ParentStatus, ParentRow, StaffOption, MembershipStatus } from '@/types/parents';
 import { ParentDrawer } from '@/components/dashboard/parent-drawer';
+import { ChildDrawer } from '@/components/dashboard/child-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -63,6 +64,12 @@ import {
   gregorianMonths,
   toIsoDateInputValue,
 } from '@/lib/calendar';
+import { AssignServiceDrawer } from '@/components/services/AssignServiceDrawer';
+import { ReferralDrawer } from '@/components/services/ReferralDrawer';
+import { AppointmentDrawer } from '@/components/dashboard/appointments/appointment-drawer';
+import { AllocationDrawer } from '@/components/dashboard/funds/allocation-drawer';
+import { DocumentUploadDrawer } from '@/components/dashboard/document-upload-drawer';
+import { getSession } from '@/lib/auth';
 
 const tabs = [
   'Profile',
@@ -88,6 +95,13 @@ export default function ParentProfilePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [staff, setStaff] = useState<StaffOption[]>([]);
+  const [userRole, setUserRole] = useState('');
+  const [assignDrawerOpen, setAssignDrawerOpen] = useState(false);
+  const [appointmentDrawerOpen, setAppointmentDrawerOpen] = useState(false);
+  const [referralDrawerOpen, setReferralDrawerOpen] = useState(false);
+  const [allocationDrawerOpen, setAllocationDrawerOpen] = useState(false);
+  const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
+  const [childDrawerOpen, setChildDrawerOpen] = useState(false);
 
   const fetchParent = useCallback(async () => {
     setLoading(true);
@@ -123,6 +137,11 @@ export default function ParentProfilePage() {
     void fetchParent();
     void fetchStaff();
   }, [fetchParent, fetchStaff]);
+
+  useEffect(() => {
+    const session = getSession();
+    setUserRole(session?.role ?? '');
+  }, []);
 
   const handleToggleStatus = async () => {
     if (!parent) return;
@@ -353,9 +372,9 @@ export default function ParentProfilePage() {
       {/* Tab Contents */}
       <div className="mt-6">
         {activeTab === 'Profile' && <ProfileTab parent={parent} calendarSystem={calendarSystem} />}
-        {activeTab === 'Children' && <ChildrenTab parent={parent} />}
-        {activeTab === 'Services' && <ServicesTab parent={parent} />}
-        {activeTab === 'Appointments' && <AppointmentsTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Children' && <ChildrenTab parent={parent} onAddChild={() => setChildDrawerOpen(true)} />}
+        {activeTab === 'Services' && <ServicesTab parent={parent} onAssignService={() => setAssignDrawerOpen(true)} />}
+        {activeTab === 'Appointments' && <AppointmentsTab parent={parent} calendarSystem={calendarSystem} onScheduleNew={() => setAppointmentDrawerOpen(true)} />}
         {activeTab === 'Referrals' && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -363,6 +382,10 @@ export default function ParentProfilePage() {
                 <ExternalLink className="h-5 w-5 text-primary" />
                 <CardTitle className="text-base">{t('parents.detail.referrals', 'Referrals')}</CardTitle>
               </div>
+              <Button size="sm" onClick={() => setReferralDrawerOpen(true)}>
+                <Plus className="h-4 w-4" />
+                {t('parents.detail.newReferral', 'New Referral')}
+              </Button>
             </CardHeader>
             <CardContent>
               {(parent as any).referrals && (parent as any).referrals.length > 0 ? (
@@ -396,8 +419,8 @@ export default function ParentProfilePage() {
             </CardContent>
           </Card>
         )}
-        {activeTab === 'Fund & Finance' && <FinanceTab parent={parent} calendarSystem={calendarSystem} />}
-        {activeTab === 'Documents' && <DocumentsTab parent={parent} calendarSystem={calendarSystem} />}
+        {activeTab === 'Fund & Finance' && <FinanceTab parent={parent} calendarSystem={calendarSystem} onNewAllocation={() => setAllocationDrawerOpen(true)} />}
+        {activeTab === 'Documents' && <DocumentsTab parent={parent} calendarSystem={calendarSystem} onUpload={() => setDocumentUploadOpen(true)} />}
       </div>
 
       <ParentDrawer
@@ -426,6 +449,44 @@ export default function ParentProfilePage() {
           onCancel={() => setShowDeactivateModal(false)}
         />
       )}
+
+      <AssignServiceDrawer
+        open={assignDrawerOpen}
+        onClose={() => setAssignDrawerOpen(false)}
+        onSaved={() => { setAssignDrawerOpen(false); fetchParent(); }}
+        userRole={userRole}
+      />
+      <AppointmentDrawer
+        open={appointmentDrawerOpen}
+        onClose={() => setAppointmentDrawerOpen(false)}
+        onSuccess={() => { setAppointmentDrawerOpen(false); fetchParent(); }}
+      />
+      <ReferralDrawer
+        open={referralDrawerOpen}
+        referral={null}
+        onClose={() => setReferralDrawerOpen(false)}
+        onSaved={() => { setReferralDrawerOpen(false); fetchParent(); }}
+        userRole={userRole}
+      />
+      <AllocationDrawer
+        open={allocationDrawerOpen}
+        onClose={() => setAllocationDrawerOpen(false)}
+        onSuccess={() => { setAllocationDrawerOpen(false); fetchParent(); }}
+      />
+      <DocumentUploadDrawer
+        open={documentUploadOpen}
+        onClose={() => setDocumentUploadOpen(false)}
+        onSuccess={() => { setDocumentUploadOpen(false); fetchParent(); }}
+        parentId={parent.id}
+      />
+      <ChildDrawer
+        open={childDrawerOpen}
+        childId={undefined}
+        fallbackChild={null}
+        staffOptions={staff}
+        onClose={() => setChildDrawerOpen(false)}
+        onSaved={() => { setChildDrawerOpen(false); fetchParent(); }}
+      />
     </div>
   );
 }
@@ -539,7 +600,7 @@ function ProfileTab({
 }
 
 // Tab: Children
-function ChildrenTab({ parent }: { parent: ParentDetailResponse }) {
+function ChildrenTab({ parent, onAddChild }: { parent: ParentDetailResponse; onAddChild: () => void }) {
   const { t } = useLocale();
 
   return (
@@ -549,11 +610,9 @@ function ChildrenTab({ parent }: { parent: ParentDetailResponse }) {
           <Users className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('parents.detail.registeredChildren', 'Registered Children')}</CardTitle>
         </div>
-        <Button size="sm" variant="outline" asChild>
-          <Link href={`/dashboard/children?parent=${parent.id}`}>
-            <Plus className="h-4 w-4" />
-            {t('parents.detail.addChild', 'Add Child')}
-          </Link>
+        <Button size="sm" variant="outline" onClick={onAddChild}>
+          <Plus className="h-4 w-4" />
+          {t('parents.detail.addChild', 'Add Child')}
         </Button>
       </CardHeader>
       <CardContent>
@@ -589,7 +648,7 @@ function ChildrenTab({ parent }: { parent: ParentDetailResponse }) {
 }
 
 // Tab: Services
-function ServicesTab({ parent }: { parent: ParentDetailResponse }) {
+function ServicesTab({ parent, onAssignService }: { parent: ParentDetailResponse; onAssignService: () => void }) {
   const { t } = useLocale();
 
   return (
@@ -599,7 +658,7 @@ function ServicesTab({ parent }: { parent: ParentDetailResponse }) {
           <Briefcase className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('parents.detail.assignedServices', 'Assigned Services')}</CardTitle>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={onAssignService}>
           <Plus className="h-4 w-4" />
           {t('parents.detail.assignService', 'Assign Service')}
         </Button>
@@ -642,9 +701,11 @@ function ServicesTab({ parent }: { parent: ParentDetailResponse }) {
 function AppointmentsTab({
   parent,
   calendarSystem,
+  onScheduleNew,
 }: {
   parent: ParentDetailResponse;
   calendarSystem: CalendarSystem;
+  onScheduleNew: () => void;
 }) {
   const { t } = useLocale();
   const appointments = parent.appointments || [];
@@ -656,7 +717,7 @@ function AppointmentsTab({
           <CalendarDays className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('parents.detail.appointments', 'Appointments')}</CardTitle>
         </div>
-        <Button size="sm">{t('parents.detail.scheduleNew', 'Schedule New')}</Button>
+        <Button size="sm" onClick={onScheduleNew}>{t('parents.detail.scheduleNew', 'Schedule New')}</Button>
       </CardHeader>
       <CardContent>
         {appointments.length ? (
@@ -694,9 +755,11 @@ function AppointmentsTab({
 function FinanceTab({
   parent,
   calendarSystem,
+  onNewAllocation,
 }: {
   parent: ParentDetailResponse;
   calendarSystem: CalendarSystem;
+  onNewAllocation: () => void;
 }) {
   const { t } = useLocale();
   const allocations = parent.fundAllocations || [];
@@ -708,7 +771,7 @@ function FinanceTab({
           <Wallet className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('parents.detail.financialAllocations', 'Financial Allocations')}</CardTitle>
         </div>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" onClick={onNewAllocation}>
           <Plus className="h-4 w-4" />
           {t('parents.detail.newAllocation', 'New Allocation')}
         </Button>
@@ -748,9 +811,11 @@ function FinanceTab({
 function DocumentsTab({
   parent,
   calendarSystem,
+  onUpload,
 }: {
   parent: ParentDetailResponse;
   calendarSystem: CalendarSystem;
+  onUpload: () => void;
 }) {
   const { t } = useLocale();
   const documents = parent.documents || [];
@@ -762,7 +827,7 @@ function DocumentsTab({
           <Files className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('parents.detail.uploadedDocuments', 'Uploaded Documents')}</CardTitle>
         </div>
-        <Button size="sm"><FileUp className="h-4 w-4" /> {t('parents.detail.upload', 'Upload')}</Button>
+        <Button size="sm" onClick={onUpload}><FileUp className="h-4 w-4" /> {t('parents.detail.upload', 'Upload')}</Button>
       </CardHeader>
       <CardContent>
         {documents.length ? (

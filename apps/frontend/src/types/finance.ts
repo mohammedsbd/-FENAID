@@ -14,6 +14,7 @@ export enum DonorType {
 export interface FundAllocation {
   id: string;
   parentId: string;
+  childId?: string;
   allocatedById: string;
   amount: number;
   currency: string;
