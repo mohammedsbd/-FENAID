@@ -151,6 +151,12 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
       return;
     }
 
+    const scheduledDate = new Date(`${date}T${time}`);
+    if (scheduledDate <= new Date()) {
+      toast({ title: t('appointmentDrawer.error', 'Error'), description: t('appointmentDrawer.pastDate', 'Appointments must be scheduled in the future.'), variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
     try {
       const scheduledAt = new Date(`${date}T${time}`).toISOString();
