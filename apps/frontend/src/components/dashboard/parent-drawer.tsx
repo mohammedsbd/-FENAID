@@ -406,10 +406,19 @@ export function ParentDrawer({
                     </select>
                   </FormField>
                   <FormField label={t('parentDrawer.educationLevel', 'Education Level')} error={errors.educationLevel}>
-                    <Input
-                      value={form.educationLevel}
-                      onChange={(event) => updateField('educationLevel', event.target.value)}
-                    />
+                    <select className={selectClassName} value={form.educationLevel} onChange={(event) => updateField('educationLevel', event.target.value)}>
+                      <option value="">{t('parentDrawer.selectEducation', 'Select education level...')}</option>
+                      <option value="NO_FORMAL">{t('parentDrawer.education.noFormal', 'No Formal Education')}</option>
+                      <option value="PRIMARY">{t('parentDrawer.education.primary', 'Primary School')}</option>
+                      <option value="SECONDARY">{t('parentDrawer.education.secondary', 'Secondary School')}</option>
+                      <option value="HIGH_SCHOOL">{t('parentDrawer.education.highSchool', 'High School')}</option>
+                      <option value="DIPLOMA">{t('parentDrawer.education.diploma', 'Diploma')}</option>
+                      <option value="BACHELOR">{t('parentDrawer.education.bachelor', "Bachelor's Degree")}</option>
+                      <option value="MASTER">{t('parentDrawer.education.master', "Master's Degree")}</option>
+                      <option value="DOCTORATE">{t('parentDrawer.education.doctorate', 'Doctorate')}</option>
+                      <option value="VOCATIONAL">{t('parentDrawer.education.vocational', 'Vocational Training')}</option>
+                      <option value="OTHER">{t('parentDrawer.education.other', 'Other')}</option>
+                    </select>
                   </FormField>
                   <FormField label={t('parentDrawer.referralSource', 'Referral Source')} error={errors.referralSource}>
                     <Input
