@@ -12,6 +12,7 @@ import api from '@/lib/api';
 import { useLocale } from '@/components/providers/locale-provider';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { COLUMN_GROUPS, SUBCITIES, countSectionFilters } from './constants';
+import { ALL_CATEGORIES, ALL_SEVERITIES, ALL_COMMUNICATIONS } from '@/lib/disability-config';
 
 type DataSubject = 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
 
@@ -304,16 +305,7 @@ export function FilterBuilder({
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.disabilityCategory', 'Disability Category')}</p>
             <MultiCheckbox
-              options={[
-                { value: 'Autism', label: t('enum.disabilityCategory.autism', 'Autism') },
-                { value: 'Down Syndrome', label: t('enum.disabilityCategory.downSyndrome', 'Down Syndrome') },
-                { value: 'Mobility Impairment', label: t('enum.disabilityCategory.mobilityImpairment', 'Mobility Impairment') },
-                { value: 'Visual Impairment', label: t('enum.disabilityCategory.visualImpairment', 'Visual Impairment') },
-                { value: 'Hearing Impairment', label: t('enum.disabilityCategory.hearingImpairment', 'Hearing Impairment') },
-                { value: 'Speech Impairment', label: t('enum.disabilityCategory.speechImpairment', 'Speech Impairment') },
-                { value: 'Developmental Delay', label: t('enum.disabilityCategory.developmentalDelay', 'Developmental Delay') },
-                { value: 'Other', label: t('enum.disabilityCategory.other', 'Other') },
-              ]}
+              options={ALL_CATEGORIES.map(c => ({ value: c, label: t(`enum.disabilityCategory.${c.toLowerCase().replace(/\s+/g, '')}`, c) }))}
               selected={filters.child?.disabilityCategory ?? []}
               onChange={(values) => updateChild({ disabilityCategory: values })}
             />
@@ -321,11 +313,7 @@ export function FilterBuilder({
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.severityLevel', 'Severity Level')}</p>
             <MultiCheckbox
-              options={[
-                { value: 'MILD', label: t('enum.severity.mild', 'Mild') },
-                { value: 'MODERATE', label: t('enum.severity.moderate', 'Moderate') },
-                { value: 'SEVERE', label: t('enum.severity.severe', 'Severe') },
-              ]}
+              options={ALL_SEVERITIES.map(s => ({ value: s, label: t(`enum.severity.${s.toLowerCase()}`, s) }))}
               selected={filters.child?.severityLevel ?? []}
               onChange={(values) => updateChild({ severityLevel: values })}
             />
@@ -333,11 +321,7 @@ export function FilterBuilder({
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.communicationAbility', 'Communication Ability')}</p>
             <MultiCheckbox
-              options={[
-                { value: 'VERBAL', label: t('enum.communication.verbal', 'Verbal') },
-                { value: 'NON_VERBAL', label: t('enum.communication.non_verbal', 'Non-Verbal') },
-                { value: 'ASSISTED', label: t('enum.communication.assisted', 'Assisted') },
-              ]}
+              options={ALL_COMMUNICATIONS.map(c => ({ value: c, label: t(`enum.communication.${c.toLowerCase()}`, c) }))}
               selected={filters.child?.communicationAbility ?? []}
               onChange={(values) =>
                 updateChild({ communicationAbility: values })

@@ -61,7 +61,12 @@ function translateCellValue(col: string, value: unknown, t: (key: string, fallba
       'visual impairment': 'visualImpairment',
       'hearing impairment': 'hearingImpairment',
       'speech impairment': 'speechImpairment',
+      'fine motor delay': 'fineMotorDelay',
+      'gross motor delay': 'grossMotorDelay',
       'developmental delay': 'developmentalDelay',
+      'learning disability': 'learningDisability',
+      'intellectual disability': 'intellectualDisability',
+      'multiple disabilities': 'multipleDisabilities',
       'other': 'other',
     };
     const catKey = catMap[str.toLowerCase()];

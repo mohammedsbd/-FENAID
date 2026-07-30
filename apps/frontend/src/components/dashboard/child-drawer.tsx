@@ -28,10 +28,14 @@ import {
   childToForm, 
   formToChildPayload 
 } from '@/types/children';
+import {
+  getCategoryOptions,
+  getSeverityOptions,
+  getCommunicationOptions,
+} from '@/lib/disability-config';
 
 const statusOptions: ChildStatus[] = ['ACTIVE', 'GRADUATED', 'TRANSFERRED', 'INACTIVE', 'DECEASED'];
 const disabilityOptions: DisabilityType[] = ['PHYSICAL', 'INTELLECTUAL', 'MULTIPLE'];
-const severityOptions: SeverityLevel[] = ['MILD', 'MODERATE', 'SEVERE'];
 
 const WORKLOAD_LIMIT = 10;
 
@@ -92,6 +96,27 @@ export function ChildDrawer({
     t('childDrawer.medicalSchool', 'Medical & School'),
     t('childDrawer.linksAssignment', 'Links & Assignment'),
   ];
+
+  const categoryOptions = getCategoryOptions(form.disabilityType && form.disabilityType !== 'MULTIPLE' ? form.disabilityType : undefined);
+  const severityOptions = getSeverityOptions(form.disabilityType);
+  const communicationOptions = getCommunicationOptions(form.disabilityType);
+
+  useEffect(() => {
+    if (form.disabilityType) {
+      const cats = getCategoryOptions(form.disabilityType);
+      if (!cats.includes(form.disabilityCategory)) {
+        updateField('disabilityCategory', '');
+      }
+      const sevs = getSeverityOptions(form.disabilityType);
+      if (!sevs.includes(form.severityLevel)) {
+        updateField('severityLevel', '');
+      }
+      const comms = getCommunicationOptions(form.disabilityType);
+      if (!comms.includes(form.communicationAbility)) {
+        updateField('communicationAbility', '');
+      }
+    }
+  }, [form.disabilityType]);
 
   useEffect(() => {
     if (!open) return;
@@ -312,22 +337,26 @@ export function ChildDrawer({
                 <div className="grid gap-4 md:grid-cols-2">
                   <FormField label={t('childDrawer.disabilityType', 'Disability Type')} error={errors.disabilityType}>
                     <select className={selectClassName} value={form.disabilityType} onChange={(event) => updateField('disabilityType', event.target.value)}>
+                      <option value="">{t('childDrawer.selectDisabilityType', 'Select type...')}</option>
                       {disabilityOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
                   </FormField>
                   <FormField label={t('childDrawer.disabilityCategory', 'Disability Category')} error={errors.disabilityCategory}>
-                    <Input value={form.disabilityCategory} placeholder={t('childDrawer.disabilityCategoryPlaceholder', 'e.g. Cerebral Palsy, Autism')} onChange={(event) => updateField('disabilityCategory', event.target.value)} />
+                    <select className={selectClassName} value={form.disabilityCategory} onChange={(event) => updateField('disabilityCategory', event.target.value)} disabled={!form.disabilityType}>
+                      <option value="">{t('childDrawer.selectCategory', 'Select category...')}</option>
+                      {categoryOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
                   </FormField>
                   <FormField label={t('childDrawer.severityLevel', 'Severity Level')} error={errors.severityLevel}>
-                    <select className={selectClassName} value={form.severityLevel} onChange={(event) => updateField('severityLevel', event.target.value)}>
+                    <select className={selectClassName} value={form.severityLevel} onChange={(event) => updateField('severityLevel', event.target.value)} disabled={!form.disabilityType}>
+                      <option value="">{t('childDrawer.selectSeverity', 'Select severity...')}</option>
                       {severityOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
                   </FormField>
                   <FormField label={t('childDrawer.communicationAbility', 'Communication Ability')} error={errors.communicationAbility}>
-                    <select className={selectClassName} value={form.communicationAbility} onChange={(event) => updateField('communicationAbility', event.target.value)}>
-                      <option value="VERBAL">{t('childDrawer.verbal', 'Verbal')}</option>
-                      <option value="NON_VERBAL">{t('childDrawer.nonVerbal', 'Non-Verbal')}</option>
-                      <option value="ASSISTED">{t('childDrawer.assisted', 'Assisted')}</option>
+                    <select className={selectClassName} value={form.communicationAbility} onChange={(event) => updateField('communicationAbility', event.target.value)} disabled={!form.disabilityType}>
+                      <option value="">{t('childDrawer.selectCommunication', 'Select communication...')}</option>
+                      {communicationOptions.map((option) => <option key={option} value={option}>{formatEnum(option)}</option>)}
                     </select>
                   </FormField>
                 </div>
