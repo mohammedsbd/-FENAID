@@ -30,9 +30,12 @@ interface AllocationDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultTargetType?: 'PARENT' | 'CHILD';
+  defaultTargetId?: string;
+  defaultTargetName?: string;
 }
 
-export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerProps) {
+export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, defaultTargetId, defaultTargetName }: AllocationDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,12 +67,32 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
 
   useEffect(() => {
     if (open) {
+      if (defaultTargetType && defaultTargetId && defaultTargetName) {
+        setTargetType(defaultTargetType);
+        if (defaultTargetType === 'PARENT') {
+          setSelectedParent({ id: defaultTargetId, fullName: defaultTargetName, photoUrl: '', nationalId: '' });
+        } else {
+          setSelectedChild({ id: defaultTargetId, fullName: defaultTargetName, photoUrl: '' });
+        }
+      }
+    } else {
+      setSelectedParent(null);
+      setSelectedChild(null);
+      setAmount('');
+      setPurpose('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setNotes('');
+      setSearch('');
+      if (!defaultTargetType) setTargetType('PARENT');
+    }
+  }, [open, defaultTargetType, defaultTargetId, defaultTargetName]);
+
+  useEffect(() => {
+    if (open && !defaultTargetType) {
       if (targetType === 'PARENT') fetchParents();
       else fetchChildren();
-    } else {
-      resetForm();
     }
-  }, [open, targetType]);
+  }, [open, targetType, defaultTargetType]);
 
   async function fetchParents() {
     try {
@@ -89,16 +112,6 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
       console.error('Failed to fetch children:', error);
       setChildren([]);
     }
-  }
-
-  function resetForm() {
-    setSelectedParent(null);
-    setSelectedChild(null);
-    setAmount('');
-    setPurpose('');
-    setDate(new Date().toISOString().split('T')[0]);
-    setNotes('');
-    setSearch('');
   }
 
   const filteredParents = Array.isArray(parents)
@@ -170,6 +183,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {!defaultTargetType && (
           <div className="space-y-2">
             <Label>{t('allocationDrawer.targetType', 'Allocate To')}</Label>
             <div className="flex gap-2">
@@ -199,12 +213,23 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
               </button>
             </div>
           </div>
+          )}
 
           <div className="space-y-4">
-            <Label>{targetType === 'PARENT' ? t('allocationDrawer.selectParentLabel', 'Select Parent') : t('allocationDrawer.selectChildLabel', 'Select Child')}</Label>
-            {targetType === 'PARENT' ? (
+            {defaultTargetType && defaultTargetName ? (
+              <div className="flex items-center gap-3 p-3 border rounded-lg bg-primary/5 border-primary/10">
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback>{defaultTargetName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium">{defaultTargetName}</div>
+                  <div className="text-xs text-muted-foreground">{defaultTargetType === 'PARENT' ? 'Parent' : 'Child'}</div>
+                </div>
+              </div>
+            ) : targetType === 'PARENT' ? (
               !selectedParent ? (
                 <div className="space-y-2">
+                  <Label>{t('allocationDrawer.selectParentLabel', 'Select Parent')}</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -257,6 +282,7 @@ export function AllocationDrawer({ open, onClose, onSuccess }: AllocationDrawerP
             ) : (
               !selectedChild ? (
                 <div className="space-y-2">
+                  <Label>{t('allocationDrawer.selectChildLabel', 'Select Child')}</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input

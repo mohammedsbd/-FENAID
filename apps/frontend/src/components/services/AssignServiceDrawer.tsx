@@ -19,6 +19,9 @@ interface AssignServiceDrawerProps {
   onClose: () => void;
   onSaved: () => void;
   userRole: string;
+  defaultTargetType?: 'PARENT' | 'CHILD';
+  defaultTargetId?: string;
+  defaultTargetName?: string;
 }
 
 interface StaffOption {
@@ -47,7 +50,7 @@ interface ChildOption {
   parent?: { fullName: string } | null;
 }
 
-export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: AssignServiceDrawerProps) {
+export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultTargetType, defaultTargetId, defaultTargetName }: AssignServiceDrawerProps) {
   const { t } = useLocale();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -88,8 +91,17 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
     if (open) {
       fetchServices();
       fetchStaff();
+      if (defaultTargetType && defaultTargetId && defaultTargetName) {
+        setTargetType(defaultTargetType);
+        if (defaultTargetType === 'PARENT') {
+          setSelectedParent({ id: defaultTargetId, fullName: defaultTargetName, idTag: null, phone: '', photoUrl: null, status: 'ACTIVE' });
+        } else {
+          setSelectedChild({ id: defaultTargetId, fullName: defaultTargetName, idTag: null, photoUrl: null, status: 'ACTIVE' });
+        }
+        setStep(2);
+      }
     }
-  }, [open, targetType]);
+  }, [open, targetType, defaultTargetType, defaultTargetId, defaultTargetName]);
 
   useEffect(() => {
     if (open) {
@@ -126,12 +138,12 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
   }, [childSearch]);
 
   function resetForm() {
-    setStep(1);
-    setTargetType('PARENT');
+    setStep(defaultTargetType ? 2 : 1);
+    setTargetType(defaultTargetType || 'PARENT');
     setParentSearch('');
     setChildSearch('');
-    setSelectedParent(null);
-    setSelectedChild(null);
+    setSelectedParent(defaultTargetType === 'PARENT' && defaultTargetId && defaultTargetName ? { id: defaultTargetId, fullName: defaultTargetName, idTag: null, phone: '', photoUrl: null, status: 'ACTIVE' } : null);
+    setSelectedChild(defaultTargetType === 'CHILD' && defaultTargetId && defaultTargetName ? { id: defaultTargetId, fullName: defaultTargetName, idTag: null, photoUrl: null, status: 'ACTIVE' } : null);
     setSelectedServiceId('');
     setStartDate('');
     setEndDate('');
@@ -283,11 +295,44 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
         <div className="flex-1 overflow-y-auto p-6">
           {step === 1 && (
             <div className="space-y-6">
+              {defaultTargetType && defaultTargetName ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-1">{t('services.assign.who', 'Who is this for?')}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t('services.assign.whoDesc', 'Select a parent or child to assign this service to.')}</p>
+                  </div>
+                  <SelectedPersonCard
+                    name={defaultTargetName}
+                    status="ACTIVE"
+                  />
+                  {targetType === 'PARENT' && (
+                    <button
+                      type="button"
+                      onClick={() => setTargetType('CHILD')}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t('services.assign.switchToChild', 'Assign to a child instead')}
+                    </button>
+                  )}
+                  {targetType === 'CHILD' && (
+                    <button
+                      type="button"
+                      onClick={() => setTargetType('PARENT')}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t('services.assign.switchToParent', 'Assign to a parent instead')}
+                    </button>
+                  )}
+                </div>
+              ) : (
               <div>
                 <h3 className="font-semibold mb-1">{t('services.assign.who', 'Who is this for?')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{t('services.assign.whoDesc', 'Select a parent or child to assign this service to.')}</p>
               </div>
+              )}
 
+              {!defaultTargetType && (
+              <>
               {/* Segmented control */}
               <div className="flex gap-2">
                 <button
@@ -424,6 +469,8 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole }: Assign
                   )}
                 </div>
               )}
+              </>
+            )}
             </div>
           )}
 

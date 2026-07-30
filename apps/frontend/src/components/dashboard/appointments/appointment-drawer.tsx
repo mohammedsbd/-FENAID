@@ -25,10 +25,14 @@ interface AppointmentDrawerProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  appointment?: any; // For editing
+  appointment?: any;
+  defaultParentId?: string;
+  defaultParentName?: string;
+  defaultChildId?: string;
+  defaultChildName?: string;
 }
 
-export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: AppointmentDrawerProps) {
+export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defaultParentId, defaultParentName, defaultChildId, defaultChildName }: AppointmentDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,11 +86,15 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
         setIsRecurring(appointment.isRecurring);
         setSelectedChild(appointment.child || null);
         setSelectedParent(appointment.parent || null);
+      } else if (defaultChildId && defaultChildName) {
+        setSelectedChild({ id: defaultChildId, fullName: defaultChildName });
+      } else if (defaultParentId && defaultParentName) {
+        setSelectedParent({ id: defaultParentId, fullName: defaultParentName });
       }
     } else {
       resetForm();
     }
-  }, [open, appointment]);
+  }, [open, appointment, defaultParentId, defaultParentName, defaultChildId, defaultChildName]);
 
   useEffect(() => {
     if (search.length > 2) {
@@ -131,8 +139,8 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
     setRecurrenceRule('DAILY');
     setRecurrenceEnd('');
     setNotes('');
-    setSelectedChild(null);
-    setSelectedParent(null);
+    setSelectedChild(defaultChildId && defaultChildName ? { id: defaultChildId, fullName: defaultChildName } : null);
+    setSelectedParent((!defaultChildId && defaultParentId && defaultParentName) ? { id: defaultParentId, fullName: defaultParentName } : null);
     setSearch('');
   }
 
@@ -255,8 +263,34 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
           </div>
 
           <div className="space-y-4 pt-2">
-            <Label>{t('appointmentDrawer.linkedParticipants', 'Linked Participants (Search and select)')}</Label>
+            <Label>{t('appointmentDrawer.linkedParticipants', 'Linked Participants')}</Label>
             
+            {(defaultChildId || defaultParentId) ? (
+              <div className="space-y-2">
+                {selectedChild && (
+                  <div className="flex items-center justify-between p-2 border rounded-md bg-blue-50/50 border-blue-100">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-8 h-8"><AvatarFallback>C</AvatarFallback></Avatar>
+                      <div>
+                        <div className="text-sm font-medium">{selectedChild.fullName}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">{t('appointmentDrawer.child', 'Child')}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {selectedParent && (
+                  <div className="flex items-center justify-between p-2 border rounded-md bg-amber-50/50 border-amber-100">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="w-8 h-8"><AvatarFallback>P</AvatarFallback></Avatar>
+                      <div>
+                        <div className="text-sm font-medium">{selectedParent.fullName}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">{t('appointmentDrawer.parent', 'Parent')}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
             <div className="space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -325,6 +359,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment }: App
                 )}
               </div>
             </div>
+            )}
           </div>
 
           <div className="space-y-4 border-t pt-4">

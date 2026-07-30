@@ -9,3 +9,4 @@ coverage
 *.tsbuildinfo
 pnpm-debug.log*
 recording.mkv
+.vercel

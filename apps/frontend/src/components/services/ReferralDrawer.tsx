@@ -25,6 +25,9 @@ interface ReferralDrawerProps {
   onClose: () => void;
   onSaved: () => void;
   userRole: string;
+  defaultTargetType?: 'PARENT' | 'CHILD';
+  defaultTargetId?: string;
+  defaultTargetName?: string;
 }
 
 interface ParentOption {
@@ -51,6 +54,9 @@ export function ReferralDrawer({
   onClose,
   onSaved,
   userRole,
+  defaultTargetType,
+  defaultTargetId,
+  defaultTargetName,
 }: ReferralDrawerProps) {
   const { t } = useLocale();
   const { toast } = useToast();
@@ -115,8 +121,15 @@ export function ReferralDrawer({
       setStatus(referral.status);
       setNotes(referral.notes || '');
       setOutcome(referral.outcome || '');
+    } else if (open && !isEdit && defaultTargetType && defaultTargetId && defaultTargetName) {
+      setTargetType(defaultTargetType);
+      if (defaultTargetType === 'PARENT') {
+        setSelectedParent({ id: defaultTargetId, fullName: defaultTargetName, idTag: null, phone: '', photoUrl: null });
+      } else {
+        setSelectedChild({ id: defaultTargetId, fullName: defaultTargetName, idTag: null, photoUrl: null });
+      }
     }
-  }, [open, isEdit, referral]);
+  }, [open, isEdit, referral, defaultTargetType, defaultTargetId, defaultTargetName]);
 
   useEffect(() => {
     if (open) {
@@ -153,11 +166,11 @@ export function ReferralDrawer({
   }, [childSearch]);
 
   function resetForm() {
-    setTargetType('PARENT');
+    setTargetType(defaultTargetType || 'PARENT');
     setParentSearch('');
     setChildSearch('');
-    setSelectedParent(null);
-    setSelectedChild(null);
+    setSelectedParent(defaultTargetType === 'PARENT' && defaultTargetId && defaultTargetName ? { id: defaultTargetId, fullName: defaultTargetName, idTag: null, phone: '', photoUrl: null } : null);
+    setSelectedChild(defaultTargetType === 'CHILD' && defaultTargetId && defaultTargetName ? { id: defaultTargetId, fullName: defaultTargetName, idTag: null, photoUrl: null } : null);
     setReferredTo('');
     setReferralReason('');
     setReferralDate(new Date().toISOString().split('T')[0]);
@@ -298,6 +311,20 @@ export function ReferralDrawer({
           {/* Recipient Selection (only in create mode) */}
           {!isEdit && (
             <div className="space-y-4">
+              {defaultTargetType && defaultTargetName ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-1">
+                      {t('services.referrals.drawer.selectRecipient', 'Select Recipient')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {t('services.referrals.drawer.whoDesc', 'Who is being referred to the external organization?')}
+                    </p>
+                  </div>
+                  <SelectedPersonCard name={defaultTargetName} />
+                </div>
+              ) : (
+              <>
               <div>
                 <h3 className="font-semibold mb-1">
                   {t('services.referrals.drawer.selectRecipient', 'Select Recipient')}
@@ -448,6 +475,8 @@ export function ReferralDrawer({
                   )}
                 </div>
               )}
+              </>
+            )}
             </div>
           )}
 
