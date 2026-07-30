@@ -307,6 +307,7 @@ model ChildParent {
 
   @@id([childId, parentId])
   @@index([parentId])
+  @@index([childId])
 }
 
 model Service {
@@ -359,6 +360,8 @@ model ServiceAssignment {
   @@index([status, endDate])
   @@index([createdAt])
   @@index([assignedStaffId, status, endDate])
+  @@index([parentId, startDate])
+  @@index([childId, startDate])
 }
 
 model FundAllocation {
@@ -387,6 +390,8 @@ model FundAllocation {
   @@index([status, createdAt])
   @@index([status, allocationDate])
   @@index([allocationDate])
+  @@index([parentId, allocationDate])
+  @@index([parentId, createdAt])
 }
 
 model Donation {
@@ -469,6 +474,7 @@ model Goal {
   @@index([staffId])
   @@index([type])
   @@index([childId, createdAt])
+  @@index([staffId, createdAt])
 }
 
 model Appointment {
@@ -549,6 +555,8 @@ model Document {
   @@index([expiresAt])
   @@index([createdAt])
   @@index([category])
+  @@index([parentId, createdAt])
+  @@index([childId, createdAt])
 }
 
 model Notification {
@@ -572,6 +580,7 @@ model Notification {
   @@index([staffId, isRead])
   @@index([staffId, type, entityType, entityId, isRead])
   @@index([entityType, entityId])
+  @@index([staffId, createdAt])
 }
 
 model AuditLog {
@@ -788,6 +797,8 @@ model Referral {
   @@index([status])
   @@index([referralDate])
   @@index([referredById, status])
+  @@index([parentId, referralDate])
+  @@index([childId, referralDate])
 }
 
 model PasswordResetToken {
