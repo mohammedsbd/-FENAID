@@ -46,6 +46,7 @@ import { AllocationDrawer } from './allocation-drawer';
 import { DonationDrawer } from './donation-drawer';
 import { DisburseModal } from './disburse-modal';
 import { AcknowledgeModal } from './acknowledge-modal';
+import { FundDetailDrawer } from './fund-detail-drawer';
 import { useLocale } from '@/components/providers/locale-provider';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
 import { ExportButton, ExportFormat } from '@/components/dashboard/export-button';
@@ -78,6 +79,8 @@ export default function FinanceClient() {
   const [disburseModalOpen, setDisburseModalOpen] = useState(false);
   const [acknowledgeModalOpen, setAcknowledgeModalOpen] = useState(false);
   const [selectedAllocation, setSelectedAllocation] = useState<FundAllocation | null>(null);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<{ allocation?: FundAllocation; donation?: Donation }>({});
 
   // Filters
   const [allocationStatus, setAllocationStatus] = useState<string>('ALL');
@@ -152,6 +155,16 @@ export default function FinanceClient() {
     e.stopPropagation();
     setSelectedAllocation(allocation);
     setAcknowledgeModalOpen(true);
+  };
+
+  const handleDetailClick = (e: React.MouseEvent, item: FundAllocation | Donation) => {
+    e.stopPropagation();
+    if ('parent' in item) {
+      setDetailItem({ allocation: item });
+    } else {
+      setDetailItem({ donation: item });
+    }
+    setDetailDrawerOpen(true);
   };
 
   const handleExport = async (formatType: ExportFormat) => {
@@ -492,8 +505,8 @@ export default function FinanceClient() {
                               <HandCoins className="w-4 h-4" />
                             </Button>
                           )}
-                          <Button size="icon" variant="ghost" className="h-8 w-8">
-                            <MoreVertical className="w-4 h-4" />
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => handleDetailClick(e, item)}>
+                            <ExternalLink className="w-4 h-4" />
                           </Button>
                         </div>
                       )}
@@ -545,9 +558,9 @@ export default function FinanceClient() {
                           <Lock className="w-3 h-3 mr-1" />
                            {t('finance.immutable', 'Immutable')}
                         </div>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
+                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => handleDetailClick(e, item)}>
+                           <ExternalLink className="w-4 h-4" />
+                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -580,6 +593,12 @@ export default function FinanceClient() {
         allocation={selectedAllocation} 
         onClose={() => setAcknowledgeModalOpen(false)} 
         onSuccess={fetchData} 
+      />
+      <FundDetailDrawer
+        open={detailDrawerOpen}
+        onClose={() => setDetailDrawerOpen(false)}
+        allocation={detailItem.allocation}
+        donation={detailItem.donation}
       />
     </div>
   );
