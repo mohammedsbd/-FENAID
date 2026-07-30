@@ -748,17 +748,30 @@ function getNotificationIcon(notification: Notification, fallback: typeof Bell) 
 }
 
 function getNotificationHref(notification: Notification) {
-  if (!notification.entityId) return '/dashboard';
+  if (!notification.entityId && notification.entityType !== 'DonationSummary') return '/dashboard';
 
-  if (notification.entityType === 'Parent') {
-    return `/dashboard/parents/${notification.entityId}`;
+  switch (notification.entityType) {
+    case 'Parent':
+      return `/dashboard/parents/${notification.entityId}`;
+    case 'Child':
+      return `/dashboard/children/${notification.entityId}`;
+    case 'FundAllocation':
+    case 'Donation':
+    case 'DonationSummary':
+      return '/dashboard/funds';
+    case 'ServiceAssignment':
+      return '/dashboard/services';
+    case 'Appointment':
+    case 'AppointmentReminder':
+      return '/dashboard/calendar';
+    case 'Document':
+    case 'DocumentExpiry':
+      return '/dashboard/documents';
+    case 'Referral':
+      return '/dashboard/referrals';
+    default:
+      return '/dashboard';
   }
-
-  if (notification.entityType === 'Child') {
-    return `/dashboard/children/${notification.entityId}`;
-  }
-
-  return '/dashboard';
 }
 
 function LiveClock() {
