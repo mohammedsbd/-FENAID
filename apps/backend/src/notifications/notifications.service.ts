@@ -83,11 +83,7 @@ export class NotificationsService {
       }
     }
 
-    const message =
-      data.message ||
-      (data.notificationKey
-        ? this.i18n.t(data.notificationKey, data.params)
-        : '');
+    const message = data.message || data.notificationKey || '';
 
     return this.prisma.notification.create({
       data: {
