@@ -64,8 +64,8 @@ export class DataQueryController {
   }
 
   @Get('education-levels')
-  educationLevels() {
-    return this.dataQueryService.listEducationLevels();
+  educationLevels(@Query('subject') subject?: string) {
+    return this.dataQueryService.listEducationLevels(subject);
   }
 
   @Get('permissions')

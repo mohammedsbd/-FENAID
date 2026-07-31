@@ -1,24 +1,7 @@
 import type { DataQueryFilters } from '@fikir/types';
 
 export { SUBCITIES } from '@/lib/location-config';
-
-export const EDUCATION_LEVEL_LABELS: Record<string, string> = {
-  NO_FORMAL: 'No Formal Education',
-  PRIMARY: 'Primary School',
-  SECONDARY: 'Secondary School',
-  HIGH_SCHOOL: 'High School',
-  DIPLOMA: 'Diploma',
-  BACHELOR: "Bachelor's Degree",
-  MASTER: "Master's Degree",
-  DOCTORATE: 'Doctorate',
-  VOCATIONAL: 'Vocational Training',
-  OTHER: 'Other',
-};
-
-export function getEducationLevelLabel(value: string): string {
-  const normalized = value.trim().toUpperCase().replace(/\s+/g, '_');
-  return EDUCATION_LEVEL_LABELS[normalized] ?? value;
-}
+export { EDUCATION_LEVEL_LABELS, getEducationLevelLabel } from '@/lib/education-config';
 
 export const COLUMN_GROUPS: Record<string, { key: string; label: string }[]> = {
   Child: [
@@ -30,6 +13,7 @@ export const COLUMN_GROUPS: Record<string, { key: string; label: string }[]> = {
     { key: 'severityLevel', label: 'Severity' },
     { key: 'communicationAbility', label: 'Communication Ability' },
     { key: 'schoolEnrollmentStatus', label: 'School Status' },
+    { key: 'educationLevel', label: 'Education Level' },
     { key: 'status', label: 'Status' },
     { key: 'registrationDate', label: 'Registration Date' },
     { key: 'assignedCaseWorker', label: 'Assigned Case Worker' },
@@ -64,7 +48,7 @@ export const COLUMN_GROUPS: Record<string, { key: string; label: string }[]> = {
 
 export const DEFAULT_COLUMNS: Record<string, string[]> = {
   CHILD: ['fullName', 'age', 'gender', 'disabilityType', 'severityLevel', 'subcity', 'assignedCaseWorker'],
-  PARENT: ['parentFullName', 'phone', 'subcity', 'financialBracket', 'status'],
+  PARENT: ['parentFullName', 'phone', 'subcity', 'educationLevel', 'financialBracket', 'status'],
   PARENT_CHILD_PAIR: [
     'childFullName',
     'age',

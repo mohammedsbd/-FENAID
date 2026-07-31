@@ -33,6 +33,7 @@ import {
   getSeverityOptions,
   getCommunicationOptions,
 } from '@/lib/disability-config';
+import { EDUCATION_LEVELS, EDUCATION_LEVEL_LABELS } from '@/lib/education-config';
 
 const statusOptions: ChildStatus[] = ['ACTIVE', 'GRADUATED', 'TRANSFERRED', 'INACTIVE', 'DECEASED'];
 const disabilityOptions: DisabilityType[] = ['PHYSICAL', 'INTELLECTUAL', 'MULTIPLE'];
@@ -383,6 +384,16 @@ export function ChildDrawer({
                       <option value="ENROLLED">{t('childDrawer.enrolled', 'Enrolled')}</option>
                       <option value="NOT_ENROLLED">{t('childDrawer.notEnrolled', 'Not Enrolled')}</option>
                       <option value="GRADUATED">{t('childDrawer.graduated', 'Graduated')}</option>
+                    </select>
+                  </FormField>
+                  <FormField label={t('childDrawer.educationLevel', 'Education Level')} error={errors.educationLevel}>
+                    <select className={selectClassName} value={form.educationLevel} onChange={(event) => updateField('educationLevel', event.target.value)}>
+                      <option value="">{t('childDrawer.selectEducation', 'Select education level...')}</option>
+                      {EDUCATION_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                          {t(`childDrawer.education.${level.toLowerCase().replace(/_/g, '')}`, EDUCATION_LEVEL_LABELS[level] ?? level)}
+                        </option>
+                      ))}
                     </select>
                   </FormField>
                 </div>

@@ -464,7 +464,21 @@ export class DataQueryService {
     });
   }
 
-  async listEducationLevels() {
+  async listEducationLevels(subject?: string) {
+    if (subject === 'CHILD') {
+      const groups = await this.prisma.child.groupBy({
+        by: ['educationLevel'],
+        where: { deletedAt: null, educationLevel: { not: null } },
+        _count: { educationLevel: true },
+        orderBy: { educationLevel: 'asc' },
+      });
+
+      return groups.map((group) => ({
+        value: group.educationLevel,
+        count: group._count.educationLevel,
+      }));
+    }
+
     const groups = await this.prisma.parent.groupBy({
       by: ['educationLevel'],
       where: { deletedAt: null },
@@ -603,7 +617,7 @@ export class DataQueryService {
       const rows = await this.prisma.parent.findMany({
         where: where as Prisma.ParentWhereInput,
         include: parentInclude,
-        orderBy,
+        orderBy: orderBy as Prisma.ParentOrderByWithRelationInput,
         ...(paginate ? { skip: (page - 1) * pageSize, take: pageSize } : {}),
       });
       return { rows, total };
@@ -613,7 +627,7 @@ export class DataQueryService {
     const rows = await this.prisma.child.findMany({
       where: where as Prisma.ChildWhereInput,
       include: childInclude,
-      orderBy,
+      orderBy: orderBy as Prisma.ChildOrderByWithRelationInput,
       ...(paginate ? { skip: (page - 1) * pageSize, take: pageSize } : {}),
     });
     return { rows, total };
@@ -740,7 +754,7 @@ export class DataQueryService {
             result[col] = parent?.financialBracket;
             break;
           case 'educationLevel':
-            result[col] = parent?.educationLevel;
+            result[col] = child?.educationLevel ?? parent?.educationLevel;
             break;
           case 'employmentStatus':
             result[col] = parent?.employmentStatus;

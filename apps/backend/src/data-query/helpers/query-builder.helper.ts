@@ -45,6 +45,9 @@ function buildChildDemographics(
       schoolEnrollmentStatus: { in: child.schoolEnrollmentStatus as never[] },
     });
   }
+  if (child.educationLevel?.length) {
+    conditions.push({ educationLevel: { in: child.educationLevel } });
+  }
   if (child.status?.length) {
     conditions.push({ status: { in: child.status as never[] } });
   }

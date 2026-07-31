@@ -144,6 +144,9 @@ export function FilterBuilder({
   const [educationLevels, setEducationLevels] = useState<
     Array<{ value: string; count: number }>
   >([]);
+  const [childEducationLevels, setChildEducationLevels] = useState<
+    Array<{ value: string; count: number }>
+  >([]);
 
   useEffect(() => {
     void Promise.all([
@@ -157,6 +160,9 @@ export function FilterBuilder({
       api
         .get('/data-query/education-levels')
         .then((r) => setEducationLevels(r.data ?? [])),
+      api
+        .get('/data-query/education-levels', { params: { subject: 'CHILD' } })
+        .then((r) => setChildEducationLevels(r.data ?? [])),
     ]).catch(() => undefined);
   }, []);
 
@@ -376,20 +382,39 @@ export function FilterBuilder({
               }
             />
           </div>
-          <div>
-            <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
-            <MultiCheckbox
-              options={[
-                { value: 'ENROLLED', label: t('enum.schoolStatus.enrolled', 'Enrolled') },
-                { value: 'NOT_ENROLLED', label: t('enum.schoolStatus.not_enrolled', 'Not Enrolled') },
-                { value: 'GRADUATED', label: t('enum.schoolStatus.graduated', 'Graduated') },
-              ]}
-              selected={filters.child?.schoolEnrollmentStatus ?? []}
-              onChange={(values) =>
-                updateChild({ schoolEnrollmentStatus: values })
-              }
-            />
-          </div>
+          {dataSubject !== 'PARENT' && (
+            <div>
+              <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
+              <MultiCheckbox
+                options={[
+                  { value: 'ENROLLED', label: t('enum.schoolStatus.enrolled', 'Enrolled') },
+                  { value: 'NOT_ENROLLED', label: t('enum.schoolStatus.not_enrolled', 'Not Enrolled') },
+                  { value: 'GRADUATED', label: t('enum.schoolStatus.graduated', 'Graduated') },
+                ]}
+                selected={filters.child?.schoolEnrollmentStatus ?? []}
+                onChange={(values) =>
+                  updateChild({ schoolEnrollmentStatus: values })
+                }
+              />
+            </div>
+          )}
+          {dataSubject !== 'PARENT' && (
+            <div>
+              <p className="mb-1 text-xs font-medium">{t('filterBuilder.educationLevel', 'Education Level')}</p>
+              {childEducationLevels.length ? (
+                <MultiCheckbox
+                  options={childEducationLevels.map((el) => ({
+                    value: el.value,
+                    label: `${getEducationLevelLabel(el.value)} (${el.count})`,
+                  }))}
+                  selected={filters.child?.educationLevel ?? []}
+                  onChange={(values) => updateChild({ educationLevel: values })}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">{t('filterBuilder.noEducationLevels', 'No education levels found')}</p>
+              )}
+            </div>
+          )}
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.status', 'Status')}</p>
             <MultiCheckbox
@@ -438,21 +463,23 @@ export function FilterBuilder({
               onChange={(values) => updateParent({ financialBracket: values })}
             />
           </div>
-          <div>
-            <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
-            {educationLevels.length ? (
-              <MultiCheckbox
-                options={educationLevels.map((el) => ({
-                  value: el.value,
-                  label: `${getEducationLevelLabel(el.value)} (${el.count})`,
-                }))}
-                selected={filters.parent?.educationLevel ?? []}
-                onChange={(values) => updateParent({ educationLevel: values })}
-              />
-            ) : (
-              <p className="text-xs text-muted-foreground">{t('filterBuilder.noEducationLevels', 'No education levels found')}</p>
-            )}
-          </div>
+          {dataSubject !== 'CHILD' && (
+            <div>
+              <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
+              {educationLevels.length ? (
+                <MultiCheckbox
+                  options={educationLevels.map((el) => ({
+                    value: el.value,
+                    label: `${getEducationLevelLabel(el.value)} (${el.count})`,
+                  }))}
+                  selected={filters.parent?.educationLevel ?? []}
+                  onChange={(values) => updateParent({ educationLevel: values })}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">{t('filterBuilder.noEducationLevels', 'No education levels found')}</p>
+              )}
+            </div>
+          )}
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.parentStatus', 'Parent Status')}</p>
             <MultiCheckbox

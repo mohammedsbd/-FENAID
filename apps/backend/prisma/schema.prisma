@@ -265,6 +265,7 @@ model Child {
   medicalHistory         String?                @db.Text
   medications            String?                @db.Text
   schoolEnrollmentStatus SchoolEnrollmentStatus
+  educationLevel        String?
   communicationAbility   CommunicationAbility
   status                 ChildStatus
   internalNotes          String?                @db.Text

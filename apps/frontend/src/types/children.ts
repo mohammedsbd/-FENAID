@@ -55,6 +55,7 @@ export type ChildFormData = {
   medicalHistory: string;
   medications: string;
   schoolEnrollmentStatus: SchoolEnrollmentStatus;
+  educationLevel: string;
   parentIds: string[];
   assignedStaffId: string;
   internalNotes: string;
@@ -74,6 +75,7 @@ export const emptyChildForm: ChildFormData = {
   medicalHistory: '',
   medications: '',
   schoolEnrollmentStatus: 'NOT_ENROLLED',
+  educationLevel: '',
   parentIds: [],
   assignedStaffId: '',
   internalNotes: '',
@@ -100,6 +102,7 @@ export function childToForm(child: any): ChildFormData {
     medicalHistory: child.medicalHistory || '',
     medications: child.medications || '',
     schoolEnrollmentStatus: child.schoolEnrollmentStatus || 'NOT_ENROLLED',
+    educationLevel: child.educationLevel || '',
     parentIds: (child.parents || []).map((cp: any) => cp.parent?.id).filter(Boolean),
     assignedStaffId: child.assignedStaffId || '',
     internalNotes: child.internalNotes || '',
@@ -121,6 +124,7 @@ export function formToChildPayload(form: ChildFormData) {
     medicalHistory: form.medicalHistory || null,
     medications: form.medications || null,
     schoolEnrollmentStatus: form.schoolEnrollmentStatus,
+    educationLevel: form.educationLevel || null,
     parentIds: form.parentIds,
     assignedStaffId: form.assignedStaffId,
   };

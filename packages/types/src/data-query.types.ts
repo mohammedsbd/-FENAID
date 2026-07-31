@@ -8,6 +8,7 @@ export interface DataQueryFilters {
     severityLevel?: string[];
     communicationAbility?: string[];
     schoolEnrollmentStatus?: string[];
+    educationLevel?: string[];
     status?: string[];
     registeredAfter?: string;
     registeredBefore?: string;
