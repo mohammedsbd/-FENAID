@@ -12,6 +12,7 @@ import api from '@/lib/api';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { formatEnum } from '@/lib/export';
+import { SUBCITIES, SUBCITY_WOREDAS } from '@/lib/location-config';
 import { useLocale } from '@/components/providers/locale-provider';
 import { 
   ParentStatus, 
@@ -33,20 +34,6 @@ const membershipStatusOptions: MembershipStatus[] = ['PAID', 'UNPAID'];
 const bracketOptions: FinancialBracket[] = ['LOW', 'MEDIUM', 'HIGH'];
 const maritalOptions: MaritalStatus[] = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'];
 const employmentOptions: EmploymentStatus[] = ['EMPLOYED', 'UNEMPLOYED', 'SELF_EMPLOYED'];
-
-const subcityWoredas: Record<string, string[]> = {
-  'Addis Ketema': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
-  'Akaky Kaliti': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
-  'Arada': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
-  'Bole': Array.from({ length: 14 }, (_, i) => `Woreda ${i + 1}`),
-  'Gullele': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
-  'Kirkos': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
-  'Kolfe Keranio': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
-  'Lemi Kura': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
-  'Lideta': Array.from({ length: 10 }, (_, i) => `Woreda ${i + 1}`),
-  'Nifas Silk-Lafto': Array.from({ length: 11 }, (_, i) => `Woreda ${i + 1}`),
-  'Yeka': Array.from({ length: 13 }, (_, i) => `Woreda ${i + 1}`),
-};
 
 const WORKLOAD_LIMIT = 10;
 
@@ -364,17 +351,9 @@ export function ParentDrawer({
                       onChange={(event) => updateField('subcity', event.target.value)}
                     >
                       <option value="">Select subcity</option>
-                      <option value="Addis Ketema">Addis Ketema</option>
-                      <option value="Akaky Kaliti">Akaky Kaliti</option>
-                      <option value="Arada">Arada</option>
-                      <option value="Bole">Bole</option>
-                      <option value="Gullele">Gullele</option>
-                      <option value="Kirkos">Kirkos</option>
-                      <option value="Kolfe Keranio">Kolfe Keranio</option>
-                      <option value="Lemi Kura">Lemi Kura</option>
-                      <option value="Lideta">Lideta</option>
-                      <option value="Nifas Silk-Lafto">Nifas Silk-Lafto</option>
-                      <option value="Yeka">Yeka</option>
+                      {SUBCITIES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
                     </select>
                   </FormField>
                   <FormField label={t('parentDrawer.woreda', 'Woreda')} error={errors.woreda}>
@@ -384,8 +363,8 @@ export function ParentDrawer({
                       onChange={(event) => updateField('woreda', event.target.value)}
                     >
                       <option value="">{t('parentDrawer.selectWoreda', 'Select woreda')}</option>
-                      {(form.subcity && subcityWoredas[form.subcity]
-                        ? subcityWoredas[form.subcity]
+                      {(form.subcity && SUBCITY_WOREDAS[form.subcity]
+                        ? SUBCITY_WOREDAS[form.subcity]
                         : []
                       ).map((w) => (
                         <option key={w} value={w}>{w}</option>

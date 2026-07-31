@@ -11,8 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import api from '@/lib/api';
 import { useLocale } from '@/components/providers/locale-provider';
 import { CalendarDatePicker } from '@/components/ui/calendar-date-picker';
-import { COLUMN_GROUPS, SUBCITIES, countSectionFilters } from './constants';
-import { ALL_CATEGORIES, ALL_SEVERITIES, ALL_COMMUNICATIONS } from '@/lib/disability-config';
+import { COLUMN_GROUPS, countSectionFilters, getEducationLevelLabel } from './constants';
+import { ADDIS_ABABA, SUBCITIES, getWoredaOptions } from '@/lib/location-config';
+import { ALL_CATEGORIES, ALL_SEVERITIES, ALL_COMMUNICATIONS, getCategoryOptions } from '@/lib/disability-config';
 
 type DataSubject = 'CHILD' | 'PARENT' | 'PARENT_CHILD_PAIR';
 
@@ -103,6 +104,16 @@ function MultiCheckbox({
   );
 }
 
+function expandDisabilityTypes(types: string[]): string[] {
+  return Array.from(
+    new Set(
+      types.flatMap((type) =>
+        type === 'MULTIPLE' ? ['PHYSICAL', 'INTELLECTUAL'] : [type],
+      ),
+    ),
+  );
+}
+
 export function FilterBuilder({
   dataSubject,
   onDataSubjectChange,
@@ -130,6 +141,9 @@ export function FilterBuilder({
   const [staff, setStaff] = useState<Array<{ id: string; fullName: string }>>(
     [],
   );
+  const [educationLevels, setEducationLevels] = useState<
+    Array<{ value: string; count: number }>
+  >([]);
 
   useEffect(() => {
     void Promise.all([
@@ -140,6 +154,9 @@ export function FilterBuilder({
         .get('/appointments')
         .then((r) => setAppointments(r.data?.data ?? r.data ?? [])),
       api.get('/data-query/staff').then((r) => setStaff(r.data ?? [])),
+      api
+        .get('/data-query/education-levels')
+        .then((r) => setEducationLevels(r.data ?? [])),
     ]).catch(() => undefined);
   }, []);
 
@@ -223,6 +240,17 @@ export function FilterBuilder({
 
   const allColumnOptions = Object.values(COLUMN_GROUPS).flat();
 
+  const selectedDisabilityTypes = filters.child?.disabilityType ?? [];
+  const effectiveDisabilityTypes = selectedDisabilityTypes.length
+    ? expandDisabilityTypes(selectedDisabilityTypes)
+    : [];
+  const disabilityCategoryGroups = effectiveDisabilityTypes.length
+    ? effectiveDisabilityTypes.map((type) => ({
+        label: t(`enum.disabilityType.${type.toLowerCase()}`, type),
+        values: getCategoryOptions(type),
+      }))
+    : [{ label: '', values: ALL_CATEGORIES }];
+
   return (
     <div className="space-y-4">
       <div className="space-y-4">
@@ -299,16 +327,36 @@ export function FilterBuilder({
                 { value: 'MULTIPLE', label: t('enum.disabilityType.multiple', 'Multiple') },
               ]}
               selected={filters.child?.disabilityType ?? []}
-              onChange={(values) => updateChild({ disabilityType: values })}
+              onChange={(values) => {
+                const effective = expandDisabilityTypes(values);
+                const allowed = effective.length
+                  ? new Set(effective.flatMap((type) => getCategoryOptions(type)))
+                  : new Set(ALL_CATEGORIES);
+                updateChild({
+                  disabilityType: values,
+                  disabilityCategory: (filters.child?.disabilityCategory ?? []).filter(
+                    (c) => allowed.has(c),
+                  ),
+                });
+              }}
             />
           </div>
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.disabilityCategory', 'Disability Category')}</p>
-            <MultiCheckbox
-              options={ALL_CATEGORIES.map(c => ({ value: c, label: t(`enum.disabilityCategory.${c.toLowerCase().replace(/\s+/g, '')}`, c) }))}
-              selected={filters.child?.disabilityCategory ?? []}
-              onChange={(values) => updateChild({ disabilityCategory: values })}
-            />
+            <div className="space-y-3">
+              {disabilityCategoryGroups.map((group) => (
+                <div key={group.label}>
+                  {group.label && (
+                    <p className="mb-1 text-xs font-semibold text-muted-foreground">{group.label}</p>
+                  )}
+                  <MultiCheckbox
+                    options={group.values.map((c) => ({ value: c, label: t(`enum.disabilityCategory.${c.toLowerCase().replace(/\s+/g, '')}`, c) }))}
+                    selected={filters.child?.disabilityCategory ?? []}
+                    onChange={(values) => updateChild({ disabilityCategory: values })}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
           <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.severityLevel', 'Severity Level')}</p>
@@ -391,6 +439,21 @@ export function FilterBuilder({
             />
           </div>
           <div>
+            <p className="mb-1 text-xs font-medium">{t('filterBuilder.schoolEnrollment', 'School Enrollment')}</p>
+            {educationLevels.length ? (
+              <MultiCheckbox
+                options={educationLevels.map((el) => ({
+                  value: el.value,
+                  label: `${getEducationLevelLabel(el.value)} (${el.count})`,
+                }))}
+                selected={filters.parent?.educationLevel ?? []}
+                onChange={(values) => updateParent({ educationLevel: values })}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground">{t('filterBuilder.noEducationLevels', 'No education levels found')}</p>
+            )}
+          </div>
+          <div>
             <p className="mb-1 text-xs font-medium">{t('filterBuilder.parentStatus', 'Parent Status')}</p>
             <MultiCheckbox
               options={[
@@ -410,18 +473,58 @@ export function FilterBuilder({
             filters.location as Record<string, unknown>,
           )}
         >
-          <Input
-            placeholder={t('filterBuilder.city', 'City')}
-            value={filters.location?.city ?? ''}
-            onChange={(e) =>
-              updateLocation({ city: e.target.value || undefined })
-            }
-          />
-          <MultiCheckbox
-            options={SUBCITIES.map((s) => ({ value: s, label: s }))}
-            selected={filters.location?.subcities ?? []}
-            onChange={(values) => updateLocation({ subcities: values })}
-          />
+          <div>
+            <Label className="text-xs">{t('filterBuilder.city', 'City')}</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+              value={filters.location?.city ?? ''}
+              onChange={(e) => {
+                const city = e.target.value;
+                updateLocation({
+                  city: city || undefined,
+                  subcities: city === ADDIS_ABABA ? filters.location?.subcities : undefined,
+                  woreda: city === ADDIS_ABABA ? filters.location?.woreda : undefined,
+                });
+              }}
+            >
+              <option value="">{t('filterBuilder.any', 'Any')}</option>
+              <option value={ADDIS_ABABA}>{ADDIS_ABABA}</option>
+            </select>
+          </div>
+          {filters.location?.city === ADDIS_ABABA && (
+            <>
+              <div>
+                <p className="mb-1 text-xs font-medium">{t('filterBuilder.subcity', 'Subcity')}</p>
+                <MultiCheckbox
+                  options={SUBCITIES.map((s) => ({ value: s, label: s }))}
+                  selected={filters.location?.subcities ?? []}
+                  onChange={(values) =>
+                    updateLocation({
+                      subcities: values,
+                      woreda: values.length ? filters.location?.woreda : undefined,
+                    })
+                  }
+                />
+              </div>
+              {(filters.location?.subcities?.length ?? 0) > 0 && (
+                <div>
+                  <Label className="text-xs">{t('filterBuilder.woreda', 'Woreda')}</Label>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    value={filters.location?.woreda ?? ''}
+                    onChange={(e) =>
+                      updateLocation({ woreda: e.target.value || undefined })
+                    }
+                  >
+                    <option value="">{t('filterBuilder.any', 'Any')}</option>
+                    {getWoredaOptions(filters.location?.subcities ?? []).map((w) => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
         </Section>
 
         <Section

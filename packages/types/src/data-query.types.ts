@@ -15,6 +15,7 @@ export interface DataQueryFilters {
   parent?: {
     gender?: string;
     financialBracket?: string[];
+    educationLevel?: string[];
     maritalStatus?: string[];
     employmentStatus?: string[];
     referralSource?: string[];

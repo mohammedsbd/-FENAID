@@ -63,6 +63,11 @@ export class DataQueryController {
     return this.dataQueryService.listStaff();
   }
 
+  @Get('education-levels')
+  educationLevels() {
+    return this.dataQueryService.listEducationLevels();
+  }
+
   @Get('permissions')
   permissions(@Req() req: AuthenticatedRequest) {
     return this.dataQueryService.getExportPermissions(req.user.staffId, req.user.role);

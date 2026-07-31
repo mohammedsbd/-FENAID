@@ -464,6 +464,20 @@ export class DataQueryService {
     });
   }
 
+  async listEducationLevels() {
+    const groups = await this.prisma.parent.groupBy({
+      by: ['educationLevel'],
+      where: { deletedAt: null },
+      _count: { educationLevel: true },
+      orderBy: { educationLevel: 'asc' },
+    });
+
+    return groups.map((group) => ({
+      value: group.educationLevel,
+      count: group._count.educationLevel,
+    }));
+  }
+
   async saveQuery(staffId: string, dto: SaveQueryDto) {
     return this.prisma.savedQuery.create({
       data: {
@@ -724,6 +738,9 @@ export class DataQueryService {
             break;
           case 'financialBracket':
             result[col] = parent?.financialBracket;
+            break;
+          case 'educationLevel':
+            result[col] = parent?.educationLevel;
             break;
           case 'employmentStatus':
             result[col] = parent?.employmentStatus;

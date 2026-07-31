@@ -73,6 +73,9 @@ function buildParentDemographics(
       financialBracket: { in: parent.financialBracket as never[] },
     });
   }
+  if (parent.educationLevel?.length) {
+    conditions.push({ educationLevel: { in: parent.educationLevel } });
+  }
   if (parent.maritalStatus?.length) {
     conditions.push({ maritalStatus: { in: parent.maritalStatus as never[] } });
   }

@@ -1,17 +1,24 @@
 import type { DataQueryFilters } from '@fikir/types';
 
-export const SUBCITIES = [
-  'Addis Ketema',
-  'Akaky Kaliti',
-  'Arada',
-  'Bole',
-  'Gulele',
-  'Kirkos',
-  'Kolfe Keranio',
-  'Lideta',
-  'Nifas Silk-Lafto',
-  'Yeka',
-];
+export { SUBCITIES } from '@/lib/location-config';
+
+export const EDUCATION_LEVEL_LABELS: Record<string, string> = {
+  NO_FORMAL: 'No Formal Education',
+  PRIMARY: 'Primary School',
+  SECONDARY: 'Secondary School',
+  HIGH_SCHOOL: 'High School',
+  DIPLOMA: 'Diploma',
+  BACHELOR: "Bachelor's Degree",
+  MASTER: "Master's Degree",
+  DOCTORATE: 'Doctorate',
+  VOCATIONAL: 'Vocational Training',
+  OTHER: 'Other',
+};
+
+export function getEducationLevelLabel(value: string): string {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, '_');
+  return EDUCATION_LEVEL_LABELS[normalized] ?? value;
+}
 
 export const COLUMN_GROUPS: Record<string, { key: string; label: string }[]> = {
   Child: [
@@ -33,6 +40,7 @@ export const COLUMN_GROUPS: Record<string, { key: string; label: string }[]> = {
     { key: 'subcity', label: 'Sub-city' },
     { key: 'woreda', label: 'Woreda' },
     { key: 'financialBracket', label: 'Financial Bracket' },
+    { key: 'educationLevel', label: 'Education Level' },
     { key: 'employmentStatus', label: 'Employment Status' },
     { key: 'maritalStatus', label: 'Marital Status' },
     { key: 'referralSource', label: 'Referral Source' },

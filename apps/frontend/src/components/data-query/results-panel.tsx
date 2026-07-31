@@ -28,6 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatEnum } from '@/lib/export';
+import { getEducationLevelLabel } from './constants';
 import { useLocale } from '@/components/providers/locale-provider';
 
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
@@ -72,6 +73,10 @@ function translateCellValue(col: string, value: unknown, t: (key: string, fallba
     const catKey = catMap[str.toLowerCase()];
     if (catKey) return t(`enum.disabilityCategory.${catKey}`, str);
     return str;
+  }
+
+  if (col === 'educationLevel') {
+    return getEducationLevelLabel(str);
   }
 
   const prefix = enumMap[col];
