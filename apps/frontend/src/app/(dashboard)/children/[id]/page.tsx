@@ -25,6 +25,7 @@ import {
   UserPlus,
   Briefcase,
   Plus,
+  XCircle,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,7 +42,7 @@ import {
 } from '@/components/ui/table';
 import { useLocale } from '@/components/providers/locale-provider';
 import { t as tI18n } from '@/lib/i18n';
-import api from '@/lib/api';
+import api, { getStorageUrl } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ExportButton } from '@/components/dashboard/export-button';
 import { ChildDrawer } from '@/components/dashboard/child-drawer';
@@ -146,6 +147,90 @@ export default function ChildProfilePage() {
   const [referralDrawerOpen, setReferralDrawerOpen] = useState(false);
   const [allocationDrawerOpen, setAllocationDrawerOpen] = useState(false);
   const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any | null>(null);
+  const [editingReferral, setEditingReferral] = useState<any | null>(null);
+  const [editingAllocation, setEditingAllocation] = useState<any | null>(null);
+  const [itemToConfirm, setItemToConfirm] = useState<{
+    id: string;
+    itemType: 'SERVICE' | 'APPOINTMENT' | 'REFERRAL' | 'ALLOCATION';
+    itemName: string;
+    targetStatus: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'ALLOCATED';
+  } | null>(null);
+
+  const requestStatusChange = (
+    item: any,
+    itemType: 'SERVICE' | 'APPOINTMENT' | 'REFERRAL' | 'ALLOCATION',
+    targetStatus: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'ALLOCATED',
+  ) => {
+    const itemName =
+      itemType === 'SERVICE'
+        ? item.service?.name || t('services.confirm.defaultService', 'Service')
+        : itemType === 'APPOINTMENT'
+        ? item.title || t('appointments.confirm.defaultAppt', 'Appointment')
+        : itemType === 'REFERRAL'
+        ? item.referredTo || t('referrals.confirm.defaultRef', 'Referral')
+        : item.purpose || t('allocations.confirm.defaultAlloc', 'Allocation');
+    setItemToConfirm({ id: item.id, itemType, itemName, targetStatus });
+  };
+
+  const handleConfirmItemStatus = async () => {
+    if (!itemToConfirm) return;
+    const { id, itemType, itemName, targetStatus } = itemToConfirm;
+    setItemToConfirm(null);
+
+    try {
+      if (itemType === 'SERVICE') {
+        await api.patch(`/service-assignments/${id}`, { status: targetStatus });
+        toast({
+          title:
+            targetStatus === 'PENDING'
+              ? t('services.toast.pendingTitle', 'Service Marked as Pending')
+              : targetStatus === 'COMPLETED'
+              ? t('services.toast.completedTitle', 'Service Marked as Completed')
+              : t('services.toast.cancelledTitle', 'Service Assignment Cancelled'),
+          description: t('children.detail.toast.statusUpdated', '"{itemName}" has been updated.', { itemName }),
+        });
+      } else if (itemType === 'APPOINTMENT') {
+        await api.patch(`/appointments/${id}`, { status: targetStatus === 'PENDING' ? 'SCHEDULED' : targetStatus });
+        toast({
+          title:
+            targetStatus === 'PENDING'
+              ? t('appointments.toast.pendingTitle', 'Appointment Marked as Pending')
+              : targetStatus === 'COMPLETED'
+              ? t('appointments.toast.completedTitle', 'Appointment Marked as Completed')
+              : t('appointments.toast.cancelledTitle', 'Appointment Cancelled'),
+          description: t('children.detail.toast.statusUpdated', '"{itemName}" has been updated.', { itemName }),
+        });
+      } else if (itemType === 'REFERRAL') {
+        await api.patch(`/referrals/${id}`, { status: targetStatus });
+        toast({
+          title:
+            targetStatus === 'PENDING'
+              ? t('referrals.toast.pendingTitle', 'Referral Marked as Pending')
+              : targetStatus === 'COMPLETED'
+              ? t('referrals.toast.completedTitle', 'Referral Marked as Completed')
+              : t('referrals.toast.cancelledTitle', 'Referral Cancelled'),
+          description: t('children.detail.toast.statusUpdated', '"{itemName}" has been updated.', { itemName }),
+        });
+      } else {
+        await api.patch(`/fund-allocations/${id}`, { status: targetStatus });
+        toast({
+          title:
+            targetStatus === 'PENDING'
+              ? t('allocations.toast.pendingTitle', 'Allocation Marked as Pending')
+              : t('allocations.toast.allocatedTitle', 'Allocation Confirmed'),
+          description: t('children.detail.toast.statusUpdated', '"{itemName}" has been updated.', { itemName }),
+        });
+      }
+      void fetchChild();
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: t('children.detail.error', 'Error'),
+        description: getErrorMessage(err, t('common.errorUpdate', 'Failed to update status')),
+      });
+    }
+  };
 
   const fetchChild = useCallback(async () => {
     setLoading(true);
@@ -190,8 +275,8 @@ export default function ChildProfilePage() {
   const handleToggleStatus = async () => {
     if (!child) return;
     try {
-      await api.delete(`/children/${child.id}`);
       const isActivating = child.status === 'INACTIVE';
+      await api.patch(`/children/${child.id}`, { status: isActivating ? 'ACTIVE' : 'INACTIVE' });
       toast({
         title: isActivating ? t('children.detail.toastActivated', 'Profile Activated') : t('children.detail.toastDeactivated', 'Profile Deactivated'),
         description: t('children.detail.toastDescription', '{name} has been successfully {action}.', { name: child.fullName, action: isActivating ? t('children.detail.activatedAction', 'activated') : t('children.detail.deactivatedAction', 'deactivated') }),
@@ -213,6 +298,52 @@ export default function ChildProfilePage() {
 
     const filename = `child-${child.fullName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
     const title = `${t('children.detail.export.profileTitle', 'Child Profile')}: ${child.fullName}`;
+
+    const servicesFields: [string, string][] = child.serviceAssignments?.length
+      ? child.serviceAssignments.map((sa: any, idx: number) => [
+          `${t('children.detail.export.service', 'Service')} #${idx + 1}: ${sa.service?.name || t('services.confirm.defaultService', 'Service')}`,
+          [
+            sa.service?.category ? `(${sa.service.category})` : '',
+            sa.frequency ? `• Frequency: ${formatEnum(sa.frequency)}` : '',
+            `• Status: ${formatEnum(sa.status)}`,
+            sa.assignedStaff?.fullName ? `• Staff: ${sa.assignedStaff.fullName}` : '',
+            `• Start: ${sa.startDate ? formatDate(sa.startDate, calendarSystem) : '—'}`,
+            sa.endDate ? `• End: ${formatDate(sa.endDate, calendarSystem)}` : '• Ongoing',
+          ].filter(Boolean).join(' '),
+        ] as [string, string])
+      : [[t('children.detail.export.services', 'Assigned Services'), t('children.detail.servicesTab.noServices', 'No assigned services.')]];
+
+    const appointmentsFields: [string, string][] = child.appointments?.length
+      ? child.appointments.map((apt: any, idx: number) => [
+          `${t('children.detail.export.appointment', 'Appointment')} #${idx + 1}: ${apt.title || t('appointments.confirm.defaultAppt', 'Appointment')}`,
+          `Date: ${apt.scheduledAt ? formatDate(apt.scheduledAt, calendarSystem) : '—'} • Status: ${formatEnum(apt.status)}${apt.staff?.fullName ? ` • Staff: ${apt.staff.fullName}` : ''}`,
+        ] as [string, string])
+      : [[t('children.detail.export.appointments', 'Appointments'), t('children.detail.appointmentsTab.noAppointments', 'No appointments found.')]];
+
+    const childReferrals = (child as any).referrals || [];
+    const referralsFields: [string, string][] = childReferrals.length
+      ? childReferrals.map((ref: any, idx: number) => [
+          `${t('children.detail.export.referral', 'Referral')} #${idx + 1}: ${ref.referredTo || 'Referral'}`,
+          `Date: ${ref.referralDate ? formatDate(ref.referralDate, calendarSystem) : '—'} • Status: ${formatEnum(ref.status)}${ref.referralReason ? ` • Reason: ${ref.referralReason}` : ''}`,
+        ] as [string, string])
+      : [[t('children.detail.export.referrals', 'Referrals'), t('children.detail.noReferrals', 'No referrals recorded for this child.')]];
+
+    const allocations = familyAllocations(child);
+    const allocationsFields: [string, string][] = allocations.length
+      ? [
+          [
+            t('children.detail.export.totalAllocated', 'Total Allocated'),
+            `${allocations
+              .filter((alloc: any) => alloc.status !== 'CANCELLED')
+              .reduce((sum: number, alloc: any) => sum + Number(alloc.amount || 0), 0)
+              .toLocaleString()} ${allocations[0]?.currency || 'ETB'}`,
+          ] as [string, string],
+          ...allocations.map((alloc: any, idx: number) => [
+            `${t('children.detail.export.allocation', 'Allocation')} #${idx + 1}: ${alloc.purpose || 'Allocation'}`,
+            `Amount: ${Number(alloc.amount).toLocaleString()} ${alloc.currency || 'ETB'} • Date: ${alloc.allocationDate ? formatDate(alloc.allocationDate, calendarSystem) : '—'} • Status: ${formatEnum(alloc.status)}${alloc.parentName ? ` • Parent: ${alloc.parentName}` : ''}`,
+          ] as [string, string]),
+        ]
+      : [[t('children.detail.export.fundAllocations', 'Fund Allocations'), t('children.detail.financeTab.noAllocations', 'No fund allocations found for this child.')]];
 
     const profileSections = [
       {
@@ -242,6 +373,22 @@ export default function ChildProfilePage() {
           [t('children.detail.export.caseWorker', 'Case Worker'), child.assignedStaff?.fullName || t('children.detail.export.unassigned', 'Unassigned')],
           [t('children.detail.export.registeredDate', 'Registered Date'), formatDate(child.createdAt, calendarSystem)],
         ] as [string, string][],
+      },
+      {
+        title: t('children.detail.export.services', 'Assigned Services'),
+        fields: servicesFields,
+      },
+      {
+        title: t('children.detail.export.appointments', 'Appointments'),
+        fields: appointmentsFields,
+      },
+      {
+        title: t('children.detail.export.referrals', 'Referrals'),
+        fields: referralsFields,
+      },
+      {
+        title: t('children.detail.export.fundAllocations', 'Fund Allocations'),
+        fields: allocationsFields,
       },
     ];
 
@@ -313,6 +460,60 @@ export default function ChildProfilePage() {
   }
 
   const canWrite = userRole === 'SUPER_ADMIN' || userRole === 'CASE_WORKER';
+
+  const confirmCopy = itemToConfirm
+    ? (() => {
+        const { itemType, itemName, targetStatus } = itemToConfirm;
+
+        if (targetStatus === 'PENDING') {
+          return {
+            title: t('confirmModal.pendingTitle', 'Confirm Pending Status'),
+            description: t('confirmModal.pendingDesc', 'Are you sure you want to set "{itemName}" to Pending status?', { itemName }),
+            confirmLabel: t('confirmModal.confirmPending', 'Yes, Mark Pending'),
+            confirmClass: 'bg-amber-600 hover:bg-amber-700 text-white',
+            destructive: false,
+          };
+        }
+
+        if (targetStatus === 'ALLOCATED') {
+          return {
+            title: t('allocations.confirm.allocatedTitle', 'Confirm Fund Allocation'),
+            description: t('confirmModal.allocatedDesc', 'Are you sure you want to mark "{itemName}" as allocated? Please confirm to update the status.', { itemName }),
+            confirmLabel: t('confirmModal.confirmAllocated', 'Yes, Mark Allocated'),
+            confirmClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+            destructive: false,
+          };
+        }
+
+        if (targetStatus === 'COMPLETED') {
+          return {
+            title:
+              itemType === 'SERVICE'
+                ? t('services.confirm.completeTitle', 'Confirm Service Completion')
+                : itemType === 'REFERRAL'
+                ? t('referrals.confirm.completeTitle', 'Confirm Referral Completion')
+                : t('appointments.confirm.completeTitle', 'Confirm Appointment Completion'),
+            description: t('confirmModal.completeDesc', 'Are you sure you want to mark "{itemName}" as completed? Please confirm to update the status.', { itemName }),
+            confirmLabel: t('confirmModal.confirmComplete', 'Yes, Mark Complete'),
+            confirmClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+            destructive: false,
+          };
+        }
+
+        return {
+          title:
+            itemType === 'SERVICE'
+              ? t('services.confirm.cancelTitle', 'Confirm Service Cancellation')
+              : itemType === 'REFERRAL'
+              ? t('referrals.confirm.cancelTitle', 'Confirm Referral Cancellation')
+              : t('appointments.confirm.cancelTitle', 'Confirm Appointment Cancellation'),
+          description: t('confirmModal.cancelDesc', 'Are you sure you want to cancel "{itemName}"? Please confirm to update the status.', { itemName }),
+          confirmLabel: t('confirmModal.confirmCancel', 'Yes, Cancel'),
+          confirmClass: '',
+          destructive: true,
+        };
+      })()
+    : null;
 
   return (
     <div className="space-y-6">
@@ -404,10 +605,45 @@ export default function ChildProfilePage() {
       <div className="mt-6">
         {activeTab === 'Profile' && <ProfileTab child={child} calendarSystem={calendarSystem} />}
         {activeTab === 'Progress' && <ProgressTab child={child} calendarSystem={calendarSystem} />}
-        {activeTab === 'Services' && <ServicesTab child={child} calendarSystem={calendarSystem} onAssignService={() => setAssignDrawerOpen(true)} canWrite={canWrite} />}
-        {activeTab === 'Appointments' && <AppointmentsTab child={child} calendarSystem={calendarSystem} onScheduleNew={() => setAppointmentDrawerOpen(true)} canWrite={canWrite} />}
-        {activeTab === 'Referrals' && <ReferralsTab child={child} calendarSystem={calendarSystem} onNewReferral={() => setReferralDrawerOpen(true)} canWrite={canWrite} />}
-        {activeTab === 'Fund & Finance' && <FinanceTab child={child} calendarSystem={calendarSystem} onNewAllocation={() => setAllocationDrawerOpen(true)} canWrite={canWrite} />}
+        {activeTab === 'Services' && (
+          <ServicesTab
+            child={child}
+            calendarSystem={calendarSystem}
+            onAssignService={() => setAssignDrawerOpen(true)}
+            onUpdateStatus={(sa, status) => requestStatusChange(sa, 'SERVICE', status)}
+            canWrite={canWrite}
+          />
+        )}
+        {activeTab === 'Appointments' && (
+          <AppointmentsTab
+            child={child}
+            calendarSystem={calendarSystem}
+            onScheduleNew={() => { setEditingAppointment(null); setAppointmentDrawerOpen(true); }}
+            onEditAppointment={(apt) => { setEditingAppointment(apt); setAppointmentDrawerOpen(true); }}
+            onUpdateStatus={(apt, status) => requestStatusChange(apt, 'APPOINTMENT', status)}
+            canWrite={canWrite}
+          />
+        )}
+        {activeTab === 'Referrals' && (
+          <ReferralsTab
+            child={child}
+            calendarSystem={calendarSystem}
+            onNewReferral={() => { setEditingReferral(null); setReferralDrawerOpen(true); }}
+            onEditReferral={(ref) => { setEditingReferral(ref); setReferralDrawerOpen(true); }}
+            onUpdateStatus={(ref, status) => requestStatusChange(ref, 'REFERRAL', status)}
+            canWrite={canWrite}
+          />
+        )}
+        {activeTab === 'Fund & Finance' && (
+          <FinanceTab
+            child={child}
+            calendarSystem={calendarSystem}
+            onNewAllocation={() => { setEditingAllocation(null); setAllocationDrawerOpen(true); }}
+            onEditAllocation={(alloc) => { setEditingAllocation(alloc); setAllocationDrawerOpen(true); }}
+            onUpdateStatus={(alloc, status) => requestStatusChange(alloc, 'ALLOCATION', status)}
+            canWrite={canWrite}
+          />
+        )}
         {activeTab === 'Documents' && <DocumentsTab child={child} calendarSystem={calendarSystem} onUpload={() => setDocumentUploadOpen(true)} canWrite={canWrite} />}
       </div>
 
@@ -453,16 +689,17 @@ export default function ChildProfilePage() {
       />
       <AppointmentDrawer
         open={appointmentDrawerOpen}
-        onClose={() => setAppointmentDrawerOpen(false)}
-        onSuccess={() => { setAppointmentDrawerOpen(false); fetchChild(); }}
+        appointment={editingAppointment}
+        onClose={() => { setAppointmentDrawerOpen(false); setEditingAppointment(null); }}
+        onSuccess={() => { setAppointmentDrawerOpen(false); setEditingAppointment(null); fetchChild(); }}
         defaultChildId={child.id}
         defaultChildName={child.fullName}
       />
       <ReferralDrawer
         open={referralDrawerOpen}
-        referral={null}
-        onClose={() => setReferralDrawerOpen(false)}
-        onSaved={() => { setReferralDrawerOpen(false); fetchChild(); }}
+        referral={editingReferral}
+        onClose={() => { setReferralDrawerOpen(false); setEditingReferral(null); }}
+        onSaved={() => { setReferralDrawerOpen(false); setEditingReferral(null); fetchChild(); }}
         userRole={userRole}
         defaultTargetType="CHILD"
         defaultTargetId={child.id}
@@ -470,11 +707,12 @@ export default function ChildProfilePage() {
       />
       <AllocationDrawer
         open={allocationDrawerOpen}
-        onClose={() => setAllocationDrawerOpen(false)}
-        onSuccess={() => { setAllocationDrawerOpen(false); fetchChild(); }}
-        defaultTargetType="CHILD"
-        defaultTargetId={child.id}
-        defaultTargetName={child.fullName}
+        allocation={editingAllocation}
+        onClose={() => { setAllocationDrawerOpen(false); setEditingAllocation(null); }}
+        onSuccess={() => { setAllocationDrawerOpen(false); setEditingAllocation(null); fetchChild(); }}
+        defaultTargetType="PARENT"
+        defaultTargetId={editingAllocation?.parentId || child.parents?.[0]?.parent?.id}
+        defaultTargetName={editingAllocation?.parentName || child.parents?.[0]?.parent?.fullName}
       />
       <DocumentUploadDrawer
         open={documentUploadOpen}
@@ -482,6 +720,29 @@ export default function ChildProfilePage() {
         onSuccess={() => { setDocumentUploadOpen(false); fetchChild(); }}
         childId={child.id}
       />
+
+      {itemToConfirm && confirmCopy && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto !mt-0 bg-slate-950/30 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-neutral-900 shadow-xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-neutral-100">{confirmCopy.title}</h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">{confirmCopy.description}</p>
+            </div>
+            <div className="flex justify-end gap-3 border-t bg-slate-50/50 dark:bg-neutral-800/50 px-6 py-4 rounded-b-lg">
+              <Button variant="outline" onClick={() => setItemToConfirm(null)}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                variant={confirmCopy.destructive ? 'destructive' : 'default'}
+                className={confirmCopy.confirmClass}
+                onClick={handleConfirmItemStatus}
+              >
+                {confirmCopy.confirmLabel}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -682,11 +943,13 @@ function ServicesTab({
   child,
   calendarSystem,
   onAssignService,
+  onUpdateStatus,
   canWrite,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
   onAssignService: () => void;
+  onUpdateStatus: (sa: any, status: 'PENDING' | 'COMPLETED' | 'CANCELLED') => void;
   canWrite: boolean;
 }) {
   const { t } = useLocale();
@@ -714,6 +977,7 @@ function ServicesTab({
               <TableHead>{t('children.detail.servicesTab.startDate', 'Start Date')}</TableHead>
               <TableHead>{t('children.detail.servicesTab.endDate', 'End Date')}</TableHead>
               <TableHead>{t('children.detail.servicesTab.status', 'Status')}</TableHead>
+              <TableHead className="text-right">{t('children.detail.actions', 'Actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -726,10 +990,20 @@ function ServicesTab({
                   <TableCell>{formatDate(sa.startDate, calendarSystem)}</TableCell>
                   <TableCell>{sa.endDate ? formatDate(sa.endDate, calendarSystem) : t('children.detail.servicesTab.ongoing', 'Ongoing')}</TableCell>
                   <TableCell><GenericStatusBadge status={sa.status} /></TableCell>
+                  <TableCell className="text-right">
+                    {canWrite && (
+                      <StatusActions
+                        status={sa.status}
+                        onPending={() => onUpdateStatus(sa, 'PENDING')}
+                        onComplete={() => onUpdateStatus(sa, 'COMPLETED')}
+                        onCancel={() => onUpdateStatus(sa, 'CANCELLED')}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">{t('children.detail.servicesTab.noServices', 'No assigned services.')}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">{t('children.detail.servicesTab.noServices', 'No assigned services.')}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -742,11 +1016,15 @@ function AppointmentsTab({
   child,
   calendarSystem,
   onScheduleNew,
+  onEditAppointment,
+  onUpdateStatus,
   canWrite,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
   onScheduleNew: () => void;
+  onEditAppointment: (apt: any) => void;
+  onUpdateStatus: (apt: any, status: 'PENDING' | 'COMPLETED' | 'CANCELLED') => void;
   canWrite: boolean;
 }) {
   const { t } = useLocale();
@@ -755,7 +1033,7 @@ function AppointmentsTab({
       <CardHeader className="flex flex-row items-center justify-between">
          <div className="flex items-center gap-2">
            <CalendarDays className="h-5 w-5 text-primary" />
-           <CardTitle className="text-base">{t('children.detail.appointmentsTab.upcoming', 'Upcoming Appointments')}</CardTitle>
+           <CardTitle className="text-base">{t('children.detail.appointmentsTab.title', 'Appointments')}</CardTitle>
          </div>
          {canWrite && (
          <Button size="sm" onClick={onScheduleNew}>{t('children.detail.appointmentsTab.scheduleNew', 'Schedule New')}</Button>
@@ -781,12 +1059,23 @@ function AppointmentsTab({
                     </p>
                   </div>
                 </div>
-                <GenericStatusBadge status={apt.status} />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <GenericStatusBadge status={apt.status} />
+                  {canWrite && (
+                    <StatusActions
+                      status={apt.status}
+                      onEdit={() => onEditAppointment(apt)}
+                      onPending={() => onUpdateStatus(apt, 'PENDING')}
+                      onComplete={() => onUpdateStatus(apt, 'COMPLETED')}
+                      onCancel={() => onUpdateStatus(apt, 'CANCELLED')}
+                    />
+                  )}
+                </div>
               </div>
               );
             })
           ) : (
-            <EmptyState message={t('children.detail.appointmentsTab.noAppointments', 'No upcoming appointments.')} />
+            <EmptyState message={t('children.detail.appointmentsTab.noAppointments', 'No appointments found.')} />
           )}
         </div>
       </CardContent>
@@ -798,17 +1087,20 @@ function FinanceTab({
   child,
   calendarSystem,
   onNewAllocation,
+  onEditAllocation,
+  onUpdateStatus,
   canWrite,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
   onNewAllocation: () => void;
+  onEditAllocation: (alloc: any) => void;
+  onUpdateStatus: (alloc: any, status: 'PENDING' | 'ALLOCATED') => void;
   canWrite: boolean;
 }) {
   const { t } = useLocale();
-  const childAllocations = child.fundAllocations || [];
-  const parentAllocations = (child.parents || []).flatMap((cp: any) => cp.parent?.fundAllocations || []);
-  const allocations = [...childAllocations, ...parentAllocations];
+  const allocations = familyAllocations(child);
+  const hasParent = (child.parents || []).length > 0;
 
   return (
     <Card>
@@ -817,7 +1109,7 @@ function FinanceTab({
           <Wallet className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{t('children.detail.financeTab.fundAllocations', 'Fund Allocations')}</CardTitle>
         </div>
-        {canWrite && (
+        {canWrite && hasParent && (
         <Button size="sm" variant="outline" onClick={onNewAllocation}>
           <Plus className="h-4 w-4" />
           {t('children.detail.financeTab.newAllocation', 'New Allocation')}
@@ -827,30 +1119,39 @@ function FinanceTab({
       <CardContent>
         {allocations.length ? (
           <div className="space-y-4">
-            {allocations.map((fund) => (
+            {allocations.map((fund: any) => (
               <div key={fund.id} className="p-4 border rounded-lg">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-lg font-bold">{Number(fund.amount).toLocaleString()} {fund.currency}</p>
                     <p className="text-sm text-muted-foreground">{fund.purpose}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('children.detail.financeTab.allocatedOn', 'Allocated on')} {formatDate(fund.allocationDate, calendarSystem)}
+                      {fund.parentName ? ` • ${fund.parentName}` : ''}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <GenericStatusBadge status={fund.status} />
-                    {fund.parentAcknowledged ? (
+                    {fund.parentAcknowledged && (
                       <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">{t('children.detail.financeTab.acknowledged', 'Acknowledged')}</Badge>
-                    ) : (
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800">{t('children.detail.financeTab.pending', 'Pending')}</Badge>
+                    )}
+                    {canWrite && !(fund.status === 'DISBURSED' && fund.parentAcknowledged) && (
+                      <StatusActions
+                        status={fund.status}
+                        onEdit={() => onEditAllocation(fund)}
+                        onPending={() => onUpdateStatus(fund, 'PENDING')}
+                        onAllocate={() => onUpdateStatus(fund, 'ALLOCATED')}
+                      />
                     )}
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {fund.parentId ? t('children.detail.financeTab.allocatedOn', 'Allocated on') : t('children.detail.financeTab.directAllocation', 'Direct allocation on')} {formatDate(fund.allocationDate, calendarSystem)}
-                </p>
               </div>
             ))}
           </div>
         ) : (
-          <EmptyState message={t('children.detail.financeTab.noAllocations', 'No fund allocations found for this child.')} />
+          <EmptyState message={hasParent
+            ? t('children.detail.financeTab.noAllocations', 'No fund allocations found for this child.')
+            : t('children.detail.financeTab.noParentLinked', 'Link a parent to this child to record fund allocations.')} />
         )}
       </CardContent>
     </Card>
@@ -861,11 +1162,15 @@ function ReferralsTab({
   child,
   calendarSystem,
   onNewReferral,
+  onEditReferral,
+  onUpdateStatus,
   canWrite,
 }: {
   child: ChildProfile;
   calendarSystem: CalendarSystem;
   onNewReferral: () => void;
+  onEditReferral: (ref: any) => void;
+  onUpdateStatus: (ref: any, status: 'PENDING' | 'COMPLETED' | 'CANCELLED') => void;
   canWrite: boolean;
 }) {
   const { t } = useLocale();
@@ -894,6 +1199,7 @@ function ReferralsTab({
               <TableHead>{t('services.referrals.table.followUp', 'Follow-up')}</TableHead>
               <TableHead>{t('services.referrals.table.status', 'Status')}</TableHead>
               <TableHead>{t('services.referrals.table.referredBy', 'Referred By')}</TableHead>
+              <TableHead className="text-right">{t('children.detail.actions', 'Actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -914,10 +1220,21 @@ function ReferralsTab({
                   <TableCell className="text-xs text-muted-foreground">
                     {r.staff?.fullName || '—'}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {canWrite && (
+                      <StatusActions
+                        status={r.status}
+                        onEdit={() => onEditReferral(r)}
+                        onPending={() => onUpdateStatus(r, 'PENDING')}
+                        onComplete={() => onUpdateStatus(r, 'COMPLETED')}
+                        onCancel={() => onUpdateStatus(r, 'CANCELLED')}
+                      />
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">{t('children.detail.noReferrals', 'No referrals recorded for this child.')}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">{t('children.detail.noReferrals', 'No referrals recorded for this child.')}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -952,21 +1269,32 @@ function DocumentsTab({
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {child.documents.length ? (
-            child.documents.map((doc) => (
-              <div key={doc.id} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700 flex flex-col gap-3">
-                <div className="flex items-start justify-between">
-                  <div className="p-2 bg-white dark:bg-neutral-900 rounded border dark:border-neutral-700"><Files className="h-5 w-5 text-slate-400" /></div>
-                  <Badge variant="outline">{doc.category}</Badge>
+            child.documents.map((doc) => {
+              const fileUrl = getStorageUrl(doc.fileUrl);
+              const ext = doc.fileUrl ? doc.fileUrl.split('.').pop()?.toUpperCase() : '';
+              return (
+                <div key={doc.id} className="p-4 border rounded-lg bg-slate-50/50 dark:bg-neutral-800/50 dark:border-neutral-700 flex flex-col gap-3">
+                  <div className="flex items-start justify-between">
+                    <div className="p-2 bg-white dark:bg-neutral-900 rounded border dark:border-neutral-700">
+                      <Files className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex gap-1">
+                      {ext && <Badge variant="secondary" className="text-[10px] font-mono">{ext}</Badge>}
+                      <Badge variant="outline">{doc.category || 'DOCUMENT'}</Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold truncate" title={doc.name}>{doc.name}</h4>
+                    <p className="text-xs text-muted-foreground">{t('children.detail.documentsTab.added', 'Added')} {formatDate(doc.createdAt, calendarSystem)}</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="w-full" asChild>
+                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                      {t('children.detail.documentsTab.openDocument', 'Open Document')} <ExternalLink className="h-3 w-3 ml-2" />
+                    </a>
+                  </Button>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold truncate">{doc.name}</h4>
-                  <p className="text-xs text-muted-foreground">{t('children.detail.documentsTab.added', 'Added')} {formatDate(doc.createdAt, calendarSystem)}</p>
-                </div>
-                <Button size="sm" variant="outline" className="w-full" asChild>
-                  <Link href={doc.fileUrl} target="_blank">{t('children.detail.documentsTab.openDocument', 'Open Document')} <ExternalLink className="h-3 w-3 ml-2" /></Link>
-                </Button>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="col-span-full"><EmptyState message={t('children.detail.documentsTab.noDocuments', 'No documents uploaded.')} /></div>
           )}
@@ -1031,11 +1359,104 @@ function StatusBadge({ status }: { status: 'ACTIVE' | 'GRADUATED' | 'TRANSFERRED
   return <Badge className={classes[status]}>{tI18n('enum.childStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;
 }
 
+function StatusActions({
+  status,
+  onEdit,
+  onPending,
+  onComplete,
+  onAllocate,
+  onCancel,
+}: {
+  status: string;
+  onEdit?: () => void;
+  onPending?: () => void;
+  onComplete?: () => void;
+  onAllocate?: () => void;
+  onCancel?: () => void;
+}) {
+  const { t } = useLocale();
+  const current = (status || '').toUpperCase();
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {onEdit && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-neutral-800"
+          title={t('children.detail.edit', 'Edit')}
+          onClick={onEdit}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {onPending && current !== 'PENDING' && current !== 'SCHEDULED' && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+          title={t('children.detail.markPending', 'Mark as Pending')}
+          onClick={onPending}
+        >
+          <Clock className="h-4 w-4" />
+        </Button>
+      )}
+      {onComplete && current !== 'COMPLETED' && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+          title={t('children.detail.markCompleted', 'Mark as Completed')}
+          onClick={onComplete}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+        </Button>
+      )}
+      {onAllocate && current !== 'ALLOCATED' && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+          title={t('children.detail.markAllocated', 'Mark as Allocated')}
+          onClick={onAllocate}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+        </Button>
+      )}
+      {onCancel && current !== 'CANCELLED' && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+          title={t('children.detail.cancel', 'Cancel')}
+          onClick={onCancel}
+        >
+          <XCircle className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// Fund allocations are recorded against the parent, so a child's funds are the
+// allocations of the parent(s) they are linked to.
+function familyAllocations(child: ChildProfile) {
+  return (child.parents || []).flatMap((cp: any) =>
+    (cp.parent?.fundAllocations || []).map((alloc: any) => ({
+      ...alloc,
+      parentId: cp.parent?.id,
+      parentName: cp.parent?.fullName,
+    })),
+  );
+}
+
 function GenericStatusBadge({ status }: { status: string }) {
   const normalized = status.toUpperCase();
-  const className = ['ACTIVE', 'COMPLETED', 'DISBURSED', 'ACHIEVED'].includes(normalized)
+  const className = ['ACTIVE', 'COMPLETED', 'DISBURSED', 'ACHIEVED', 'ALLOCATED'].includes(normalized)
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-    : ['PENDING', 'ALLOCATED', 'IN_PROGRESS', 'SCHEDULED'].includes(normalized)
+    : ['CANCELLED'].includes(normalized)
+      ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300'
+    : ['PENDING', 'IN_PROGRESS', 'SCHEDULED'].includes(normalized)
       ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
       : 'border-slate-200 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400';
   return <Badge className={className}>{tI18n('enum.serviceAssignmentStatus.' + status.toLowerCase(), formatEnum(status))}</Badge>;

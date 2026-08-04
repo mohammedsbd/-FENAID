@@ -21,9 +21,9 @@ export class CreateReferralDto {
   @IsNotEmpty()
   referredTo!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  referralReason!: string;
+  referralReason?: string;
 
   @IsDateString()
   @IsNotEmpty()

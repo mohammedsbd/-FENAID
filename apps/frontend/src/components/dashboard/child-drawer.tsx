@@ -365,14 +365,14 @@ export function ChildDrawer({
 
               {step === 2 && (
                 <div className="grid gap-4">
-                  <FormField label={t('childDrawer.medicalHistory', 'Medical History')}>
+                  <FormField label={t('childDrawer.medicalHistory', 'Medical History (Optional)')}>
                     <textarea
                       className={textareaClassName}
                       value={form.medicalHistory}
                       onChange={(event) => updateField('medicalHistory', event.target.value)}
                     />
                   </FormField>
-                  <FormField label={t('childDrawer.currentMedications', 'Current Medications')}>
+                  <FormField label={t('childDrawer.currentMedications', 'Current Medications (Optional)')}>
                     <textarea
                       className={textareaClassName}
                       value={form.medications}
@@ -527,7 +527,7 @@ export function ChildDrawer({
                       )}
                     </div>
                   </FormField>
-                  <FormField label={t('childDrawer.internalNotes', 'Internal Notes')}>
+                  <FormField label={t('childDrawer.internalNotes', 'Internal Notes (Optional)')}>
                     <textarea
                       className={textareaClassName}
                       value={form.internalNotes}

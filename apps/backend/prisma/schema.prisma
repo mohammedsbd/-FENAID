@@ -125,9 +125,11 @@ enum ServiceAssignmentStatus {
 }
 
 enum FundAllocationStatus {
+  PENDING
   ALLOCATED
   DISBURSED
   PARTIALLY_DISBURSED
+  CANCELLED
 }
 
 enum DonorType {
@@ -238,6 +240,7 @@ model Parent {
   attendanceRecords  AttendanceRecord[]
   documents          Document[]
   referrals          Referral[]
+  volunteerServices  VolunteerService[]
 
   @@index([assignedStaffId])
   @@index([status])
@@ -758,7 +761,8 @@ model VolunteerService {
   id          String   @id @default(cuid())
   volunteerId String
   serviceType String   // Type of service (e.g. teaching, healthcare)
-  childId     String?  // Nullable, if null it means "All Children" or general
+  childId     String?  // Nullable, set when the service targets a specific child
+  parentId    String?  // Nullable, set when the service targets a specific parent
   description String?  @db.Text
   serviceDate DateTime
   notes       String?  @db.Text
@@ -767,9 +771,11 @@ model VolunteerService {
 
   volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
   child       Child?    @relation(fields: [childId], references: [id], onDelete: SetNull)
+  parent      Parent?   @relation(fields: [parentId], references: [id], onDelete: SetNull)
 
   @@index([volunteerId])
   @@index([childId])
+  @@index([parentId])
 }
 
 model Referral {

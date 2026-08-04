@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
 
 export class CreateVolunteerDto {
@@ -60,6 +61,24 @@ export class UpdateVolunteerDto {
   expectedUpdatedAt?: string;
 }
 
+export class ListVolunteersDto {
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
+
 export class CreateVolunteerServiceDto {
   @IsString()
   @IsNotEmpty()
@@ -68,6 +87,10 @@ export class CreateVolunteerServiceDto {
   @IsString()
   @IsOptional()
   childId?: string;
+
+  @IsString()
+  @IsOptional()
+  parentId?: string;
 
   @IsString()
   @IsOptional()

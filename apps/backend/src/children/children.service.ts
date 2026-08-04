@@ -302,11 +302,7 @@ export class ChildrenService {
           orderBy: { createdAt: 'desc' },
         },
         appointments: {
-          where: {
-            scheduledAt: {
-              gte: new Date(),
-            },
-          },
+          where: { deletedAt: null },
           include: {
             staff: {
               select: {
@@ -318,7 +314,7 @@ export class ChildrenService {
             },
             attendanceRecords: true,
           },
-          orderBy: { scheduledAt: 'asc' },
+          orderBy: { scheduledAt: 'desc' },
         },
         referrals: {
           include: {
@@ -332,6 +328,7 @@ export class ChildrenService {
           orderBy: { referralDate: 'desc' },
         },
         documents: {
+          where: { deletedAt: null },
           include: {
             uploadedBy: {
               select: {

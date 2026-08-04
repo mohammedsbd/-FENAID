@@ -22,7 +22,7 @@ export class DocumentsService {
       const d = await tx.document.create({
         data: {
           name: dto.name,
-          category: dto.category,
+          category: dto.category || 'OTHER',
           fileUrl: dto.fileUrl,
           expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
           uploadedById: staffId,
@@ -135,6 +135,10 @@ export class DocumentsService {
   }
 
   private validateFileUrl(url: string) {
+    if (!url) throw new BadRequestException('error.document.invalidUrl');
+    if (url.startsWith('/uploads/') || url.startsWith('/')) {
+      return;
+    }
     try {
       const parsed = new URL(url);
       const hostname = parsed.hostname.toLowerCase();

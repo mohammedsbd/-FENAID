@@ -14,6 +14,7 @@ import {
   Phone,
   Mail,
   Loader2,
+  ChevronLeft,
   ChevronRight,
   AlertTriangle,
 } from 'lucide-react';
@@ -47,6 +48,10 @@ interface VolunteerServiceRow {
     id: string;
     fullName: string;
   };
+  parent?: {
+    id: string;
+    fullName: string;
+  };
 }
 
 interface Volunteer {
@@ -62,10 +67,12 @@ interface Volunteer {
   services: VolunteerServiceRow[];
 }
 
-interface ChildOption {
+interface RecipientOption {
   id: string;
   fullName: string;
 }
+
+type RecipientType = 'GENERAL' | 'CHILD' | 'PARENT';
 
 export default function VolunteersPage() {
   const router = useRouter();
@@ -78,6 +85,12 @@ export default function VolunteersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Volunteer Drawer (Add/Edit)
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -96,11 +109,14 @@ export default function VolunteersPage() {
   // Service Log Drawer
   const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
   const [activeVolunteer, setActiveVolunteer] = useState<Volunteer | null>(null);
-  const [children, setChildren] = useState<ChildOption[]>([]);
-  const [childrenLoading, setChildrenLoading] = useState(false);
+  const [children, setChildren] = useState<RecipientOption[]>([]);
+  const [parents, setParents] = useState<RecipientOption[]>([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
   const [sForm, setSForm] = useState({
     serviceType: '',
+    recipientType: 'GENERAL' as RecipientType,
     childId: '',
+    parentId: '',
     description: '',
     serviceDate: new Date().toISOString().split('T')[0],
     notes: '',
@@ -123,6 +139,7 @@ export default function VolunteersPage() {
   // Handle search debounce
   useEffect(() => {
     const timer = setTimeout(() => {
+      setPage(1);
       setDebouncedSearch(search);
     }, 300);
     return () => clearTimeout(timer);
@@ -134,9 +151,19 @@ export default function VolunteersPage() {
     setError(null);
     try {
       const res = await api.get('/volunteers', {
-        params: { search: debouncedSearch || undefined },
+        params: { search: debouncedSearch || undefined, page, limit },
       });
-      setVolunteers(res.data || []);
+      const totalCount = res.data?.meta?.total || 0;
+      const totalPages = res.data?.meta?.pages || 1;
+
+      setVolunteers(res.data?.data || []);
+      setTotal(totalCount);
+      setPages(totalPages);
+
+      // The last row of a page can disappear (deletion, search) — step back.
+      if (page > totalPages && totalPages > 0) {
+        setPage(totalPages);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || t('volunteers.errorLoad', 'Failed to load volunteers.'));
     } finally {
@@ -146,28 +173,54 @@ export default function VolunteersPage() {
 
   useEffect(() => {
     fetchVolunteers();
-  }, [debouncedSearch]);
+  }, [debouncedSearch, page, limit]);
 
-  // Fetch children list for the service dropdown
-  const fetchChildren = async () => {
-    setChildrenLoading(true);
+  // The parents endpoint caps page size at 100, so walk the pages (up to the
+  // same 1000 ceiling the children dropdown uses) to fill the dropdown.
+  const fetchAllParents = async (): Promise<RecipientOption[]> => {
+    const pageSize = 100;
+    const maxPages = 10;
+
+    const first = await api.get('/parents', { params: { limit: pageSize, page: 1 } });
+    const collected: RecipientOption[] = first.data?.data || [];
+    const pageCount = Math.min(first.data?.meta?.pages || 1, maxPages);
+
+    if (pageCount > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: pageCount - 1 }, (_, i) =>
+          api.get('/parents', { params: { limit: pageSize, page: i + 2 } }),
+        ),
+      );
+      rest.forEach((res) => collected.push(...(res.data?.data || [])));
+    }
+
+    return collected;
+  };
+
+  // Fetch children and parents for the service recipient dropdowns
+  const fetchRecipients = async () => {
+    setRecipientsLoading(true);
     try {
-      const res = await api.get('/children', { params: { limit: 1000 } });
-      setChildren(res.data?.data || []);
+      const [childrenRes, allParents] = await Promise.all([
+        api.get('/children', { params: { limit: 1000 } }),
+        fetchAllParents(),
+      ]);
+      setChildren(childrenRes.data?.data || []);
+      setParents(allParents);
     } catch {
       toast({
         title: t('common.error', 'Error'),
-        description: t('volunteers.toast.errorLoadChildren', 'Failed to load children list for dropdown'),
+        description: t('volunteers.toast.errorLoadRecipients', 'Failed to load children and parents list for dropdown'),
         variant: 'destructive',
       });
     } finally {
-      setChildrenLoading(false);
+      setRecipientsLoading(false);
     }
   };
 
   useEffect(() => {
     if (serviceDrawerOpen) {
-      fetchChildren();
+      fetchRecipients();
     }
   }, [serviceDrawerOpen]);
 
@@ -262,7 +315,9 @@ export default function VolunteersPage() {
     setActiveVolunteer(volunteer);
     setSForm({
       serviceType: '',
+      recipientType: 'GENERAL',
       childId: '',
+      parentId: '',
       description: '',
       serviceDate: new Date().toISOString().split('T')[0],
       notes: '',
@@ -292,9 +347,34 @@ export default function VolunteersPage() {
       return;
     }
 
+    if (sForm.recipientType === 'CHILD' && !sForm.childId) {
+      toast({
+        title: t('common.validationError', 'Validation Error'),
+        description: t('volunteers.toast.childRequired', 'Please select the child who received the service'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (sForm.recipientType === 'PARENT' && !sForm.parentId) {
+      toast({
+        title: t('common.validationError', 'Validation Error'),
+        description: t('volunteers.toast.parentRequired', 'Please select the parent who received the service'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSSaving(true);
     try {
-      await api.post(`/volunteers/${activeVolunteer?.id}/services`, sForm);
+      await api.post(`/volunteers/${activeVolunteer?.id}/services`, {
+        serviceType: sForm.serviceType,
+        childId: sForm.recipientType === 'CHILD' ? sForm.childId : undefined,
+        parentId: sForm.recipientType === 'PARENT' ? sForm.parentId : undefined,
+        description: sForm.description,
+        serviceDate: sForm.serviceDate,
+        notes: sForm.notes,
+      });
       toast({
         title: t('common.success', 'Success'),
         description: t('volunteers.toast.serviceSaved', 'Service log added for {name}').replace('{name}', `${activeVolunteer?.firstName} ${activeVolunteer?.lastName}`),
@@ -358,6 +438,25 @@ export default function VolunteersPage() {
   const initials = (firstName: string, lastName: string) => {
     return (firstName[0] + lastName[0]).toUpperCase();
   };
+
+  const getPageNumbers = () => {
+    const items: (number | string)[] = [];
+    if (pages <= 7) {
+      for (let i = 1; i <= pages; i++) items.push(i);
+    } else {
+      items.push(1);
+      if (page > 3) items.push('...');
+      const start = Math.max(2, page - 1);
+      const end = Math.min(pages - 1, page + 1);
+      for (let i = start; i <= end; i++) items.push(i);
+      if (page < pages - 2) items.push('...');
+      items.push(pages);
+    }
+    return items;
+  };
+
+  const startRecord = total > 0 ? (page - 1) * limit + 1 : 0;
+  const endRecord = Math.min(page * limit, total);
 
   return (
     <div className="flex flex-col gap-8 pb-12">
@@ -554,6 +653,76 @@ export default function VolunteersPage() {
               )}
             </TableBody>
           </Table>
+
+          <div className="flex flex-col gap-4 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <span>
+                {t('volunteers.pagination.showingRange', 'Showing {start}–{end} of {total} volunteers', {
+                  start: String(startRecord),
+                  end: String(endRecord),
+                  total: String(total),
+                })}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">{t('volunteers.pagination.perPage', 'Per page:')}</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={limit}
+                  onChange={(e) => {
+                    setPage(1);
+                    setLimit(Number(e.target.value));
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t('volunteers.pagination.previous', 'Previous')}
+              </Button>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {getPageNumbers().map((num, i) =>
+                  typeof num === 'number' ? (
+                    <Button
+                      key={i}
+                      variant={num === page ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 w-8 p-0 text-xs"
+                      onClick={() => setPage(num)}
+                    >
+                      {num}
+                    </Button>
+                  ) : (
+                    <span key={i} className="px-1 text-xs text-muted-foreground">
+                      ...
+                    </span>
+                  ),
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pages || loading}
+                onClick={() => setPage((current) => Math.min(pages, current + 1))}
+              >
+                {t('volunteers.pagination.next', 'Next')}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -741,28 +910,68 @@ export default function VolunteersPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="s-child" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.targetRecipient', 'Target Recipient')}</Label>
-                    {childrenLoading ? (
-                      <div className="h-11 flex items-center justify-center border rounded-xl bg-muted/30">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                        <span className="text-xs text-muted-foreground">{t('volunteers.serviceDrawer.loadingChildren', 'Loading child options...')}</span>
-                      </div>
-                    ) : (
-                      <select
-                        id="s-child"
-                        value={sForm.childId}
-                        onChange={(e) => setSForm({ ...sForm, childId: e.target.value })}
-                        className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                      >
-                        <option value="">{t('volunteers.serviceDrawer.allChildren', 'All Children / General Service')}</option>
-                        {children.map((child) => (
-                          <option key={child.id} value={child.id}>
-                            {child.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                    <Label htmlFor="s-recipient-type" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.targetRecipient', 'Target Recipient')}</Label>
+                    <select
+                      id="s-recipient-type"
+                      value={sForm.recipientType}
+                      onChange={(e) => setSForm({
+                        ...sForm,
+                        recipientType: e.target.value as RecipientType,
+                        childId: '',
+                        parentId: '',
+                      })}
+                      className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    >
+                      <option value="GENERAL">{t('volunteers.serviceDrawer.generalService', 'General Service (no specific recipient)')}</option>
+                      <option value="CHILD">{t('volunteers.serviceDrawer.recipientChild', 'A specific child')}</option>
+                      <option value="PARENT">{t('volunteers.serviceDrawer.recipientParent', 'A specific parent')}</option>
+                    </select>
                   </div>
+
+                  {sForm.recipientType !== 'GENERAL' && (
+                    <div className="space-y-2">
+                      {recipientsLoading ? (
+                        <div className="h-11 flex items-center justify-center border rounded-xl bg-muted/30">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+                          <span className="text-xs text-muted-foreground">{t('volunteers.serviceDrawer.loadingRecipients', 'Loading recipient options...')}</span>
+                        </div>
+                      ) : sForm.recipientType === 'CHILD' ? (
+                        <>
+                          <Label htmlFor="s-child" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.selectChild', 'Select Child')} *</Label>
+                          <select
+                            id="s-child"
+                            value={sForm.childId}
+                            onChange={(e) => setSForm({ ...sForm, childId: e.target.value })}
+                            className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                          >
+                            <option value="">{t('volunteers.serviceDrawer.chooseChild', 'Choose a child...')}</option>
+                            {children.map((child) => (
+                              <option key={child.id} value={child.id}>
+                                {child.fullName}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <>
+                          <Label htmlFor="s-parent" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.selectParent', 'Select Parent')} *</Label>
+                          <select
+                            id="s-parent"
+                            value={sForm.parentId}
+                            onChange={(e) => setSForm({ ...sForm, parentId: e.target.value })}
+                            className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                          >
+                            <option value="">{t('volunteers.serviceDrawer.chooseParent', 'Choose a parent...')}</option>
+                            {parents.map((parent) => (
+                              <option key={parent.id} value={parent.id}>
+                                {parent.fullName}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="s-date" className="text-foreground font-semibold">{t('volunteers.serviceDrawer.serviceDate', 'Service Date')} *</Label>
@@ -929,7 +1138,11 @@ export default function VolunteersPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-foreground text-base">{service.serviceType}</span>
                           <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 rounded-lg dark:border-emerald-800 dark:text-emerald-300 dark:bg-emerald-950/40">
-                            {service.child ? `${t('volunteers.historyDialog.forChild', 'For Child')}: ${service.child.fullName}` : t('volunteers.historyDialog.allChildren', 'All Children')}
+                            {service.child
+                              ? `${t('volunteers.historyDialog.forChild', 'For Child')}: ${service.child.fullName}`
+                              : service.parent
+                                ? `${t('volunteers.historyDialog.forParent', 'For Parent')}: ${service.parent.fullName}`
+                                : t('volunteers.historyDialog.generalService', 'General Service')}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground font-medium">

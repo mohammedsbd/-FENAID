@@ -17,9 +17,9 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   title!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  staffId!: string;
+  staffId?: string;
 
   @IsOptional()
   @IsString()
@@ -78,6 +78,22 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsInt()
   durationMinutes?: number;
+
+  @IsOptional()
+  @IsEnum(AppointmentType)
+  type?: AppointmentType;
+
+  @IsOptional()
+  @IsBoolean()
+  isRecurring?: boolean;
+
+  @IsOptional()
+  @IsString()
+  recurrenceRule?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @IsOptional()
   @IsEnum(AppointmentStatus)

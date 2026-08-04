@@ -6,6 +6,7 @@ coverage
 .env.local
 .turbo
 .codex/dev-logs
+apps/backend/uploads
 *.tsbuildinfo
 pnpm-debug.log*
 recording.mkv

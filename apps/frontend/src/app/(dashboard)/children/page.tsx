@@ -70,6 +70,7 @@ export default function ChildrenPage() {
   const [severityLevel, setSeverityLevel] = useState('');
   const [assignedStaffId, setAssignedStaffId] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -93,7 +94,7 @@ export default function ChildrenPage() {
 
   useEffect(() => {
     fetchChildren();
-  }, [debouncedSearch, status, disabilityType, severityLevel, assignedStaffId, page]);
+  }, [debouncedSearch, status, disabilityType, severityLevel, assignedStaffId, page, limit]);
 
   useEffect(() => {
     const session = getSession();
@@ -139,7 +140,7 @@ export default function ChildrenPage() {
       const res = await api.get('/children', {
         params: {
           page,
-          limit: 10,
+          limit,
           search: debouncedSearch || undefined,
           status: status || undefined,
           disabilityType: disabilityType || undefined,
@@ -147,9 +148,16 @@ export default function ChildrenPage() {
           assignedStaffId: assignedStaffId || undefined,
         },
       });
+      const totalCount = res.data.meta?.total || 0;
+      const totalPages = res.data.meta?.pages || 1;
+
       setChildren(res.data.data || []);
-      setPages(res.data.meta?.pages || 1);
-      setTotal(res.data.meta?.total || 0);
+      setPages(totalPages);
+      setTotal(totalCount);
+
+      if (page > totalPages && totalPages > 0) {
+        setPage(totalPages);
+      }
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('children.errorLoad', 'Failed to load children.')));
     } finally {
@@ -170,10 +178,13 @@ export default function ChildrenPage() {
   async function handleToggleStatus() {
     if (!deactivatingChild) return;
     try {
-      await api.delete(`/children/${deactivatingChild.id}`);
       const name = deactivatingChild.fullName;
       const isActivating = deactivatingChild.status === 'INACTIVE';
-      
+
+      await api.patch(`/children/${deactivatingChild.id}`, {
+        status: isActivating ? 'ACTIVE' : 'INACTIVE',
+      });
+
       setDeactivatingChild(null);
       fetchChildren();
       
@@ -324,6 +335,24 @@ export default function ChildrenPage() {
     }
   };
 
+  const getPageNumbers = () => {
+    const items: (number | string)[] = [];
+    if (pages <= 7) {
+      for (let i = 1; i <= pages; i++) items.push(i);
+    } else {
+      items.push(1);
+      if (page > 3) items.push('...');
+      const start = Math.max(2, page - 1);
+      const end = Math.min(pages - 1, page + 1);
+      for (let i = start; i <= end; i++) items.push(i);
+      if (page < pages - 2) items.push('...');
+      items.push(pages);
+    }
+    return items;
+  };
+
+  const startRecord = total > 0 ? (page - 1) * limit + 1 : 0;
+  const endRecord = Math.min(page * limit, total);
 
   return (
     <div className="space-y-6">
@@ -550,24 +579,68 @@ export default function ChildrenPage() {
             </TableBody>
           </Table>
 
-          <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              {t('children.pagination.showing', 'Showing page {page} of {pages} for {total} child records', { page: String(page), pages: String(pages), total: String(total) })}
-            </p>
-            <div className="flex items-center gap-2">
+          <div className="mt-4 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <span>
+                {t('children.pagination.showingRange', 'Showing {start}–{end} of {total} children', {
+                  start: String(startRecord),
+                  end: String(endRecord),
+                  total: String(total),
+                })}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">{t('children.pagination.perPage', 'Per page:')}</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={limit}
+                  onChange={(e) => {
+                    setPage(1);
+                    setLimit(Number(e.target.value));
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
                 {t('children.pagination.previous', 'Previous')}
               </Button>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {getPageNumbers().map((num, i) =>
+                  typeof num === 'number' ? (
+                    <Button
+                      key={i}
+                      variant={num === page ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 w-8 p-0 text-xs"
+                      onClick={() => setPage(num)}
+                    >
+                      {num}
+                    </Button>
+                  ) : (
+                    <span key={i} className="px-1 text-xs text-muted-foreground">
+                      ...
+                    </span>
+                  ),
+                )}
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page >= pages}
+                disabled={page >= pages || loading}
                 onClick={() => setPage((current) => Math.min(pages, current + 1))}
               >
                 {t('children.pagination.next', 'Next')}

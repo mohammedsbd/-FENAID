@@ -64,7 +64,7 @@ export interface CreateAssignmentData {
   targetType: 'PARENT' | 'CHILD';
   parentId?: string;
   childId?: string;
-  assignedStaffId: string;
+  assignedStaffId?: string;
   startDate: string;
   endDate?: string;
   frequency: 'ONE_TIME' | 'WEEKLY' | 'MONTHLY' | 'ONGOING';
@@ -185,7 +185,7 @@ export interface CreateReferralData {
   parentId?: string;
   childId?: string;
   referredTo: string;
-  referralReason: string;
+  referralReason?: string;
   referralDate: string;
   status?: ReferralStatus;
   notes?: string;

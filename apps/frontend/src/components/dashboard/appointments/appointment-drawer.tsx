@@ -84,8 +84,21 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
         setDuration(appointment.durationMinutes.toString());
         setStaffId(appointment.staffId);
         setIsRecurring(appointment.isRecurring);
-        setSelectedChild(appointment.child || null);
-        setSelectedParent(appointment.parent || null);
+        const pId = appointment.parentId || appointment.parent?.id || defaultParentId;
+        const pName = appointment.parent?.fullName || defaultParentName || '';
+        if (pId) {
+          setSelectedParent({ id: pId, fullName: pName });
+        } else {
+          setSelectedParent(null);
+        }
+
+        const cId = appointment.childId || appointment.child?.id || defaultChildId;
+        const cName = appointment.child?.fullName || defaultChildName || '';
+        if (cId) {
+          setSelectedChild({ id: cId, fullName: cName });
+        } else {
+          setSelectedChild(null);
+        }
       } else if (defaultChildId && defaultChildName) {
         setSelectedChild({ id: defaultChildId, fullName: defaultChildName });
       } else if (defaultParentId && defaultParentName) {
@@ -146,26 +159,20 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title || !date || !time || !staffId) {
-      toast({ title: t('appointmentDrawer.error', 'Error'), description: t('appointmentDrawer.requiredFields', 'Please fill in all required fields.'), variant: 'destructive' });
-      return;
-    }
-
-    const scheduledDate = new Date(`${date}T${time}`);
-    if (scheduledDate <= new Date()) {
-      toast({ title: t('appointmentDrawer.error', 'Error'), description: t('appointmentDrawer.pastDate', 'Appointments must be scheduled in the future.'), variant: 'destructive' });
-      return;
-    }
+    const apptTitle = title.trim() || `${t(`enum.appointmentType.${type.toLowerCase()}`, type.replace(/_/g, ' '))} Session`;
+    const effectiveDate = date || new Date().toISOString().split('T')[0];
+    const effectiveTime = time || '09:00';
+    const durationMins = parseInt(duration) || 60;
 
     setLoading(true);
     try {
-      const scheduledAt = new Date(`${date}T${time}`).toISOString();
+      const scheduledAt = new Date(`${effectiveDate}T${effectiveTime}`).toISOString();
       const payload = {
-        title,
+        title: apptTitle,
         type,
         scheduledAt,
-        durationMinutes: parseInt(duration),
-        staffId,
+        durationMinutes: durationMins,
+        staffId: staffId || undefined,
         childId: selectedChild?.id || null,
         parentId: selectedParent?.id || null,
         isRecurring,
@@ -209,7 +216,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">{t('appointmentDrawer.title', 'Title')}</Label>
+            <Label htmlFor="title">{t('appointmentDrawer.title', 'Title')} *</Label>
             <Input 
               id="title" 
               placeholder={t('appointmentDrawer.titlePlaceholder', 'e.g. Weekly Therapy Session')} 
@@ -221,7 +228,7 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('appointmentDrawer.type', 'Type')}</Label>
+              <Label>{t('appointmentDrawer.type', 'Type')} *</Label>
               <Select value={type} onValueChange={(v) => setType(v as AppointmentType)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('appointmentDrawer.typePlaceholder', 'Select type')} />
@@ -234,9 +241,10 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t('appointmentDrawer.duration', 'Duration (min)')}</Label>
+              <Label>{t('appointmentDrawer.duration', 'Duration (Optional)')}</Label>
               <Input 
                 type="number" 
+                placeholder="60"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -245,20 +253,20 @@ export function AppointmentDrawer({ open, onClose, onSuccess, appointment, defau
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t('appointmentDrawer.date', 'Date')}</Label>
+              <Label>{t('appointmentDrawer.date', 'Date')} *</Label>
               <CalendarDatePicker value={date} onChange={setDate} />
             </div>
             <div className="space-y-2">
-              <Label>{t('appointmentDrawer.time', 'Time')}</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+              <Label>{t('appointmentDrawer.time', 'Time (Optional)')}</Label>
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>{t('appointmentDrawer.assignedStaff', 'Assigned Staff')}</Label>
+            <Label>{t('appointmentDrawer.assignedStaff', 'Assigned Staff (Optional)')}</Label>
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('appointmentDrawer.staffPlaceholder', 'Select staff member')} />
+                <SelectValue placeholder={t('appointmentDrawer.staffPlaceholder', '-- Select Staff (Optional) --')} />
               </SelectTrigger>
               <SelectContent>
                 {staff.map((s) => (

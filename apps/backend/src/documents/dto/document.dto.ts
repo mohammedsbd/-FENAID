@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateDocumentDto {
   @IsString()
@@ -6,11 +6,10 @@ export class CreateDocumentDto {
   name!: string;
 
   @IsString()
-  @IsNotEmpty()
-  category!: string;
+  @IsOptional()
+  category?: string;
 
   @IsString()
-  @IsUrl()
   @IsNotEmpty()
   fileUrl!: string;
 

@@ -29,7 +29,7 @@ export class AppointmentsService {
       const a = await tx.appointment.create({
         data: {
           title: dto.title,
-          staffId: dto.staffId,
+          staffId: dto.staffId || staffId,
           childId: dto.childId,
           parentId: dto.parentId,
           scheduledAt: new Date(dto.scheduledAt),
@@ -214,6 +214,9 @@ export class AppointmentsService {
           parentId: dto.parentId,
           scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
           durationMinutes: dto.durationMinutes,
+          type: dto.type,
+          isRecurring: dto.isRecurring,
+          recurrenceRule: dto.recurrenceRule,
           status: dto.status,
         },
         include: {

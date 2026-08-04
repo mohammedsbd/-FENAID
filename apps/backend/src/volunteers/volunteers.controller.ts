@@ -15,7 +15,12 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import { VolunteersService } from './volunteers.service';
-import { CreateVolunteerDto, UpdateVolunteerDto, CreateVolunteerServiceDto } from './dto/volunteer.dto';
+import {
+  CreateVolunteerDto,
+  UpdateVolunteerDto,
+  CreateVolunteerServiceDto,
+  ListVolunteersDto,
+} from './dto/volunteer.dto';
 
 @Controller('volunteers')
 @ModuleAccess('VOLUNTEERS' as any)
@@ -33,8 +38,8 @@ export class VolunteersController {
   }
 
   @Get()
-  findAll(@Query('search') search?: string) {
-    return this.volunteersService.findAll(search);
+  findAll(@Query() query: ListVolunteersDto) {
+    return this.volunteersService.findAll(query);
   }
 
   @Get(':id')

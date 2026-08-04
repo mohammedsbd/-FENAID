@@ -272,6 +272,7 @@ export class ParentsService {
           orderBy: { referralDate: 'desc' },
         },
         documents: {
+          where: { deletedAt: null },
           include: {
             uploadedBy: {
               select: {
@@ -283,6 +284,30 @@ export class ParentsService {
             },
           },
           orderBy: { createdAt: 'desc' },
+        },
+        appointments: {
+          where: { deletedAt: null },
+          include: {
+            staff: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            parent: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+            child: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+          orderBy: { scheduledAt: 'desc' },
         },
       },
     });

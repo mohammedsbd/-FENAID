@@ -28,6 +28,7 @@ interface Child {
 
 interface AllocationDrawerProps {
   open: boolean;
+  allocation?: any | null;
   onClose: () => void;
   onSuccess: () => void;
   defaultTargetType?: 'PARENT' | 'CHILD';
@@ -35,7 +36,7 @@ interface AllocationDrawerProps {
   defaultTargetName?: string;
 }
 
-export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, defaultTargetId, defaultTargetName }: AllocationDrawerProps) {
+export function AllocationDrawer({ open, allocation, onClose, onSuccess, defaultTargetType, defaultTargetId, defaultTargetName }: AllocationDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,9 +66,24 @@ export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, 
     }
   }, [open]);
 
+  const isEdit = !!(allocation && allocation.id);
+
   useEffect(() => {
     if (open) {
-      if (defaultTargetType && defaultTargetId && defaultTargetName) {
+      if (isEdit) {
+        setAmount(allocation.amount?.toString() || '');
+        setPurpose(allocation.purpose || '');
+        setDate(allocation.allocationDate ? new Date(allocation.allocationDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+        setNotes(allocation.notes || '');
+        if (defaultTargetType && defaultTargetId && defaultTargetName) {
+          setTargetType(defaultTargetType);
+          if (defaultTargetType === 'PARENT') {
+            setSelectedParent({ id: defaultTargetId, fullName: defaultTargetName, photoUrl: '', nationalId: '' });
+          } else {
+            setSelectedChild({ id: defaultTargetId, fullName: defaultTargetName, photoUrl: '' });
+          }
+        }
+      } else if (defaultTargetType && defaultTargetId && defaultTargetName) {
         setTargetType(defaultTargetType);
         if (defaultTargetType === 'PARENT') {
           setSelectedParent({ id: defaultTargetId, fullName: defaultTargetName, photoUrl: '', nationalId: '' });
@@ -85,7 +101,7 @@ export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, 
       setSearch('');
       if (!defaultTargetType) setTargetType('PARENT');
     }
-  }, [open, defaultTargetType, defaultTargetId, defaultTargetName]);
+  }, [open, allocation, defaultTargetType, defaultTargetId, defaultTargetName]);
 
   useEffect(() => {
     if (open && !defaultTargetType) {
@@ -144,21 +160,31 @@ export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, 
 
     setLoading(true);
     try {
-      const payload: any = {
-        amount: amount.toString(),
-        purpose,
-        allocationDate: new Date(date).toISOString(),
-        notes,
-      };
-      if (targetType === 'PARENT') payload.parentId = selectedParent!.id;
-      else payload.childId = selectedChild!.id;
+      if (isEdit) {
+        await api.patch(`/fund-allocations/${allocation.id}`, {
+          amount: amount.toString(),
+          purpose,
+          allocationDate: new Date(date).toISOString(),
+          notes: notes || undefined,
+        });
+        toast({ title: t('allocationDrawer.updated', 'Updated'), description: t('allocationDrawer.updateSuccess', 'Fund allocation updated successfully.') });
+      } else {
+        const payload: any = {
+          amount: amount.toString(),
+          purpose,
+          allocationDate: new Date(date).toISOString(),
+          notes,
+        };
+        if (targetType === 'PARENT') payload.parentId = selectedParent!.id;
+        else payload.childId = selectedChild!.id;
 
-      await api.post('/fund-allocations', payload);
-      toast({ title: t('allocationDrawer.success', 'Success'), description: t('allocationDrawer.recorded', 'Fund allocation recorded successfully.') });
+        await api.post('/fund-allocations', payload);
+        toast({ title: t('allocationDrawer.success', 'Success'), description: t('allocationDrawer.recorded', 'Fund allocation recorded successfully.') });
+      }
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to create allocation:', error);
+      console.error('Failed to save allocation:', error);
       toast({ title: t('allocationDrawer.error', 'Error'), description: t('allocationDrawer.recordFailed', 'Failed to record allocation.'), variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -176,7 +202,7 @@ export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, 
         visible ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">{t('allocationDrawer.title', 'New Fund Allocation')}</h2>
+          <h2 className="text-lg font-semibold">{isEdit ? t('allocationDrawer.editTitle', 'Edit Fund Allocation') : t('allocationDrawer.title', 'New Fund Allocation')}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
@@ -390,7 +416,7 @@ export function AllocationDrawer({ open, onClose, onSuccess, defaultTargetType, 
           <Button variant="outline" className="flex-1" onClick={onClose}>{t('allocationDrawer.cancel', 'Cancel')}</Button>
           <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleSubmit} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            {t('allocationDrawer.record', 'Record Allocation')}
+            {isEdit ? t('allocationDrawer.update', 'Update Allocation') : t('allocationDrawer.record', 'Record Allocation')}
           </Button>
         </div>
       </div>

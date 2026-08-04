@@ -30,9 +30,9 @@ export class CreateServiceAssignmentDto {
   @IsString()
   childId?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  assignedStaffId!: string;
+  assignedStaffId?: string;
 
   @IsDateString()
   @IsNotEmpty()

@@ -80,7 +80,8 @@
       "notFound": "Namyoon fedhiin tajaajilu hin argamne",
       "emailExists": "Imeeliin namyo fedhiif duraan galmaa'eera",
       "emailConflict": "Imeeliin namyo fedhii biraatiif duraan galmaa'eera",
-      "serviceRecordNotFound": "Galmee tajaajila namyo fedhii hin argamne"
+      "serviceRecordNotFound": "Galmee tajaajila namyo fedhii hin argamne",
+      "onlyOneRecipient": "Tajaajilli tola-ooltaa mucaaf ykn warra-ijoolleef qofa galmaa'a, lamaanuu miti"
     },
     "internal": "Dogoggora sarvarii keessaa"
   },

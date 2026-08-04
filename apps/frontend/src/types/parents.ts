@@ -52,6 +52,8 @@ export type ParentFormData = {
   financialBracket: FinancialBracket;
   monthlyIncomeRange: string;
   numberOfDependents: string;
+  disabledDependents: string;
+  nonDisabledDependents: string;
   membershipFee: string;
   membershipStatus: MembershipStatus;
   assignedStaffId: string;
@@ -117,6 +119,8 @@ export const emptyParentForm: ParentFormData = {
   financialBracket: 'LOW',
   monthlyIncomeRange: '',
   numberOfDependents: '0',
+  disabledDependents: '0',
+  nonDisabledDependents: '0',
   membershipFee: '',
   membershipStatus: 'UNPAID',
   assignedStaffId: '',
@@ -134,6 +138,16 @@ function splitFullName(fullName: string): { firstName: string; lastName: string 
 export function parentToForm(parent: ParentDetailResponse): ParentFormData {
   const notes = parseParentNotes(parent.internalNotes || '');
   const { firstName, lastName } = splitFullName(parent.fullName);
+  const totalDeps = parent.numberOfDependents ?? 0;
+  let disDeps = notes.disabledDependents;
+  let nonDisDeps = notes.nonDisabledDependents;
+
+  if (!disDeps && !nonDisDeps) {
+    const disabledChildrenCount = parent.children ? parent.children.length : 0;
+    const disNum = Math.min(disabledChildrenCount, totalDeps);
+    disDeps = String(disNum);
+    nonDisDeps = String(Math.max(0, totalDeps - disNum));
+  }
 
   return {
     firstName,
@@ -154,7 +168,9 @@ export function parentToForm(parent: ParentDetailResponse): ParentFormData {
     employmentStatus: parent.employmentStatus || 'UNEMPLOYED',
     financialBracket: parent.financialBracket || 'LOW',
     monthlyIncomeRange: notes.monthlyIncomeRange,
-    numberOfDependents: String(parent.numberOfDependents ?? 0),
+    numberOfDependents: String(totalDeps),
+    disabledDependents: disDeps,
+    nonDisabledDependents: nonDisDeps,
     membershipFee: parent.membershipFee != null ? String(parent.membershipFee) : '',
     membershipStatus: parent.membershipStatus || 'UNPAID',
     assignedStaffId: parent.assignedStaffId || '',
@@ -165,12 +181,25 @@ export function parentToForm(parent: ParentDetailResponse): ParentFormData {
 
 export function parseParentNotes(notes: string) {
   const monthlyIncomePrefix = 'Monthly income range:';
+  const dependentsBreakdownPrefix = 'Dependents breakdown:';
   let monthlyIncomeRange = '';
+  let disabledDependents = '';
+  let nonDisabledDependents = '';
+
   const internalNotes = notes
     .split('\n')
     .filter((line) => {
       if (line.startsWith(monthlyIncomePrefix)) {
         monthlyIncomeRange = line.slice(monthlyIncomePrefix.length).trim();
+        return false;
+      }
+      if (line.startsWith(dependentsBreakdownPrefix)) {
+        const str = line.slice(dependentsBreakdownPrefix.length).trim();
+        const match = str.match(/(\d+)\s*disabled,\s*(\d+)\s*non-disabled/i);
+        if (match) {
+          disabledDependents = match[1];
+          nonDisabledDependents = match[2];
+        }
         return false;
       }
 
@@ -182,10 +211,16 @@ export function parseParentNotes(notes: string) {
   return {
     internalNotes,
     monthlyIncomeRange,
+    disabledDependents,
+    nonDisabledDependents,
   };
 }
 
 export function formToParentPayload(form: ParentFormData) {
+  const disabledCount = Math.max(0, Number(form.disabledDependents) || 0);
+  const nonDisabledCount = Math.max(0, Number(form.nonDisabledDependents) || 0);
+  const totalDependents = disabledCount + nonDisabledCount;
+
   return {
     fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
     photoUrl: form.photoUrl || undefined,
@@ -202,7 +237,7 @@ export function formToParentPayload(form: ParentFormData) {
     employmentStatus: form.employmentStatus,
     financialBracket: form.financialBracket,
     educationLevel: form.educationLevel.trim(),
-    numberOfDependents: Number(form.numberOfDependents),
+    numberOfDependents: totalDependents,
     membershipFee: form.membershipFee ? Number(form.membershipFee) : undefined,
     membershipStatus: form.membershipStatus,
     referralSource: form.referralSource.trim() || undefined,
@@ -210,6 +245,7 @@ export function formToParentPayload(form: ParentFormData) {
     internalNotes: [
       form.internalNotes.trim(),
       form.monthlyIncomeRange.trim() ? `Monthly income range: ${form.monthlyIncomeRange.trim()}` : '',
+      `Dependents breakdown: ${disabledCount} disabled, ${nonDisabledCount} non-disabled`,
     ]
       .filter(Boolean)
       .join('\n'),

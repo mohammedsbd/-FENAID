@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Upload, Loader2, FileText } from 'lucide-react';
+import { X, Upload, Loader2, FileText, FileSpreadsheet, Image as ImageIcon, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +49,40 @@ export function DocumentUploadDrawer({ open, onClose, onSuccess, parentId, child
     }
   }, [open]);
 
+  const handleFileChange = (selectedFile: File | null) => {
+    setFile(selectedFile);
+    if (selectedFile && !title.trim()) {
+      const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, '');
+      const formattedTitle = nameWithoutExt.replace(/[-_]/g, ' ');
+      setTitle(formattedTitle);
+    }
+  };
+
+  const getFileIcon = (fileName?: string) => {
+    if (!fileName) return <FileText className="h-8 w-8 text-primary" />;
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['xls', 'xlsx', 'csv', 'ods'].includes(ext || '')) {
+      return <FileSpreadsheet className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />;
+    }
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) {
+      return <ImageIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />;
+    }
+    if (['pdf'].includes(ext || '')) {
+      return <FileText className="h-8 w-8 text-red-600 dark:text-red-400" />;
+    }
+    if (['doc', 'docx', 'txt', 'rtf', 'odt'].includes(ext || '')) {
+      return <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />;
+    }
+    return <File className="h-8 w-8 text-slate-600 dark:text-slate-400" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
@@ -65,6 +99,7 @@ export function DocumentUploadDrawer({ open, onClose, onSuccess, parentId, child
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title.trim());
+      formData.append('name', title.trim());
       if (category) formData.append('category', category);
       if (parentId) formData.append('parentId', parentId);
       if (childId) formData.append('childId', childId);
@@ -104,10 +139,10 @@ export function DocumentUploadDrawer({ open, onClose, onSuccess, parentId, child
             >
               {file ? (
                 <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
+                  {getFileIcon(file.name)}
                   <div>
                     <p className="text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                   </div>
                   <Button type="button" variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setFile(null); }}>{t('documentUpload.remove', 'Remove')}</Button>
                 </div>
@@ -115,11 +150,18 @@ export function DocumentUploadDrawer({ open, onClose, onSuccess, parentId, child
                 <>
                   <Upload className="h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-sm font-medium">{t('documentUpload.clickToUpload', 'Click to select file')}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t('documentUpload.supportedFormats', 'PDF, DOC, DOCX, XLS, XLSX, JPG, PNG')}</p>
+                  <p className="text-xs text-muted-foreground mt-1 text-center">
+                    {t('documentUpload.supportedFormats', 'PDF, Word (doc, docx), Excel (xls, xlsx, csv), Text, Images, and more')}
+                  </p>
                 </>
               )}
             </div>
-            <input ref={fileRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+            />
           </div>
 
           <div className="space-y-2">

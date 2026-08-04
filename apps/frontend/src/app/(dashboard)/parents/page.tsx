@@ -68,6 +68,7 @@ export default function ParentsPage() {
   const [membershipStatus, setMembershipStatus] = useState('');
   const [assignedStaffId, setAssignedStaffId] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -78,8 +79,8 @@ export default function ParentsPage() {
   const [suggestedServices, setSuggestedServices] = useState<SuggestedService[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [deactivatingParent, setDeactivatingParent] = useState<ParentRow | null>(null);
+  const [membershipConfirmParent, setMembershipConfirmParent] = useState<ParentRow | null>(null);
   const [exporting, setExporting] = useState(false);
-
 
   useEffect(() => {
     const timeout = globalThis.setTimeout(() => {
@@ -91,8 +92,8 @@ export default function ParentsPage() {
   }, [search]);
 
   useEffect(() => {
-    fetchParents();
-  }, [debouncedSearch, status, financialBracket, membershipStatus, assignedStaffId, page]);
+    void fetchParents();
+  }, [debouncedSearch, status, financialBracket, membershipStatus, assignedStaffId, page, limit]);
 
   useEffect(() => {
     const editId = searchParams.get('edit') || undefined;
@@ -150,7 +151,7 @@ export default function ParentsPage() {
       const res = await api.get('/parents', {
         params: {
           page,
-          limit: 10,
+          limit,
           search: debouncedSearch || undefined,
           status: status || undefined,
           financialBracket: financialBracket || undefined,
@@ -158,9 +159,17 @@ export default function ParentsPage() {
           assignedStaffId: assignedStaffId || undefined,
         },
       });
-      setParents(res.data.data || []);
-      setPages(res.data.meta?.pages || 1);
-      setTotal(res.data.meta?.total || 0);
+      const dataParents = res.data.data || [];
+      const totalCount = res.data.meta?.total || 0;
+      const totalPages = res.data.meta?.pages || 1;
+
+      setParents(dataParents);
+      setPages(totalPages);
+      setTotal(totalCount);
+
+      if (page > totalPages && totalPages > 0) {
+        setPage(totalPages);
+      }
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('parents.errorLoad', 'Failed to load parents.')));
     } finally {
@@ -192,10 +201,11 @@ export default function ParentsPage() {
 
   async function handleToggleStatus() {
     if (!deactivatingParent) return;
+    const isActivating = deactivatingParent.status === 'INACTIVE';
+    const newStatus: ParentStatus = isActivating ? 'ACTIVE' : 'INACTIVE';
     try {
-      await api.delete(`/parents/${deactivatingParent.id}`);
+      await api.patch(`/parents/${deactivatingParent.id}`, { status: newStatus });
       const name = deactivatingParent.fullName;
-      const isActivating = deactivatingParent.status === 'INACTIVE';
       
       setDeactivatingParent(null);
       fetchParents();
@@ -214,12 +224,18 @@ export default function ParentsPage() {
     try {
       await api.patch(`/parents/${parent.id}`, { membershipStatus: newStatus });
       fetchParents();
+      const numericFee = parent.membershipFee != null ? Number(parent.membershipFee) : null;
+      const feeText = numericFee != null ? ` (${numericFee.toLocaleString()} ETB)` : '';
       toast({
-        title: newStatus === 'PAID' ? t('parents.membership.markedPaid', 'Marked as Paid') : t('parents.membership.markedUnpaid', 'Marked as Unpaid'),
-        description: t('parents.membership.toggleDesc', '{name} membership is now {status}.', { name: parent.fullName, status: newStatus }),
+        title: newStatus === 'PAID' ? t('parents.membership.toastPaidTitle', 'Payment Confirmed') : t('parents.membership.toastUnpaidTitle', 'Status Marked as Unpaid'),
+        description: newStatus === 'PAID'
+          ? t('parents.membership.toastPaidDesc', 'Membership payment{fee} for {name} has been successfully confirmed.', { name: parent.fullName, fee: feeText })
+          : t('parents.membership.toastUnpaidDesc', 'Membership status for {name} was changed to Unpaid.', { name: parent.fullName }),
       });
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('parents.membership.errorToggle', 'Failed to update membership status.')));
+    } finally {
+      setMembershipConfirmParent(null);
     }
   }
 
@@ -239,7 +255,7 @@ export default function ParentsPage() {
       const data = res.data.data || [];
       const filename = `parents-export-${new Date().toISOString().split('T')[0]}`;
 
-      const membershipHeader = t('parents.export.csv.membership', 'Membership');
+      const membershipHeader = t('parents.export.csv.membership', 'Membership Fee');
       const membershipFeeHeader = t('parents.export.csv.membershipFee', 'Membership Fee');
 
       if (formatType === 'csv') {
@@ -362,7 +378,7 @@ export default function ParentsPage() {
                 <th style="width: 15%">${t('parents.export.csv.phone', 'Phone')}</th>
                 <th style="width: 15%">${t('parents.export.csv.location', 'Location')}</th>
                 <th style="width: 10%">${t('parents.export.csv.status', 'Status')}</th>
-                <th style="width: 10%">${t('parents.export.csv.financial', 'Financial')}</th>
+                <th style="width: 10%">${t('parents.export.csv.financialBracket', 'Financial Bracket')}</th>
                 <th style="width: 10%">${membershipHeader}</th>
                 <th style="width: 10%">${membershipFeeHeader}</th>
                 <th style="width: 15%">${t('parents.export.csv.caseWorker', 'Case Worker')}</th>
@@ -382,6 +398,25 @@ export default function ParentsPage() {
     }
   };
 
+
+  const getPageNumbers = () => {
+    const items: (number | string)[] = [];
+    if (pages <= 7) {
+      for (let i = 1; i <= pages; i++) items.push(i);
+    } else {
+      items.push(1);
+      if (page > 3) items.push('...');
+      const start = Math.max(2, page - 1);
+      const end = Math.min(pages - 1, page + 1);
+      for (let i = start; i <= end; i++) items.push(i);
+      if (page < pages - 2) items.push('...');
+      items.push(pages);
+    }
+    return items;
+  };
+
+  const startRecord = total > 0 ? (page - 1) * limit + 1 : 0;
+  const endRecord = Math.min(page * limit, total);
 
   return (
     <div className="space-y-6">
@@ -426,25 +461,25 @@ export default function ParentsPage() {
                 )}
               </div>
             </div>
-            <FilterSelect label={t('parents.filter.status', 'Status')} value={status} onChange={setStatus}>
+            <FilterSelect label={t('parents.filter.status', 'Status')} value={status} onChange={(val) => { setPage(1); setStatus(val); }}>
               <option value="">{t('parents.filter.statusAll', 'All statuses')}</option>
               {statusOptions.map((option) => (
                 <option key={option} value={option}>{tI18n(`enum.parentStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label={t('parents.filter.membership', 'Membership')} value={membershipStatus} onChange={setMembershipStatus}>
+            <FilterSelect label={t('parents.filter.membership', 'Membership Fee')} value={membershipStatus} onChange={(val) => { setPage(1); setMembershipStatus(val); }}>
               <option value="">{t('parents.filter.membershipAll', 'All')}</option>
               {membershipStatusOptions.map((option) => (
                 <option key={option} value={option}>{t(`enum.membershipStatus.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={setFinancialBracket}>
+            <FilterSelect label={t('parents.filter.financialBracket', 'Financial Bracket')} value={financialBracket} onChange={(val) => { setPage(1); setFinancialBracket(val); }}>
               <option value="">{t('parents.filter.bracketAll', 'All brackets')}</option>
               {bracketOptions.map((option) => (
                 <option key={option} value={option}>{tI18n(`enum.financialBracket.${option.toLowerCase()}`, formatEnum(option))}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label={t('parents.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={setAssignedStaffId}>
+            <FilterSelect label={t('parents.filter.assignedStaff', 'Assigned Staff')} value={assignedStaffId} onChange={(val) => { setPage(1); setAssignedStaffId(val); }}>
               <option value="">{t('parents.filter.staffAll', 'All staff')}</option>
               {staffOptions.map((worker) => (
                 <option key={worker.id} value={worker.id}>{worker.fullName}</option>
@@ -459,7 +494,7 @@ export default function ParentsPage() {
                 setFinancialBracket('');
                 setMembershipStatus('');
                 setAssignedStaffId('');
-                setPage(page);
+                setPage(1);
               }}
             >
               <RotateCcw className="h-4 w-4" />
@@ -477,13 +512,14 @@ export default function ParentsPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[60px] text-center">{t('parents.table.number', '#')}</TableHead>
                 <TableHead>{t('parents.table.firstName', 'First Name')}</TableHead>
                 <TableHead>{t('parents.table.lastName', 'Last Name')}</TableHead>
                 <TableHead className="w-[120px]">{t('parents.table.id', 'ID')}</TableHead>
                 <TableHead>{t('parents.table.nationalId', 'National ID')}</TableHead>
                 <TableHead>{t('parents.table.phone', 'Phone')}</TableHead>
-                <TableHead>{t('parents.table.financial', 'Financial')}</TableHead>
-                <TableHead>{t('parents.table.membership', 'Membership')}</TableHead>
+                <TableHead>{t('parents.table.financialBracket', 'Financial Bracket')}</TableHead>
+                <TableHead>{t('parents.table.membership', 'Membership Fee')}</TableHead>
                 <TableHead>{t('parents.table.status', 'Status')}</TableHead>
                 <TableHead>{t('parents.table.staff', 'Staff')}</TableHead>
                 <TableHead className="text-right">{t('parents.table.actions', 'Actions')}</TableHead>
@@ -493,18 +529,21 @@ export default function ParentsPage() {
               {loading ? (
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={10}>
+                    <TableCell colSpan={11}>
                       <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : parents.length ? (
-                parents.map((parent) => (
+                parents.map((parent, index) => (
                   <TableRow 
                     key={parent.id}
                     className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                     onClick={() => router.push(`/dashboard/parents/${parent.id}`)}
                   >
+                    <TableCell className="text-center font-medium text-muted-foreground w-[60px]">
+                      {(page - 1) * limit + index + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -529,7 +568,7 @@ export default function ParentsPage() {
                       <MembershipBadge 
                         status={parent.membershipStatus} 
                         fee={parent.membershipFee} 
-                        onToggle={() => handleToggleMembership(parent)}
+                        onToggle={() => setMembershipConfirmParent(parent)}
                       />
                     </TableCell>
                     <TableCell>
@@ -567,7 +606,7 @@ export default function ParentsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-64 text-center">
+                  <TableCell colSpan={11} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
@@ -592,24 +631,68 @@ export default function ParentsPage() {
             </TableBody>
           </Table>
 
-          <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              {t('parents.pagination.showing', 'Showing page {page} of {pages} for {total} parent records', { page: String(page), pages: String(pages), total: String(total) })}
-            </p>
-            <div className="flex items-center gap-2">
+          <div className="mt-4 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <span>
+                {t('parents.pagination.showingRange', 'Showing {start}–{end} of {total} parents', {
+                  start: String(startRecord),
+                  end: String(endRecord),
+                  total: String(total),
+                })}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">{t('parents.pagination.perPage', 'Per page:')}</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={limit}
+                  onChange={(e) => {
+                    setPage(1);
+                    setLimit(Number(e.target.value));
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
                 {t('parents.pagination.previous', 'Previous')}
               </Button>
+
+              <div className="hidden sm:flex items-center gap-1">
+                {getPageNumbers().map((num, i) =>
+                  typeof num === 'number' ? (
+                    <Button
+                      key={i}
+                      variant={num === page ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 w-8 p-0 text-xs"
+                      onClick={() => setPage(num)}
+                    >
+                      {num}
+                    </Button>
+                  ) : (
+                    <span key={i} className="px-1 text-xs text-muted-foreground">
+                      ...
+                    </span>
+                  ),
+                )}
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page >= pages}
+                disabled={page >= pages || loading}
                 onClick={() => setPage((current) => Math.min(pages, current + 1))}
               >
                 {t('parents.pagination.next', 'Next')}
@@ -645,6 +728,54 @@ export default function ParentsPage() {
           onConfirm={handleToggleStatus}
           onCancel={() => setDeactivatingParent(null)}
         />
+      )}
+
+      {membershipConfirmParent && (
+        <div
+          className="fixed inset-0 z-[60] !mt-0 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm"
+          onClick={() => setMembershipConfirmParent(null)}
+        >
+          <div
+            className="w-full max-w-md animate-in fade-in zoom-in duration-200 rounded-lg bg-white shadow-xl dark:bg-neutral-900 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-neutral-100">
+                {membershipConfirmParent.membershipStatus === 'PAID'
+                  ? t('parents.membership.modalUnpaidTitle', 'Mark Membership as Unpaid?')
+                  : t('parents.membership.modalPaidTitle', 'Confirm Membership Payment?')}
+              </h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
+                {membershipConfirmParent.membershipStatus === 'PAID'
+                  ? t('parents.membership.modalUnpaidDesc', 'Are you sure you want to change {name}\'s membership status to Unpaid? This will flag their membership as pending payment.', { name: membershipConfirmParent.fullName })
+                  : t('parents.membership.modalPaidDesc', 'Are you sure you want to confirm membership payment{fee} for {name}? This will confirm that the membership fee has been received.', {
+                      name: membershipConfirmParent.fullName,
+                      fee: membershipConfirmParent.membershipFee != null ? ` (${Number(membershipConfirmParent.membershipFee).toLocaleString()} ETB)` : '',
+                    })}
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t bg-slate-50/50 dark:bg-neutral-800/50 px-6 py-4 rounded-b-lg">
+              <Button
+                variant="outline"
+                onClick={() => setMembershipConfirmParent(null)}
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                className={
+                  membershipConfirmParent.membershipStatus === 'PAID'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }
+                onClick={() => void handleToggleMembership(membershipConfirmParent)}
+              >
+                {membershipConfirmParent.membershipStatus === 'PAID'
+                  ? t('parents.membership.confirmMarkUnpaid', 'Mark as Unpaid')
+                  : t('parents.membership.confirmMarkPaid', 'Confirm Payment')}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -702,7 +833,7 @@ function MembershipBadge({ status, fee, onToggle }: { status: MembershipStatus; 
   const isPaid = status === 'PAID';
   const numericFee = fee != null ? Number(fee) : null;
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col items-center justify-center gap-1 text-center">
       <button
         type="button"
         onClick={(event) => {
@@ -716,7 +847,9 @@ function MembershipBadge({ status, fee, onToggle }: { status: MembershipStatus; 
         {isPaid ? t('parents.membership.paid', 'Paid') : t('parents.membership.unpaid', 'Unpaid')}
       </button>
       {numericFee != null && (
-        <span className="text-[11px] font-medium text-slate-500">{numericFee.toLocaleString()} {t('common.etb', 'ETB')}</span>
+        <span className="text-[11px] font-semibold text-muted-foreground tracking-tight">
+          {numericFee.toLocaleString()} {t('common.etb', 'ETB')}
+        </span>
       )}
     </div>
   );

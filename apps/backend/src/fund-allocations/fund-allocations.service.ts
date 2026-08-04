@@ -204,8 +204,11 @@ export class FundAllocationsService {
 
     const data: Prisma.FundAllocationUpdateInput = {
       ...(dto.status && { status: dto.status }),
+      ...(dto.amount && { amount: dto.amount }),
+      ...(dto.purpose && { purpose: dto.purpose }),
+      ...(dto.allocationDate && { allocationDate: new Date(dto.allocationDate) }),
       ...(dto.receiptUrl && { receiptUrl: dto.receiptUrl }),
-      ...(dto.notes && { notes: dto.notes }),
+      ...(dto.notes !== undefined && { notes: dto.notes }),
     };
 
     const updated = await this.prisma.$transaction(async (tx) => {

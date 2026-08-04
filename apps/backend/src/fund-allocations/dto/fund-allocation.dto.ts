@@ -41,6 +41,18 @@ export class UpdateFundAllocationDto {
   status?: FundAllocationStatus;
 
   @IsOptional()
+  @IsDecimal()
+  amount?: string;
+
+  @IsOptional()
+  @IsString()
+  purpose?: string;
+
+  @IsOptional()
+  @IsDateString()
+  allocationDate?: string;
+
+  @IsOptional()
   @IsString()
   receiptUrl?: string;
 

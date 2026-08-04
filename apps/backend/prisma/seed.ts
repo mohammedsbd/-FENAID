@@ -160,6 +160,7 @@ async function main() {
   const parents = await Promise.all([
     prisma.parent.create({
       data: {
+        idTag: 'FKP-0001',
         fullName: 'Hana Alemu',
         photoUrl: null,
         dateOfBirth: date('1987-04-18'),
@@ -184,6 +185,7 @@ async function main() {
     }),
     prisma.parent.create({
       data: {
+        idTag: 'FKP-0002',
         fullName: 'Mulugeta Bekele',
         photoUrl: null,
         dateOfBirth: date('1979-09-06'),
@@ -208,6 +210,7 @@ async function main() {
     }),
     prisma.parent.create({
       data: {
+        idTag: 'FKP-0003',
         fullName: 'Rahel Tesfaye',
         photoUrl: null,
         dateOfBirth: date('1991-12-11'),

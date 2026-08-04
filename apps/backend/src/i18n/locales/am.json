@@ -80,7 +80,8 @@
       "notFound": "በጎ ፈቃደኛ አልተገኘም",
       "emailExists": "ኢሜይሉ ለበጎ ፈቃደኛ አስቀድሞ ተመዝግቧል",
       "emailConflict": "ኢሜይሉ ለሌላ በጎ ፈቃደኛ አስቀድሞ ተመዝግቧል",
-      "serviceRecordNotFound": "የበጎ ፈቃደኛ አገልግሎት መዝገብ አልተገኘም"
+      "serviceRecordNotFound": "የበጎ ፈቃደኛ አገልግሎት መዝገብ አልተገኘም",
+      "onlyOneRecipient": "የበጎ ፈቃደኛ አገልግሎት ለልጅ ወይም ለወላጅ ብቻ መመዝገብ ይቻላል፣ ለሁለቱም አይቻልም"
     },
     "internal": "የውስጥ አገልጋይ ስህተት"
   },

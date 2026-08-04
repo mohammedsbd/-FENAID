@@ -85,7 +85,7 @@ export class ServiceAssignmentsService {
           targetType: dto.targetType,
           parentId: dto.parentId,
           childId: dto.childId,
-          assignedStaffId: dto.assignedStaffId,
+          assignedStaffId: dto.assignedStaffId || staffId,
           startDate: new Date(dto.startDate),
           endDate: dto.endDate ? new Date(dto.endDate) : null,
           frequency: dto.frequency,

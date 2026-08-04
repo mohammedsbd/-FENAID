@@ -64,7 +64,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        'fixed left-0 top-0 z-50 flex h-full flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-950',
+        'relative z-50 flex h-full flex-shrink-0 flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-950',
         isCollapsed ? 'w-[70px]' : 'w-[260px]'
       )}
     >

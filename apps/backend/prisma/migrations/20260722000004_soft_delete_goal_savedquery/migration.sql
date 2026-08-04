@@ -1,2 +1,0 @@
-ALTER TABLE "Goal" ADD COLUMN "deletedAt" TIMESTAMP(3);
-ALTER TABLE "SavedQuery" ADD COLUMN "deletedAt" TIMESTAMP(3);

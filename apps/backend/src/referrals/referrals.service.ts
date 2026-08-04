@@ -59,7 +59,7 @@ export class ReferralsService {
           parentId: dto.parentId,
           childId: dto.childId,
           referredTo: dto.referredTo,
-          referralReason: dto.referralReason,
+          referralReason: dto.referralReason || '',
           referralDate: new Date(dto.referralDate),
           status: dto.status ?? 'PENDING',
           notes: dto.notes,

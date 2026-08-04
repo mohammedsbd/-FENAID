@@ -18,6 +18,7 @@ interface AssignmentDetailPanelProps {
   assignment: ServiceAssignmentDto | null;
   onClose: () => void;
   onEdit: () => void;
+  onMarkPending?: () => void;
   onMarkComplete: () => void;
   onMarkCancelled: () => void;
   userRole: string;
@@ -28,6 +29,7 @@ export function AssignmentDetailPanel({
   assignment,
   onClose,
   onEdit,
+  onMarkPending,
   onMarkComplete,
   onMarkCancelled,
   userRole,
@@ -198,13 +200,18 @@ export function AssignmentDetailPanel({
             <Button variant="outline" className="w-full" onClick={onEdit}>
               {t('services.detail.edit', 'Edit Assignment')}
             </Button>
-            {assignment.status === 'ACTIVE' && (
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={onMarkComplete}>
+            {assignment.status !== 'PENDING' && onMarkPending && (
+              <Button variant="outline" className="w-full text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-950/40" onClick={onMarkPending}>
+                {t('services.detail.markPending', 'Mark as Pending')}
+              </Button>
+            )}
+            {assignment.status !== 'COMPLETED' && (
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onMarkComplete}>
                 {t('services.detail.markComplete', 'Mark as Completed')}
               </Button>
             )}
-            {(assignment.status === 'PENDING' || assignment.status === 'ACTIVE') && (
-              <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={onMarkCancelled}>
+            {assignment.status !== 'CANCELLED' && (
+              <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/40" onClick={onMarkCancelled}>
                 {t('services.detail.markCancelled', 'Mark as Cancelled')}
               </Button>
             )}

@@ -137,16 +137,17 @@ export function Topbar() {
   const router = useRouter();
   const { t } = useLocale();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const searchRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLFormElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GlobalSearchResponse | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement | null>(null);
 
   // Helper to get the current page name from pathname, ignoring dynamic ID segments
   const getPageTitle = () => {
@@ -210,57 +211,33 @@ export function Topbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery.trim());
-    }, 250);
-
-    return () => window.clearTimeout(timeout);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (debouncedSearchQuery.length < 2) {
+  const performSearch = async (overrideQuery?: string) => {
+    const query = (overrideQuery ?? searchQuery).trim();
+    if (query.length < 2) {
       setSearchResults(null);
-      setIsSearchLoading(false);
+      setIsSearchOpen(false);
       return;
     }
 
-    let ignore = false;
+    setIsSearchLoading(true);
+    setIsSearchOpen(true);
 
-    async function runSearch() {
-      setIsSearchLoading(true);
-      try {
-        const response = await api.get<GlobalSearchResponse>('/search/global', {
-          params: { q: debouncedSearchQuery, limit: 8 },
-        });
-
-        if (!ignore) {
-          setSearchResults(response.data);
-          setIsSearchOpen(true);
-        }
-      } catch {
-        if (!ignore) {
-          setSearchResults({
-            query: debouncedSearchQuery,
-            parents: [],
-            children: [],
-            total: 0,
-          });
-          setIsSearchOpen(true);
-        }
-      } finally {
-        if (!ignore) {
-          setIsSearchLoading(false);
-        }
-      }
+    try {
+      const response = await api.get<GlobalSearchResponse>('/search/global', {
+        params: { q: query, limit: 8 },
+      });
+      setSearchResults(response.data);
+    } catch {
+      setSearchResults({
+        query,
+        parents: [],
+        children: [],
+        total: 0,
+      });
+    } finally {
+      setIsSearchLoading(false);
     }
-
-    void runSearch();
-
-    return () => {
-      ignore = true;
-    };
-  }, [debouncedSearchQuery]);
+  };
 
   const groupedNotifications = useMemo(() => {
     return notifications.reduce<Record<NotificationGroup, Notification[]>>(
@@ -318,36 +295,49 @@ export function Topbar() {
         </h2>
       </div>
 
-      <div className="relative hidden w-full flex-1 md:block" ref={searchRef}>
-        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (
+            isSearchOpen &&
+            searchResults &&
+            (searchResults.parents.length > 0 || searchResults.children.length > 0)
+          ) {
+            const firstResult = searchResults.parents[0] ?? searchResults.children[0];
+            if (firstResult) {
+              openSearchResult(firstResult);
+              return;
+            }
+          }
+          void performSearch();
+        }}
+        className="relative hidden w-full flex-1 md:block"
+        ref={searchRef}
+      >
+        <button
+          type="submit"
+          className="absolute left-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus:outline-none"
+          aria-label={t('topbar.search', 'Search')}
+          title={t('topbar.search', 'Search')}
+        >
+          <Search className="h-4 w-4" />
+        </button>
         <Input
           value={searchQuery}
           onChange={(event) => {
             setSearchQuery(event.target.value);
-            if (event.target.value.trim().length >= 2) {
-              setIsSearchOpen(true);
-            }
-          }}
-          onFocus={() => {
-            if (searchQuery.trim().length >= 2) {
-              setIsSearchOpen(true);
+            if (!event.target.value.trim()) {
+              setSearchResults(null);
+              setIsSearchOpen(false);
             }
           }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setIsSearchOpen(false);
             }
-
-            if (event.key === 'Enter') {
-              const firstResult =
-                searchResults?.parents[0] ?? searchResults?.children[0];
-              if (firstResult) {
-                openSearchResult(firstResult);
-              }
-            }
           }}
           placeholder={t('topbar.searchPlaceholder', 'Search parents or children by name, ID, phone...')}
-          className="h-10 rounded-full pr-10 pl-10"
+          className="h-10 rounded-full pl-11 pr-10"
         />
         {isSearchLoading ? (
           <Loader2 className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -362,14 +352,14 @@ export function Topbar() {
           </button>
         ) : null}
 
-        {isSearchOpen && searchQuery.trim().length >= 2 && (
+        {isSearchOpen && (
           <GlobalSearchPanel
             results={searchResults}
             isLoading={isSearchLoading}
             onSelect={openSearchResult}
           />
         )}
-      </div>
+      </form>
 
       <div className="flex shrink-0 items-center gap-1.5">
         <LiveClock />

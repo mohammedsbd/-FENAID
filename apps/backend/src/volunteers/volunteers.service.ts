@@ -1,8 +1,21 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { I18nService } from '../i18n/i18n.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateVolunteerDto, UpdateVolunteerDto, CreateVolunteerServiceDto } from './dto/volunteer.dto';
+import {
+  CreateVolunteerDto,
+  UpdateVolunteerDto,
+  CreateVolunteerServiceDto,
+  ListVolunteersDto,
+} from './dto/volunteer.dto';
+
+// Services are shown with their recipient, which is either a child, a parent,
+// or nobody in particular (a general service).
+const SERVICE_INCLUDE = {
+  child: { select: { id: true, fullName: true } },
+  parent: { select: { id: true, fullName: true } },
+} satisfies Prisma.VolunteerServiceInclude;
 
 @Injectable()
 export class VolunteersService {
@@ -48,40 +61,60 @@ export class VolunteersService {
     return volunteer;
   }
 
-  async findAll(search?: string) {
-    const where: any = { deletedAt: null };
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' as const } },
-        { lastName: { contains: search, mode: 'insensitive' as const } },
-        { email: { contains: search, mode: 'insensitive' as const } },
-        { phone: { contains: search, mode: 'insensitive' as const } },
-        { serviceTypes: { contains: search, mode: 'insensitive' as const } },
-      ];
-    }
+  async findAll(query: ListVolunteersDto = {}) {
+    const page = Math.max(query.page ?? 1, 1);
+    const limit = Math.min(Math.max(query.limit ?? 10, 1), 100);
+    const skip = (page - 1) * limit;
+    const search = query.search;
 
-    return this.prisma.volunteer.findMany({
-      where,
-      include: {
-        services: {
-          include: {
-            child: {
-              select: {
-                id: true,
-                fullName: true,
-              },
+    const where: Prisma.VolunteerWhereInput = {
+      deletedAt: null,
+      ...(query.status ? { status: query.status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' as const } },
+              { lastName: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+              { phone: { contains: search, mode: 'insensitive' as const } },
+              { serviceTypes: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.volunteer.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          services: {
+            include: SERVICE_INCLUDE,
+            orderBy: {
+              serviceDate: 'desc',
             },
           },
-          orderBy: {
-            serviceDate: 'desc',
-          },
         },
+        // id breaks ties so rows can't shift between pages.
+        orderBy: [
+          { firstName: 'asc' },
+          { lastName: 'asc' },
+          { id: 'asc' },
+        ],
+      }),
+      this.prisma.volunteer.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit) || 1,
       },
-      orderBy: [
-        { firstName: 'asc' },
-        { lastName: 'asc' },
-      ],
-    });
+    };
   }
 
   async findOne(id: string) {
@@ -89,14 +122,7 @@ export class VolunteersService {
       where: { id, deletedAt: null },
       include: {
         services: {
-          include: {
-            child: {
-              select: {
-                id: true,
-                fullName: true,
-              },
-            },
-          },
+          include: SERVICE_INCLUDE,
           orderBy: {
             serviceDate: 'desc',
           },
@@ -179,12 +205,26 @@ export class VolunteersService {
   async addService(staffId: string, volunteerId: string, dto: CreateVolunteerServiceDto) {
     await this.findOne(volunteerId);
 
+    // A service is given either to a child or to a parent, never to both.
+    if (dto.childId && dto.parentId) {
+      throw new BadRequestException('error.volunteer.onlyOneRecipient');
+    }
+
     if (dto.childId) {
-      const child = await this.prisma.child.findUnique({
-        where: { id: dto.childId },
+      const child = await this.prisma.child.findFirst({
+        where: { id: dto.childId, deletedAt: null },
       });
       if (!child) {
         throw new NotFoundException('error.child.notFound');
+      }
+    }
+
+    if (dto.parentId) {
+      const parent = await this.prisma.parent.findFirst({
+        where: { id: dto.parentId, deletedAt: null },
+      });
+      if (!parent) {
+        throw new NotFoundException('error.parent.notFound');
       }
     }
 
@@ -194,18 +234,12 @@ export class VolunteersService {
           volunteerId,
           serviceType: dto.serviceType,
           childId: dto.childId || null,
+          parentId: dto.parentId || null,
           description: dto.description,
           serviceDate: new Date(dto.serviceDate),
           notes: dto.notes,
         },
-        include: {
-          child: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-        },
+        include: SERVICE_INCLUDE,
       });
 
       await tx.auditLog.create({

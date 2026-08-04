@@ -209,7 +209,7 @@ export function ReferralDrawer({
   }
 
   async function handleSubmit() {
-    if (!referredTo.trim() || !referralReason.trim() || !referralDate) {
+    if (!referredTo.trim() || !referralDate) {
       toast({
         title: t('common.error', 'Error'),
         description: t('services.referrals.error.create', 'Please fill in all required fields.'),
@@ -233,11 +233,10 @@ export function ReferralDrawer({
         parentId: targetType === 'PARENT' ? selectedParent!.id : undefined,
         childId: targetType === 'CHILD' ? selectedChild!.id : undefined,
         referredTo: referredTo.trim(),
-        referralReason: referralReason.trim(),
+        referralReason: referralReason.trim() || undefined,
         referralDate,
         status,
         notes: notes.trim() || undefined,
-        outcome: outcome.trim() || undefined,
         followUpDate: followUpDate || undefined,
       };
 
@@ -248,7 +247,6 @@ export function ReferralDrawer({
           referralDate: data.referralDate,
           status: data.status,
           notes: data.notes,
-          outcome: data.outcome,
           followUpDate: data.followUpDate,
         });
         toast({
@@ -545,7 +543,7 @@ export function ReferralDrawer({
             {/* Reason */}
             <div className="space-y-2">
               <Label>
-                {t('services.referrals.drawer.referralReason', 'Reason for Referral')} *
+                {t('services.referrals.drawer.referralReason', 'Reason for Referral (Optional)')}
               </Label>
               <textarea
                 value={referralReason}
@@ -572,7 +570,7 @@ export function ReferralDrawer({
               </div>
               <div className="space-y-2">
                 <Label>
-                  {t('services.referrals.drawer.followUpDate', 'Follow-up Date')}
+                  {t('services.referrals.drawer.followUpDate', 'Follow-up Date (Optional)')}
                 </Label>
                 <CalendarDatePicker
                   value={followUpDate}
@@ -606,29 +604,10 @@ export function ReferralDrawer({
               </select>
             </div>
 
-            {/* Outcome (shown when status is COMPLETED or CONTACTED) */}
-            {(status === 'COMPLETED' || status === 'CONTACTED') && (
-              <div className="space-y-2">
-                <Label>
-                  {t('services.referrals.drawer.outcome', 'Outcome')}
-                </Label>
-                <textarea
-                  value={outcome}
-                  onChange={(e) => setOutcome(e.target.value)}
-                  placeholder={t(
-                    'services.referrals.drawer.outcomePlaceholder',
-                    'Result of the referral...'
-                  )}
-                  rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                />
-              </div>
-            )}
-
             {/* Notes */}
             <div className="space-y-2">
               <Label>
-                {t('services.referrals.drawer.notes', 'Notes')} ({t('common.optional', 'Optional')})
+                {t('services.referrals.drawer.notes', 'Notes')} {t('common.optional', '(Optional)')}
               </Label>
               <textarea
                 value={notes}

@@ -80,7 +80,8 @@
       "notFound": "Volunteer not found",
       "emailExists": "Email already registered for a volunteer",
       "emailConflict": "Email already registered for another volunteer",
-      "serviceRecordNotFound": "Volunteer service record not found"
+      "serviceRecordNotFound": "Volunteer service record not found",
+      "onlyOneRecipient": "A volunteer service can be linked to either a child or a parent, not both"
     },
     "internal": "Internal server error"
   },

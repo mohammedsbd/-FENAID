@@ -428,7 +428,7 @@ export function ParentDrawer({
                   <FormField label={t('parentDrawer.financialBracket', 'Financial Bracket')} error={errors.financialBracket}>
                     <div className="relative">
                       <select
-                        className={cn(selectClassName, 'opacity-60')}
+                        className={cn(selectClassName, 'appearance-none pr-16 opacity-70 cursor-not-allowed bg-muted/20')}
                         value={form.financialBracket}
                         disabled
                       >
@@ -438,11 +438,9 @@ export function ParentDrawer({
                           </option>
                         ))}
                       </select>
-                      {form.monthlyIncomeRange.trim() && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground pointer-events-none">
-                          {t('parentDrawer.autoCalculated', 'auto')}
-                        </span>
-                      )}
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-muted-foreground/20 bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pointer-events-none">
+                        {t('parentDrawer.autoCalculated', 'Auto')}
+                      </span>
                     </div>
                   </FormField>
                   <FormField label={t('parentDrawer.monthlyIncome', 'Monthly Income Range')} error={errors.monthlyIncomeRange}>
@@ -466,14 +464,72 @@ export function ParentDrawer({
                       }}
                     />
                   </FormField>
-                  <FormField label={t('parentDrawer.dependents', 'Number of Dependents')} error={errors.numberOfDependents}>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={form.numberOfDependents}
-                      onChange={(event) => updateField('numberOfDependents', event.target.value)}
-                    />
-                  </FormField>
+                  <div className="col-span-full rounded-lg border border-border bg-slate-50/70 p-3.5 dark:bg-neutral-900/50">
+                    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t('parentDrawer.dependentsBreakdown', 'Dependents & Children Breakdown')}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <FormField
+                        label={t('parentDrawer.disabledDependents', 'Children with Disabilities')}
+                        error={errors.disabledDependents}
+                      >
+                        <Input
+                          type="number"
+                          min="0"
+                          value={form.disabledDependents}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            const disNum = Math.max(0, parseInt(val, 10) || 0);
+                            const nonDisNum = Math.max(0, parseInt(form.nonDisabledDependents, 10) || 0);
+                            setForm((current) => ({
+                              ...current,
+                              disabledDependents: val,
+                              numberOfDependents: String(disNum + nonDisNum),
+                            }));
+                          }}
+                        />
+                      </FormField>
+
+                      <FormField
+                        label={t('parentDrawer.nonDisabledDependents', 'Non-Disabled Children')}
+                        error={errors.nonDisabledDependents}
+                      >
+                        <Input
+                          type="number"
+                          min="0"
+                          value={form.nonDisabledDependents}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            const disNum = Math.max(0, parseInt(form.disabledDependents, 10) || 0);
+                            const nonDisNum = Math.max(0, parseInt(val, 10) || 0);
+                            setForm((current) => ({
+                              ...current,
+                              nonDisabledDependents: val,
+                              numberOfDependents: String(disNum + nonDisNum),
+                            }));
+                          }}
+                        />
+                      </FormField>
+
+                      <FormField
+                        label={t('parentDrawer.totalDependents', 'Total Dependents')}
+                        error={errors.numberOfDependents}
+                      >
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            value={form.numberOfDependents}
+                            disabled
+                            className="bg-muted/30 opacity-70 cursor-not-allowed pr-16"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-muted-foreground/20 bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pointer-events-none">
+                            {t('parentDrawer.autoCalculated', 'Auto')}
+                          </span>
+                        </div>
+                      </FormField>
+                    </div>
+                  </div>
                   <FormField label={t('parentDrawer.membershipFee', 'Membership Fee (ETB)')} error={errors.membershipFee}>
                     <Input
                       type="number"

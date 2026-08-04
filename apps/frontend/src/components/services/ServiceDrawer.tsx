@@ -250,7 +250,7 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service-desc">{t('services.catalog.description', 'Description')} ({t('common.optional', 'Optional')})</Label>
+            <Label htmlFor="service-desc">{t('services.catalog.description', 'Description')} {t('common.optional', '(Optional)')}</Label>
             <textarea
               id="service-desc"
               value={description}

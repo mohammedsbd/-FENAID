@@ -207,7 +207,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
   }
 
   async function handleSubmit() {
-    if (!selectedServiceId || !startDate || !assignedStaffId) return;
+    if (!selectedServiceId || !startDate) return;
     if (targetType === 'PARENT' && !selectedParent) return;
     if (targetType === 'CHILD' && !selectedChild) return;
 
@@ -218,7 +218,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
         targetType,
         parentId: targetType === 'PARENT' ? selectedParent!.id : undefined,
         childId: targetType === 'CHILD' ? selectedChild!.id : undefined,
-        assignedStaffId,
+        assignedStaffId: assignedStaffId || undefined,
         startDate,
         endDate: endDate || undefined,
         frequency,
@@ -246,7 +246,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
       return targetType === 'PARENT' ? !!selectedParent : !!selectedChild;
     }
     if (step === 2) {
-      return !!selectedServiceId && !!startDate && !!assignedStaffId;
+      return !!selectedServiceId && !!startDate;
     }
     return true;
   }
@@ -555,13 +555,13 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
 
               {/* Assigned Staff */}
               <div className="space-y-2">
-                <Label>{t('services.assign.assignedStaff', 'Assigned Staff')} *</Label>
+                <Label>{t('services.assign.assignedStaff', 'Assigned Staff (Optional)')}</Label>
                 <select
                   value={assignedStaffId}
                   onChange={(e) => setAssignedStaffId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <option value="">{t('services.assign.selectStaff', '-- Select Staff --')}</option>
+                  <option value="">{t('services.assign.selectStaff', '-- Select Staff (Optional) --')}</option>
                   {staffList.map((s) => (
                     <option key={s.id} value={s.id}>{s.fullName} ({s.role.replace('_', ' ')})</option>
                   ))}
@@ -570,7 +570,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label>{t('services.assign.notes', 'Notes')} ({t('common.optional', 'Optional')})</Label>
+                <Label>{t('services.assign.notes', 'Notes')} {t('common.optional', '(Optional)')}</Label>
                 <textarea
                   value={assignmentNotes}
                   onChange={(e) => setAssignmentNotes(e.target.value)}
@@ -636,7 +636,7 @@ export function AssignServiceDrawer({ open, onClose, onSaved, userRole, defaultT
 
                 {/* Staff */}
                 <div>                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('services.assign.assignedStaff', 'Assigned Staff')}</Label>
-                  <p className="text-sm font-medium mt-1">{selectedStaff?.fullName}</p>
+                  <p className="text-sm font-medium mt-1">{selectedStaff?.fullName || t('services.assign.unassigned', 'Unassigned / Auto')}</p>
                 </div>
 
                 {assignmentNotes && (
