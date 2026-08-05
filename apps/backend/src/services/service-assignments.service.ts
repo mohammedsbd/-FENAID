@@ -8,6 +8,7 @@ import { checkOptimisticLock } from '../common/utils/optimistic-lock';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  CreateBulkServiceAssignmentDto,
   CreateServiceAssignmentDto,
   ListServiceAssignmentsDto,
   UpdateServiceAssignmentDto,
@@ -21,6 +22,84 @@ export class ServiceAssignmentsService {
     private readonly notifications: NotificationsService,
     private readonly i18n: I18nService,
   ) {}
+
+  async createBulk(staffId: string, dto: CreateBulkServiceAssignmentDto) {
+    const parentIds = dto.parentIds || [];
+    const childIds = dto.childIds || [];
+
+    if (dto.targetType === ServiceTargetType.PARENT && parentIds.length === 0) {
+      throw new BadRequestException('At least one parent must be selected for bulk assignment');
+    }
+    if (dto.targetType === ServiceTargetType.CHILD && childIds.length === 0) {
+      throw new BadRequestException('At least one child must be selected for bulk assignment');
+    }
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: dto.serviceId },
+    });
+    if (!service) {
+      throw new NotFoundException('error.service.notFound');
+    }
+    if (!service.isActive) {
+      throw new BadRequestException('error.service.inactive');
+    }
+
+    const createdAssignments: any[] = [];
+    const skippedRecipientIds: string[] = [];
+
+    const targetList = dto.targetType === ServiceTargetType.PARENT ? parentIds : childIds;
+
+    for (const targetId of targetList) {
+      const parentId = dto.targetType === ServiceTargetType.PARENT ? targetId : null;
+      const childId = dto.targetType === ServiceTargetType.CHILD ? targetId : null;
+
+      const existing = await this.prisma.serviceAssignment.findFirst({
+        where: {
+          serviceId: dto.serviceId,
+          targetType: dto.targetType,
+          parentId,
+          childId,
+          status: { in: ['PENDING', 'ACTIVE'] },
+        },
+      });
+
+      if (existing) {
+        skippedRecipientIds.push(targetId);
+        continue;
+      }
+
+      const a = await this.prisma.serviceAssignment.create({
+        data: {
+          serviceId: dto.serviceId,
+          targetType: dto.targetType,
+          parentId,
+          childId,
+          assignedStaffId: dto.assignedStaffId || staffId,
+          startDate: dto.startDate ? new Date(dto.startDate) : new Date(),
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          frequency: dto.frequency,
+          deliveryMethod: dto.deliveryMethod,
+          status: dto.status ?? 'PENDING',
+          notes: dto.notes,
+        },
+        include: {
+          service: true,
+          parent: { select: { fullName: true, photoUrl: true } },
+          child: { select: { fullName: true, photoUrl: true } },
+          assignedStaff: { select: { fullName: true } },
+        },
+      });
+
+      createdAssignments.push(a);
+    }
+
+    return {
+      totalSelected: targetList.length,
+      createdCount: createdAssignments.length,
+      skippedCount: skippedRecipientIds.length,
+      createdAssignments,
+    };
+  }
 
   async create(staffId: string, dto: CreateServiceAssignmentDto) {
     // Validate targetType consistency
@@ -50,7 +129,7 @@ export class ServiceAssignmentsService {
       throw new BadRequestException('error.service.inactive');
     }
 
-    if (service.targetType !== dto.targetType) {
+    if (service.targetType !== ServiceTargetType.ALL && dto.targetType !== ServiceTargetType.ALL && service.targetType !== dto.targetType) {
       throw new BadRequestException(
         this.i18n.t('error.service.targetTypeMismatch', {
           serviceTargetType: service.targetType,
@@ -86,7 +165,7 @@ export class ServiceAssignmentsService {
           parentId: dto.parentId,
           childId: dto.childId,
           assignedStaffId: dto.assignedStaffId || staffId,
-          startDate: new Date(dto.startDate),
+          startDate: dto.startDate ? new Date(dto.startDate) : new Date(),
           endDate: dto.endDate ? new Date(dto.endDate) : null,
           frequency: dto.frequency,
           deliveryMethod: dto.deliveryMethod,
@@ -226,9 +305,11 @@ export class ServiceAssignmentsService {
     const updateData: Prisma.ServiceAssignmentUpdateInput = {};
     if (dto.status) updateData.status = dto.status;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
     if (endDate !== undefined) updateData.endDate = endDate;
     if (dto.deliveryMethod) updateData.deliveryMethod = dto.deliveryMethod;
     if (dto.frequency) updateData.frequency = dto.frequency;
+    if (dto.assignedStaffId) updateData.assignedStaff = { connect: { id: dto.assignedStaffId } };
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.serviceAssignment.update({

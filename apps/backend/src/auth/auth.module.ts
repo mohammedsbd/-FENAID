@@ -20,7 +20,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1d'),
+          // Sessions are ended by logging out, not by the clock.
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '3650d'),
         },
       }),
     }),

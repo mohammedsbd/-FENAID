@@ -9,6 +9,11 @@ import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthenticatedRequest } from './types/authenticated-request.type';
 
+// Express takes cookie maxAge in MILLISECONDS. A session ends only when the
+// user logs out, so the cookie is given a 10-year lifetime rather than one
+// that quietly runs out while they are working.
+const SESSION_COOKIE_MAX_AGE_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -29,7 +34,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       path: '/',
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: SESSION_COOKIE_MAX_AGE_MS,
     };
 
     response.cookie('token', result.accessToken, cookieOptions);

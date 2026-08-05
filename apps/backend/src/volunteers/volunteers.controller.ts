@@ -58,9 +58,16 @@ export class VolunteersController {
   }
 
   @Delete(':id')
-  @Roles(StaffRole.SUPER_ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   remove(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
     return this.volunteersService.remove(request.user.staffId, id);
+  }
+
+  /** Irreversible: erases the volunteer and every service they logged. */
+  @Delete(':id/permanent')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
+  purge(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.volunteersService.purge(request.user.staffId, id);
   }
 
   @Post(':id/services')

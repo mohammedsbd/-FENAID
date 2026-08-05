@@ -45,6 +45,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
 import { logout } from '@/lib/auth';
+import { ToastAction } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 type Notification = {
@@ -136,6 +138,7 @@ export function Topbar() {
   }, []);
   const router = useRouter();
   const { t } = useLocale();
+  const { toast } = useToast();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLFormElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -148,6 +151,30 @@ export function Topbar() {
   const [searchResults, setSearchResults] = useState<GlobalSearchResponse | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+
+  // Logging out is the only thing that ends a session, so it always asks
+  // first. Dismissing the toast (or ignoring it) keeps the user signed in.
+  const confirmLogout = () => {
+    toast({
+      title: t('topbar.logoutConfirm.title', 'Log out?'),
+      description: t('topbar.logoutConfirm.description', 'You will need to sign in again to continue working.'),
+      duration: 30000,
+      action: (
+        <div className="flex shrink-0 gap-2">
+          <ToastAction altText={t('topbar.logoutConfirm.cancel', 'Stay signed in')}>
+            {t('topbar.logoutConfirm.cancel', 'Stay signed in')}
+          </ToastAction>
+          <ToastAction
+            altText={t('topbar.logoutConfirm.confirm', 'Log out')}
+            onClick={() => logout()}
+            className="border-destructive/40 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {t('topbar.logoutConfirm.confirm', 'Log out')}
+          </ToastAction>
+        </div>
+      ),
+    });
+  };
 
   // Helper to get the current page name from pathname, ignoring dynamic ID segments
   const getPageTitle = () => {
@@ -481,7 +508,7 @@ export function Topbar() {
                   type="button"
                   onClick={() => {
                     setProfileOpen(false);
-                    logout();
+                    confirmLogout();
                   }}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-destructive"
                 >

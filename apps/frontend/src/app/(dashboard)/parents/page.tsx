@@ -12,6 +12,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trash2,
   UserMinus,
   X,
   UserPlus,
@@ -40,6 +41,7 @@ import { t as tI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { ParentDrawer } from '@/components/dashboard/parent-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
+import { PermanentDeleteModal } from '@/components/dashboard/permanent-delete-modal';
 import { 
   ParentRow, 
   StaffOption, 
@@ -79,8 +81,12 @@ export default function ParentsPage() {
   const [suggestedServices, setSuggestedServices] = useState<SuggestedService[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [deactivatingParent, setDeactivatingParent] = useState<ParentRow | null>(null);
+  const [deletingParent, setDeletingParent] = useState<ParentRow | null>(null);
+  const [deletingInFlight, setDeletingInFlight] = useState(false);
   const [membershipConfirmParent, setMembershipConfirmParent] = useState<ParentRow | null>(null);
   const [exporting, setExporting] = useState(false);
+  // Erasing a record is restricted to super admins on the server too.
+  const canPermanentlyDelete = getSession()?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
     const timeout = globalThis.setTimeout(() => {
@@ -216,6 +222,30 @@ export default function ParentsPage() {
       });
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('parents.errorUpdateStatus', 'Failed to update parent status.')));
+    }
+  }
+
+  async function handlePermanentDelete() {
+    if (!deletingParent) return;
+    const name = deletingParent.fullName;
+    setDeletingInFlight(true);
+    try {
+      await api.delete(`/parents/${deletingParent.id}/permanent`);
+      setDeletingParent(null);
+      fetchParents();
+
+      toast({
+        title: t('parents.toast.deletedTitle', 'Parent Deleted'),
+        description: t('parents.toast.deletedDesc', '{name} and their related records have been permanently removed.', { name }),
+      });
+    } catch (err: unknown) {
+      toast({
+        title: t('common.error', 'Error'),
+        description: getErrorMessage(err, t('parents.errorDelete', 'Failed to delete parent.')),
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingInFlight(false);
     }
   }
 
@@ -600,6 +630,19 @@ export default function ParentsPage() {
                         >
                           {parent.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
                         </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeletingParent(parent);
+                          }}
+                          aria-label={t('parents.table.deleteLabel', 'Delete parent permanently')}
+                          title={t('parents.table.deleteLabel', 'Delete parent permanently')}
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -727,6 +770,19 @@ export default function ParentsPage() {
           confirmLabel={deactivatingParent.status === 'INACTIVE' ? t('parents.deactivate.confirmActivate', 'Activate Now') : t('parents.deactivate.confirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setDeactivatingParent(null)}
+        />
+      )}
+
+      {deletingParent && (
+        <PermanentDeleteModal
+          name={deletingParent.fullName}
+          relatedSummary={t(
+            'parents.delete.related',
+            'fund allocations, documents, appointments, attendance and service assignments',
+          )}
+          deleting={deletingInFlight}
+          onConfirm={handlePermanentDelete}
+          onCancel={() => setDeletingParent(null)}
         />
       )}
 

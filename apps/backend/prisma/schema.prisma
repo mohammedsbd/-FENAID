@@ -102,6 +102,7 @@ enum ChildStatus {
 enum ServiceTargetType {
   PARENT
   CHILD
+  ALL
 }
 
 enum ServiceFrequency {
@@ -739,21 +740,26 @@ model Staff {
 }
 
 model Volunteer {
-  id           String             @id @default(cuid())
-  firstName    String
-  lastName     String
-  email        String             @unique
-  phone        String
-  status       String             @default("ACTIVE") // ACTIVE, INACTIVE
-  serviceTypes String?            @db.Text
-  notes        String?            @db.Text
-  deletedAt    DateTime?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  services     VolunteerService[]
+  id                   String             @id @default(cuid())
+  isOrganization       Boolean            @default(false)
+  organizationName     String?
+  organizationLocation String?
+  organizationPhone    String?
+  firstName            String?
+  lastName             String?
+  email                String?            @unique
+  phone                String?
+  status               String             @default("ACTIVE") // ACTIVE, INACTIVE
+  serviceTypes         String?            @db.Text
+  notes                String?            @db.Text
+  deletedAt            DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  services             VolunteerService[]
 
   @@index([firstName])
   @@index([lastName])
+  @@index([organizationName])
   @@index([email])
 }
 

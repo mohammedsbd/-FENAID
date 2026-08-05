@@ -15,6 +15,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import {
+  CreateBulkReferralDto,
   CreateReferralDto,
   ListReferralsDto,
   UpdateReferralDto,
@@ -25,6 +26,15 @@ import { ReferralsService } from './referrals.service';
 @ModuleAccess('REFERRALS' as any)
 export class ReferralsController {
   constructor(private readonly referralsService: ReferralsService) {}
+
+  @Post('bulk')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
+  createBulk(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateBulkReferralDto,
+  ) {
+    return this.referralsService.createBulk(req.user.staffId, dto);
+  }
 
   @Post()
   @Idempotent()
@@ -57,7 +67,7 @@ export class ReferralsController {
   }
 
   @Delete(':id')
-  @Roles(StaffRole.SUPER_ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.referralsService.remove(req.user.staffId, id);
   }

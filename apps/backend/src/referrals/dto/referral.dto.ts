@@ -1,12 +1,53 @@
 import { ReferralStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+
+export class CreateBulkReferralDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  parentIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  childIds?: string[];
+
+  @IsString()
+  @IsNotEmpty()
+  referredTo!: string;
+
+  @IsOptional()
+  @IsString()
+  referralReason?: string;
+
+  @IsDateString()
+  @IsNotEmpty()
+  referralDate!: string;
+
+  @IsOptional()
+  @IsEnum(ReferralStatus)
+  status?: ReferralStatus;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  outcome?: string;
+
+  @IsOptional()
+  @IsDateString()
+  followUpDate?: string;
+}
 
 export class CreateReferralDto {
   @IsOptional()

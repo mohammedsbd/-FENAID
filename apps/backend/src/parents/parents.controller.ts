@@ -49,8 +49,15 @@ export class ParentsController {
   }
 
   @Delete(':id')
-  @Roles(StaffRole.SUPER_ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
   remove(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
     return this.parentsService.remove(request.user.staffId, id);
+  }
+
+  /** Irreversible: erases the parent and the records that belong only to them. */
+  @Delete(':id/permanent')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
+  purge(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.parentsService.purge(request.user.staffId, id);
   }
 }

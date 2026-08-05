@@ -1,22 +1,39 @@
-import { Type } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsDateString, IsBoolean } from 'class-validator';
 
 export class CreateVolunteerDto {
-  @IsString()
-  @IsNotEmpty()
-  firstName!: string;
+  @IsBoolean()
+  @IsOptional()
+  isOrganization?: boolean;
 
   @IsString()
-  @IsNotEmpty()
-  lastName!: string;
+  @IsOptional()
+  organizationName?: string;
+
+  @IsString()
+  @IsOptional()
+  organizationLocation?: string;
+
+  @IsString()
+  @IsOptional()
+  organizationPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
 
   @IsEmail()
-  @IsNotEmpty()
-  email!: string;
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
+  email?: string;
 
   @IsString()
-  @IsNotEmpty()
-  phone!: string;
+  @IsOptional()
+  phone?: string;
 
   @IsString()
   @IsOptional()
@@ -28,6 +45,22 @@ export class CreateVolunteerDto {
 }
 
 export class UpdateVolunteerDto {
+  @IsBoolean()
+  @IsOptional()
+  isOrganization?: boolean;
+
+  @IsString()
+  @IsOptional()
+  organizationName?: string;
+
+  @IsString()
+  @IsOptional()
+  organizationLocation?: string;
+
+  @IsString()
+  @IsOptional()
+  organizationPhone?: string;
+
   @IsString()
   @IsOptional()
   firstName?: string;
@@ -38,6 +71,7 @@ export class UpdateVolunteerDto {
 
   @IsEmail()
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
   email?: string;
 
   @IsString()
@@ -69,6 +103,14 @@ export class ListVolunteersDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @IsString()
+  @IsOptional()
+  isOrganization?: string;
 
   @IsOptional()
   @Type(() => Number)

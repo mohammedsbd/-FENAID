@@ -9,6 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { I18nService } from '../i18n/i18n.service';
 import {
+  CreateBulkReferralDto,
   CreateReferralDto,
   ListReferralsDto,
   UpdateReferralDto,
@@ -21,6 +22,66 @@ export class ReferralsService {
     private readonly notifications: NotificationsService,
     private readonly i18n: I18nService,
   ) {}
+
+  async createBulk(staffId: string, dto: CreateBulkReferralDto) {
+    const parentIds = dto.parentIds || [];
+    const childIds = dto.childIds || [];
+
+    if (parentIds.length === 0 && childIds.length === 0) {
+      throw new BadRequestException('At least one parent or child must be selected for bulk referral');
+    }
+
+    const createdReferrals: any[] = [];
+
+    for (const parentId of parentIds) {
+      const r = await this.prisma.referral.create({
+        data: {
+          parentId,
+          referredTo: dto.referredTo,
+          referralReason: dto.referralReason ?? '',
+          referralDate: new Date(dto.referralDate),
+          status: dto.status ?? 'PENDING',
+          notes: dto.notes,
+          outcome: dto.outcome,
+          followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : null,
+          referredById: staffId,
+        },
+        include: {
+          parent: { select: { fullName: true, photoUrl: true } },
+          child: { select: { fullName: true, photoUrl: true } },
+          staff: { select: { id: true, fullName: true } },
+        },
+      });
+      createdReferrals.push(r);
+    }
+
+    for (const childId of childIds) {
+      const r = await this.prisma.referral.create({
+        data: {
+          childId,
+          referredTo: dto.referredTo,
+          referralReason: dto.referralReason ?? '',
+          referralDate: new Date(dto.referralDate),
+          status: dto.status ?? 'PENDING',
+          notes: dto.notes,
+          outcome: dto.outcome,
+          followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : null,
+          referredById: staffId,
+        },
+        include: {
+          parent: { select: { fullName: true, photoUrl: true } },
+          child: { select: { fullName: true, photoUrl: true } },
+          staff: { select: { id: true, fullName: true } },
+        },
+      });
+      createdReferrals.push(r);
+    }
+
+    return {
+      createdCount: createdReferrals.length,
+      createdReferrals,
+    };
+  }
 
   async create(staffId: string, dto: CreateReferralDto) {
     // Validate that at least one of parentId or childId is provided

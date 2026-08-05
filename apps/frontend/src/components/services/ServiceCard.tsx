@@ -19,7 +19,8 @@ interface ServiceCardProps {
 export function ServiceCard({ service, isSuperAdmin, onEdit, onToggleActive }: ServiceCardProps) {
   const { t } = useLocale();
   const isForParents = service.targetType === 'PARENT';
-  const stripColor = isForParents ? 'bg-amber-500' : 'bg-blue-500';
+  const isForAll = service.targetType === 'ALL';
+  const stripColor = isForAll ? 'bg-emerald-500' : isForParents ? 'bg-amber-500' : 'bg-blue-500';
 
   return (
     <div className="relative">
@@ -47,19 +48,25 @@ export function ServiceCard({ service, isSuperAdmin, onEdit, onToggleActive }: S
                 {service.name}
               </h3>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="text-[10px] px-2 py-0 bg-slate-100 text-slate-600">
-                  {service.category}
+                <Badge variant="secondary" className="text-[10px] px-2 py-0 bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300 font-medium">
+                  {t('services.catalog.categoryLabel', 'Category')}: {service.category}
                 </Badge>
                 <Badge
                   variant="outline"
                   className={cn(
-                    'text-[10px] px-2 py-0',
-                    isForParents
-                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                    'text-[10px] px-2 py-0 font-semibold',
+                    isForAll
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                      : isForParents
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                      : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
                   )}
                 >
-                  {isForParents ? t('services.catalog.forParents', 'For Parents') : t('services.catalog.forChildren', 'For Children')}
+                  {isForAll
+                    ? t('services.catalog.forAll', 'For All')
+                    : isForParents
+                    ? t('services.catalog.forParents', 'For Parents')
+                    : t('services.catalog.forChildren', 'For Children')}
                 </Badge>
               </div>
             </div>

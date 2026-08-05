@@ -384,17 +384,6 @@ export default function FinanceClient() {
                 <option value="ANONYMOUS">{t('finance.anonymous', 'Anonymous')}</option>
               </select>
             )}
-            <CalendarDatePicker
-              value={startDate}
-              onChange={setStartDate}
-              placeholder={t('finance.fromDate', 'From date')}
-            />
-            <span className="text-muted-foreground">{t('finance.to', 'to')}</span>
-            <CalendarDatePicker
-              value={endDate}
-              onChange={setEndDate}
-              placeholder={t('finance.toDate', 'To date')}
-            />
           </div>
         </div>
 
@@ -409,7 +398,7 @@ export default function FinanceClient() {
                   <TableHead>{t('finance.purpose', 'Purpose')}</TableHead>
                   <TableHead>{t('finance.allocationDate', 'Allocation Date')}</TableHead>
                   <TableHead>{t('finance.status', 'Status')}</TableHead>
-                  <TableHead className="text-center">{t('finance.ack', 'Ack.')}</TableHead>
+                  <TableHead className="text-center">{t('finance.acknowledgment', 'Acknowledgment')}</TableHead>
                   <TableHead className="text-right">{t('finance.actions', 'Actions')}</TableHead>
                 </TableRow>
               ) : (

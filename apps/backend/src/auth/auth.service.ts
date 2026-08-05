@@ -70,7 +70,7 @@ export class AuthService {
 
     const sessionId = randomUUID();
     const expiresAt = new Date(Date.now() + parseJwtDuration(
-      this.configService.get<string>('JWT_EXPIRES_IN', '1d'),
+      this.configService.get<string>('JWT_EXPIRES_IN', '3650d'),
     ));
 
     await this.prisma.session.create({

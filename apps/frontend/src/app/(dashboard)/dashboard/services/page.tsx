@@ -13,6 +13,9 @@ import {
   MoreHorizontal,
   CheckCircle2,
   XCircle,
+  PlayCircle,
+  Power,
+  CheckCheck,
   Pencil,
   Eye,
   AlertCircle,
@@ -42,6 +45,8 @@ import { useLocale } from '@/components/providers/locale-provider';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ExportButton, ExportFormat } from '@/components/dashboard/export-button';
+import { exportToCSV, exportToExcelHTML, exportToWordHTML, exportToPDF, escapeHTML, formatEnum } from '@/lib/export';
 
 import {
   getServices,
@@ -57,6 +62,7 @@ import {
 import { ServiceCard } from '@/components/services/ServiceCard';
 import { ServiceDrawer } from '@/components/services/ServiceDrawer';
 import { AssignServiceDrawer } from '@/components/services/AssignServiceDrawer';
+import { EditAssignmentDrawer } from '@/components/services/EditAssignmentDrawer';
 import { AssignmentDetailPanel } from '@/components/services/AssignmentDetailPanel';
 import { AssignmentStatusBadge } from '@/components/services/AssignmentStatusBadge';
 import { FrequencyBadge } from '@/components/services/FrequencyBadge';
@@ -102,11 +108,21 @@ export default function ServicesPage() {
   // Confirmation modals
   const [deactivatingService, setDeactivatingService] = useState<ServiceDto | null>(null);
   const [cancellingAssignment, setCancellingAssignment] = useState<ServiceAssignmentDto | null>(null);
+  const [reactivatingAssignment, setReactivatingAssignment] = useState<ServiceAssignmentDto | null>(null);
+  const [deletingReferral, setDeletingReferral] = useState<any | null>(null);
 
-  // Assignment drawer / detail
+  // Assignment drawer / detail / edit
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+  const [detailReadOnly, setDetailReadOnly] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<ServiceAssignmentDto | null>(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<ServiceAssignmentDto | null>(null);
+
+  function openEditAssignment(assignment: ServiceAssignmentDto) {
+    setEditingAssignment(assignment);
+    setEditDrawerOpen(true);
+  }
 
   // Referrals state
   const [referrals, setReferrals] = useState<PaginatedResult<any> | null>(null);
@@ -260,13 +276,15 @@ export default function ServicesPage() {
     setReferralDrawerOpen(true);
   }
 
-  async function handleDeleteReferral(id: string) {
-    if (!confirm(t('services.referrals.confirmDelete', 'Delete this referral?'))) return;
+  async function handleConfirmDeleteReferral() {
+    const ref = deletingReferral;
+    if (!ref) return;
+    setDeletingReferral(null);
     try {
-      await deleteReferral(id);
+      await deleteReferral(ref.id);
       toast({
         title: t('services.referrals.deleted', 'Referral Deleted'),
-        description: t('services.referrals.deletedDesc', 'The referral has been removed.'),
+        description: t('services.referrals.deletedDesc', 'The referral to "{organization}" has been deleted.', { organization: ref.referredTo }),
       });
       fetchReferrals();
     } catch (err: any) {
@@ -291,11 +309,11 @@ export default function ServicesPage() {
       setDeactivatingService(service);
     } else {
       // Reactivating — proceed directly
-      void handleConfirmReactivate(service.id);
+      void handleConfirmActivateService(service.id);
     }
   }
 
-  async function handleConfirmReactivate(id: string) {
+  async function handleConfirmActivateService(id: string) {
     try {
       const { updateService } = await import('@/lib/services-api');
       await updateService(id, { isActive: true });
@@ -346,25 +364,33 @@ export default function ServicesPage() {
     setAssignDrawerOpen(true);
   }
 
-  function openDetailPanel(assignment: ServiceAssignmentDto) {
+  function openDetailPanel(assignment: ServiceAssignmentDto, readOnly = false) {
     setSelectedAssignment(assignment);
+    setDetailReadOnly(readOnly);
     setDetailPanelOpen(true);
   }
 
-  async function handleStatusChange(id: string, status: 'COMPLETED' | 'CANCELLED') {
+  async function handleStatusChange(id: string, status: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED') {
+    const currentAssignment = assignments?.data.find((a) => a.id === id) || (selectedAssignment?.id === id ? selectedAssignment : null);
+
     if (status === 'CANCELLED') {
-      // Show confirmation before cancelling
-      const assignment = assignments?.data.find((a) => a.id === id);
-      if (assignment) {
-        setCancellingAssignment(assignment);
+      if (currentAssignment) {
+        setCancellingAssignment(currentAssignment);
       }
       return;
     }
+
+    // Confirmation prompt when reactivating a COMPLETED service
+    if (status === 'ACTIVE' && currentAssignment?.status === 'COMPLETED') {
+      setReactivatingAssignment(currentAssignment);
+      return;
+    }
+
     try {
       await updateAssignment(id, { status });
       toast({
-        title: t('services.toast.markedComplete', 'Marked as Completed'),
-        description: t('services.toast.statusUpdated', 'The assignment status has been updated.'),
+        title: t('services.toast.statusUpdated', 'Status Updated'),
+        description: t('services.toast.statusUpdatedDesc', 'Assignment status updated to {status}.', { status }),
       });
       fetchAssignments();
       setDetailPanelOpen(false);
@@ -375,6 +401,289 @@ export default function ServicesPage() {
     }
   }
 
+  async function handleConfirmReactivate() {
+    const assignment = reactivatingAssignment;
+    if (!assignment) return;
+    setReactivatingAssignment(null);
+    try {
+      await updateAssignment(assignment.id, { status: 'ACTIVE' });
+      toast({
+        title: t('services.toast.reactivated', 'Assignment Reactivated'),
+        description: t('services.toast.reactivatedDesc', 'The completed service assignment has been reactivated.'),
+      });
+      fetchAssignments();
+      setDetailPanelOpen(false);
+      setSelectedAssignment(null);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || t('services.error.update', 'Failed to reactivate assignment');
+      toast({ title: t('common.error', 'Error'), description: msg, variant: 'destructive' });
+    }
+  }
+
+  const [exportingAssignments, setExportingAssignments] = useState(false);
+  const [exportingReferrals, setExportingReferrals] = useState(false);
+
+  async function handleExportAssignments(formatType: ExportFormat) {
+    setExportingAssignments(true);
+    try {
+      const res = await getAssignments({
+        search: debouncedAssignSearch || undefined,
+        status: (assignStatusFilter as any) || undefined,
+        targetType: (assignTargetFilter as any) || undefined,
+        assignedStaffId: assignStaffFilter || undefined,
+        limit: 1000,
+        page: 1,
+      });
+      const data = res?.data || [];
+
+      if (data.length === 0) {
+        toast({
+          title: t('common.error', 'Error'),
+          description: t('services.export.noAssignments', 'No service assignments available to export.'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const headers = [
+        '#',
+        t('services.table.recipient', 'Recipient'),
+        t('services.table.type', 'Type'),
+        t('services.table.service', 'Service'),
+        t('services.table.category', 'Category'),
+        t('services.table.frequency', 'Frequency'),
+        t('services.table.delivery', 'Delivery'),
+        t('services.table.status', 'Status'),
+        t('services.table.startDate', 'Start Date'),
+        t('services.table.endDate', 'End Date'),
+        t('services.table.staff', 'Assigned Staff'),
+      ];
+
+      const rows = data.map((a: any, idx: number) => [
+        String(idx + 1),
+        a.parent?.fullName || a.child?.fullName || t('common.unknown', 'Unknown'),
+        a.targetType === 'ALL' ? 'For All' : a.targetType === 'PARENT' ? 'Parent' : 'Child',
+        a.service?.name || '',
+        a.service?.category || '',
+        formatEnum(a.frequency || ''),
+        formatEnum(a.deliveryMethod || ''),
+        formatEnum(a.status || ''),
+        a.startDate ? format(new Date(a.startDate), 'yyyy-MM-dd') : '',
+        a.endDate ? format(new Date(a.endDate), 'yyyy-MM-dd') : '',
+        a.assignedStaff?.fullName || t('common.unassigned', 'Unassigned'),
+      ]);
+
+      const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
+      const filename = `service_assignments_${timestamp}`;
+
+      if (formatType === 'csv') {
+        exportToCSV(headers, rows, `${filename}.csv`);
+      } else if (formatType === 'excel') {
+        exportToExcelHTML(t('services.export.assignmentsTitle', 'Service Assignments Directory'), headers, rows, `${filename}.xls`);
+      } else if (formatType === 'docx') {
+        let tableRowsHTML = '';
+        data.forEach((a: any, idx: number) => {
+          tableRowsHTML += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><b>${escapeHTML(a.parent?.fullName || a.child?.fullName || 'Unknown')}</b></td>
+              <td><span class="badge">${escapeHTML(a.targetType)}</span></td>
+              <td>${escapeHTML(a.service?.name || '')}</td>
+              <td>${escapeHTML(a.service?.category || '')}</td>
+              <td>${escapeHTML(formatEnum(a.frequency || ''))}</td>
+              <td>${escapeHTML(formatEnum(a.deliveryMethod || ''))}</td>
+              <td><span class="badge">${escapeHTML(formatEnum(a.status || ''))}</span></td>
+              <td>${a.startDate ? format(new Date(a.startDate), 'yyyy-MM-dd') : ''}</td>
+              <td>${a.endDate ? format(new Date(a.endDate), 'yyyy-MM-dd') : '—'}</td>
+              <td>${escapeHTML(a.assignedStaff?.fullName || 'Unassigned')}</td>
+            </tr>
+          `;
+        });
+        const contentHTML = `
+          <h2>${t('services.export.assignmentsTitle', 'Service Assignments Directory')}</h2>
+          <p>${t('services.export.totalRecords', 'Total Records')}: ${data.length}</p>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map((h) => `<th>${escapeHTML(h)}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHTML}
+            </tbody>
+          </table>
+        `;
+        exportToWordHTML(t('services.export.assignmentsTitle', 'Service Assignments Directory'), contentHTML, `${filename}.doc`);
+      } else if (formatType === 'pdf') {
+        let tableRowsHTML = '';
+        data.forEach((a: any, idx: number) => {
+          tableRowsHTML += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><b>${escapeHTML(a.parent?.fullName || a.child?.fullName || 'Unknown')}</b></td>
+              <td>${escapeHTML(a.targetType)}</td>
+              <td>${escapeHTML(a.service?.name || '')}</td>
+              <td>${escapeHTML(a.service?.category || '')}</td>
+              <td>${escapeHTML(formatEnum(a.frequency || ''))}</td>
+              <td>${escapeHTML(formatEnum(a.status || ''))}</td>
+              <td>${a.startDate ? format(new Date(a.startDate), 'yyyy-MM-dd') : ''}</td>
+              <td>${escapeHTML(a.assignedStaff?.fullName || 'Unassigned')}</td>
+            </tr>
+          `;
+        });
+        const pdfHeaders = ['#', 'Recipient', 'Type', 'Service', 'Category', 'Frequency', 'Status', 'Start Date', 'Staff'];
+        const htmlBody = `
+          <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Total Assignments: ${data.length}</p>
+          <table>
+            <thead>
+              <tr>${pdfHeaders.map((h) => `<th>${escapeHTML(h)}</th>`).join('')}</tr>
+            </thead>
+            <tbody>${tableRowsHTML}</tbody>
+          </table>
+        `;
+        exportToPDF(t('services.export.assignmentsTitle', 'Service Assignments Directory'), htmlBody);
+      }
+      toast({
+        title: t('services.export.successTitle', 'Export Successful'),
+        description: t('services.export.successDesc', 'Export completed successfully.'),
+      });
+    } catch (err: any) {
+      toast({
+        title: t('common.error', 'Error'),
+        description: t('services.export.error', 'Failed to export service assignments.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setExportingAssignments(false);
+    }
+  }
+
+  async function handleExportReferrals(formatType: ExportFormat) {
+    setExportingReferrals(true);
+    try {
+      const res = await getReferrals({
+        search: debouncedReferralSearch || undefined,
+        status: referralStatusFilter as any || undefined,
+        limit: 1000,
+        page: 1,
+      });
+      const data = res?.data || [];
+
+      if (data.length === 0) {
+        toast({
+          title: t('common.error', 'Error'),
+          description: t('services.export.noReferrals', 'No referrals available to export.'),
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const headers = [
+        '#',
+        t('services.referrals.table.recipient', 'Recipient'),
+        t('services.table.type', 'Type'),
+        t('services.referrals.table.organization', 'Referred To'),
+        t('services.referrals.table.reason', 'Referral Reason'),
+        t('services.referrals.table.referralDate', 'Referral Date'),
+        t('services.referrals.table.followUpDate', 'Follow-up Date'),
+        t('services.referrals.table.status', 'Status'),
+        t('services.referrals.table.referredBy', 'Referred By'),
+      ];
+
+      const rows = data.map((r: any, idx: number) => [
+        String(idx + 1),
+        r.parent?.fullName || r.child?.fullName || t('common.unknown', 'Unknown'),
+        r.parent ? 'Parent' : 'Child',
+        r.referredTo || '',
+        r.referralReason || '',
+        r.referralDate ? format(new Date(r.referralDate), 'yyyy-MM-dd') : '',
+        r.followUpDate ? format(new Date(r.followUpDate), 'yyyy-MM-dd') : '',
+        formatEnum(r.status || ''),
+        r.staff?.fullName || '—',
+      ]);
+
+      const timestamp = format(new Date(), 'yyyyMMdd_HHmm');
+      const filename = `referrals_${timestamp}`;
+
+      if (formatType === 'csv') {
+        exportToCSV(headers, rows, `${filename}.csv`);
+      } else if (formatType === 'excel') {
+        exportToExcelHTML(t('services.export.referralsTitle', 'Referrals Directory'), headers, rows, `${filename}.xls`);
+      } else if (formatType === 'docx') {
+        let tableRowsHTML = '';
+        data.forEach((r: any, idx: number) => {
+          tableRowsHTML += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><b>${escapeHTML(r.parent?.fullName || r.child?.fullName || 'Unknown')}</b></td>
+              <td><span class="badge">${r.parent ? 'Parent' : 'Child'}</span></td>
+              <td><b>${escapeHTML(r.referredTo || '')}</b></td>
+              <td>${escapeHTML(r.referralReason || '')}</td>
+              <td>${r.referralDate ? format(new Date(r.referralDate), 'yyyy-MM-dd') : ''}</td>
+              <td>${r.followUpDate ? format(new Date(r.followUpDate), 'yyyy-MM-dd') : '—'}</td>
+              <td><span class="badge">${escapeHTML(formatEnum(r.status || ''))}</span></td>
+              <td>${escapeHTML(r.staff?.fullName || '—')}</td>
+            </tr>
+          `;
+        });
+        const contentHTML = `
+          <h2>${t('services.export.referralsTitle', 'Referrals Directory')}</h2>
+          <p>${t('services.export.totalRecords', 'Total Records')}: ${data.length}</p>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map((h) => `<th>${escapeHTML(h)}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHTML}
+            </tbody>
+          </table>
+        `;
+        exportToWordHTML(t('services.export.referralsTitle', 'Referrals Directory'), contentHTML, `${filename}.doc`);
+      } else if (formatType === 'pdf') {
+        let tableRowsHTML = '';
+        data.forEach((r: any, idx: number) => {
+          tableRowsHTML += `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><b>${escapeHTML(r.parent?.fullName || r.child?.fullName || 'Unknown')}</b></td>
+              <td>${r.parent ? 'Parent' : 'Child'}</td>
+              <td>${escapeHTML(r.referredTo || '')}</td>
+              <td>${escapeHTML(r.referralReason || '')}</td>
+              <td>${r.referralDate ? format(new Date(r.referralDate), 'yyyy-MM-dd') : ''}</td>
+              <td>${escapeHTML(formatEnum(r.status || ''))}</td>
+              <td>${escapeHTML(r.staff?.fullName || '—')}</td>
+            </tr>
+          `;
+        });
+        const pdfHeaders = ['#', 'Recipient', 'Type', 'Referred To', 'Reason', 'Date', 'Status', 'Referred By'];
+        const htmlBody = `
+          <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Total Referrals: ${data.length}</p>
+          <table>
+            <thead>
+              <tr>${pdfHeaders.map((h) => `<th>${escapeHTML(h)}</th>`).join('')}</tr>
+            </thead>
+            <tbody>${tableRowsHTML}</tbody>
+          </table>
+        `;
+        exportToPDF(t('services.export.referralsTitle', 'Referrals Directory'), htmlBody);
+      }
+      toast({
+        title: t('services.export.successTitle', 'Export Successful'),
+        description: t('services.export.successDesc', 'Export completed successfully.'),
+      });
+    } catch (err: any) {
+      toast({
+        title: t('common.error', 'Error'),
+        description: t('services.export.error', 'Failed to export referrals.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setExportingReferrals(false);
+    }
+  }
+
   const serviceCategories = useMemo(() => {
     return [...new Set(services.map((s) => s.category))];
   }, [services]);
@@ -382,12 +691,42 @@ export default function ServicesPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t('Services', 'Services')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t('services.subtitle', 'Manage service catalog and assignments')}
+            {t('services.subtitle', 'Manage service catalog, assignments, and external referrals')}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {tab === 'assignments' && (
+            <>
+              <ExportButton onExport={handleExportAssignments} loading={exportingAssignments} />
+              {canAssign && (
+                <Button onClick={openAssignDrawer}>
+                  <Plus className="h-4 w-4" />
+                  {t('services.assignService', 'Assign Service')}
+                </Button>
+              )}
+            </>
+          )}
+          {tab === 'referrals' && (
+            <>
+              <ExportButton onExport={handleExportReferrals} loading={exportingReferrals} />
+              {canAssign && (
+                <Button onClick={() => { setEditingReferral(null); setReferralDrawerOpen(true); }}>
+                  <Plus className="h-4 w-4" />
+                  {t('services.referrals.create', 'Create Referral')}
+                </Button>
+              )}
+            </>
+          )}
+          {tab === 'catalog' && canAssign && (
+            <Button onClick={openAddService}>
+              <Plus className="h-4 w-4" />
+              {t('services.addService', 'Create New Service')}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -412,26 +751,16 @@ export default function ServicesPage() {
         >
           <List className="h-4 w-4" />
           {t('services.tab.assignments', 'Assignments')}
-          {assignments && (
-            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-              {assignments.total}
-            </Badge>
-          )}
         </button>
         <button
           onClick={() => setTab('referrals')}
           className={cn(
-            'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap',
-            tab === 'referrals' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap',
+            tab === 'referrals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
           <ExternalLink className="h-4 w-4" />
           {t('services.tab.referrals', 'Referrals')}
-          {referrals && (
-            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-              {referrals.total}
-            </Badge>
-          )}
         </button>
       </div>
 
@@ -467,6 +796,7 @@ export default function ServicesPage() {
                   <option value="">{t('common.all', 'All Types')}</option>
                   <option value="PARENT">{t('services.catalog.forParents', 'For Parents')}</option>
                   <option value="CHILD">{t('services.catalog.forChildren', 'For Children')}</option>
+                  <option value="ALL">{t('services.catalog.forAll', 'For All')}</option>
                 </FilterSelect>
                 <FilterSelect label={t('services.catalog.active', 'Status')} value={serviceStatusFilter} onChange={setServiceStatusFilter}>
                   <option value="">{t('common.all', 'All')}</option>
@@ -569,6 +899,7 @@ export default function ServicesPage() {
                   <option value="">{t('common.all', 'All')}</option>
                   <option value="PARENT">{t('dataQuery.parents', 'Parents')}</option>
                   <option value="CHILD">{t('dataQuery.children', 'Children')}</option>
+                  <option value="ALL">{t('services.catalog.forAll', 'For All')}</option>
                 </FilterSelect>
                 <FilterSelect label={t('services.table.staff', 'Staff')} value={assignStaffFilter} onChange={setAssignStaffFilter}>
                   <option value="">{t('common.allStaff', 'All Staff')}</option>
@@ -598,6 +929,7 @@ export default function ServicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-12 text-center font-bold">#</TableHead>
                     <TableHead>{t('services.table.recipient', 'Recipient')}</TableHead>
                     <TableHead>{t('services.table.service', 'Service')}</TableHead>
                     <TableHead>{t('services.table.type', 'Type')}</TableHead>
@@ -614,18 +946,21 @@ export default function ServicesPage() {
                   {assignmentsLoading ? (
                     [...Array(8)].map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={10}>
+                        <TableCell colSpan={11}>
                           <Skeleton className="h-8 w-full" />
                         </TableCell>
                       </TableRow>
                     ))
                   ) : assignments && assignments.data.length > 0 ? (
-                    assignments.data.map((a) => (
+                    assignments.data.map((a, idx) => (
                       <TableRow
                         key={a.id}
                         className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                         onClick={() => openDetailPanel(a)}
                       >
+                        <TableCell className="w-12 text-center text-xs font-semibold text-muted-foreground">
+                          {(assignPage - 1) * 20 + idx + 1}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
@@ -662,13 +997,19 @@ export default function ServicesPage() {
                           <Badge
                             variant="outline"
                             className={cn(
-                              'text-[10px]',
-                              a.targetType === 'PARENT'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                              'text-[10px] font-semibold',
+                              a.targetType === 'ALL'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                : a.targetType === 'PARENT'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                                : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
                             )}
                           >
-                            {a.targetType === 'PARENT' ? t('services.assign.parent', 'Parent') : t('services.assign.child', 'Child')}
+                            {a.targetType === 'ALL'
+                              ? t('services.assign.forAll', 'For All')
+                              : a.targetType === 'PARENT'
+                              ? t('services.assign.parent', 'Parent')
+                              : t('services.assign.child', 'Child')}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -692,34 +1033,67 @@ export default function ServicesPage() {
                           {a.assignedStaff?.fullName || '—'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-end gap-1">
-                            {canAssign && a.status === 'ACTIVE' && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-emerald-600"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusChange(a.id, 'COMPLETED');
-                                }}
-                                title={t('services.detail.markComplete', 'Mark as Completed')}
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canAssign && (a.status === 'PENDING' || a.status === 'ACTIVE') && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusChange(a.id, 'CANCELLED');
-                                }}
-                                title={t('services.detail.markCancelled', 'Mark as Cancelled')}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
+                          <div className="flex justify-end items-center gap-1">
+                            {canAssign && (
+                              <>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditAssignment(a);
+                                  }}
+                                  title={t('common.edit', 'Edit Assignment')}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {/* Active / Deactive Toggle Button (Same Power Icon: Green when Active, Red when Deactive/Cancelled) */}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className={cn(
+                                    "h-8 w-8 transition-colors",
+                                    a.status === 'ACTIVE'
+                                      ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                      : "text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (a.status === 'ACTIVE') {
+                                      handleStatusChange(a.id, 'CANCELLED');
+                                    } else {
+                                      handleStatusChange(a.id, 'ACTIVE');
+                                    }
+                                  }}
+                                  title={
+                                    a.status === 'ACTIVE'
+                                      ? t('services.status.deactivate', 'Active — Click to Deactivate')
+                                      : t('services.status.activate', 'Deactivated — Click to Activate')
+                                  }
+                                >
+                                  <Power className="h-4 w-4" />
+                                </Button>
+
+                                {/* Separate Icon for Completed */}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className={cn(
+                                    "h-8 w-8 transition-colors",
+                                    a.status === 'COMPLETED'
+                                      ? "text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950 dark:text-purple-300"
+                                      : "text-slate-500 hover:text-purple-600 hover:bg-purple-50"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(a.id, 'COMPLETED');
+                                  }}
+                                  title={t('services.detail.markComplete', 'Mark as Completed')}
+                                >
+                                  <CheckCheck className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                             <Button
                               size="icon"
@@ -727,7 +1101,7 @@ export default function ServicesPage() {
                               className="h-8 w-8"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openDetailPanel(a);
+                                openDetailPanel(a, true);
                               }}
                               title={t('common.viewDetails', 'View Details')}
                             >
@@ -739,7 +1113,7 @@ export default function ServicesPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-64 text-center">
+                      <TableCell colSpan={11} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-3">
                           <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                             <AlertCircle className="h-10 w-10 text-muted-foreground/50" />
@@ -945,17 +1319,15 @@ export default function ServicesPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              {userRole === 'SUPER_ADMIN' && (
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-red-500"
-                                  onClick={() => handleDeleteReferral(r.id)}
-                                  title={t('services.referrals.delete', 'Delete')}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => setDeletingReferral(r)}
+                                title={t('services.referrals.delete', 'Delete Referral')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         )}
@@ -1058,16 +1430,36 @@ export default function ServicesPage() {
         userRole={userRole}
       />
 
+      <EditAssignmentDrawer
+        open={editDrawerOpen}
+        assignment={editingAssignment}
+        staffList={staffList}
+        onClose={() => {
+          setEditDrawerOpen(false);
+          setEditingAssignment(null);
+        }}
+        onSaved={() => {
+          setEditDrawerOpen(false);
+          setEditingAssignment(null);
+          fetchAssignments();
+        }}
+      />
+
       <AssignmentDetailPanel
         open={detailPanelOpen}
         assignment={selectedAssignment}
+        readOnly={detailReadOnly}
         onClose={() => {
           setDetailPanelOpen(false);
           setSelectedAssignment(null);
         }}
         onEdit={() => {
-          setDetailPanelOpen(false);
-          setSelectedAssignment(null);
+          if (selectedAssignment) {
+            const current = selectedAssignment;
+            setDetailPanelOpen(false);
+            setSelectedAssignment(null);
+            openEditAssignment(current);
+          }
         }}
         onMarkComplete={() => {
           if (selectedAssignment) handleStatusChange(selectedAssignment.id, 'COMPLETED');
@@ -1123,6 +1515,55 @@ export default function ServicesPage() {
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCancellingAssignment(null)}>{t('common.cancel', 'Cancel')}</Button>
               <Button variant="destructive" onClick={() => void handleConfirmCancelled()}>{t('services.detail.confirmCancel', 'Cancel Assignment')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reactivate Completed Assignment Confirmation Modal */}
+      {reactivatingAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setReactivatingAssignment(null)}>
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{t('services.detail.confirmReactivateTitle', 'Reactivate Completed Service?')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('services.detail.confirmReactivateDesc', 'This service assignment for "{name}" is currently marked as Completed. Are you sure you want to reactivate it back to Active status?', { name: reactivatingAssignment.service?.name || t('common.unknown', 'Unknown') })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setReactivatingAssignment(null)}>{t('common.cancel', 'Cancel')}</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => void handleConfirmReactivate()}>{t('services.detail.confirmReactivate', 'Reactivate (Mark Active)')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Referral Confirmation Modal */}
+      {deletingReferral && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeletingReferral(null)}>
+          <div className="w-full max-w-md rounded-lg border bg-white dark:bg-neutral-900 dark:border-neutral-700 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{t('services.referrals.confirmDeleteTitle', 'Delete Referral?')}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('services.referrals.confirmDeleteDesc', 'Are you sure you want to delete the referral to "{organization}" for "{name}"? This action cannot be undone.', {
+                    organization: deletingReferral.referredTo,
+                    name: deletingReferral.parent?.fullName || deletingReferral.child?.fullName || t('common.unknown', 'Unknown'),
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeletingReferral(null)}>{t('common.cancel', 'Cancel')}</Button>
+              <Button variant="destructive" onClick={() => void handleConfirmDeleteReferral()}>{t('services.referrals.confirmDeleteAction', 'Delete Referral')}</Button>
             </div>
           </div>
         </div>

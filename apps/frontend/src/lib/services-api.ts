@@ -7,7 +7,7 @@ export interface ServiceDto {
   name: string;
   description: string | null;
   category: string;
-  targetType: 'PARENT' | 'CHILD';
+  targetType: 'PARENT' | 'CHILD' | 'ALL';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -18,7 +18,7 @@ export interface CreateServiceData {
   name: string;
   description?: string | null;
   category: string;
-  targetType: 'PARENT' | 'CHILD';
+  targetType: 'PARENT' | 'CHILD' | 'ALL';
   isActive?: boolean;
 }
 
@@ -26,12 +26,12 @@ export interface UpdateServiceData {
   name?: string;
   description?: string | null;
   category?: string;
-  targetType?: 'PARENT' | 'CHILD';
+  targetType?: 'PARENT' | 'CHILD' | 'ALL';
   isActive?: boolean;
 }
 
 export interface ListServicesParams {
-  targetType?: 'PARENT' | 'CHILD';
+  targetType?: 'PARENT' | 'CHILD' | 'ALL';
   isActive?: boolean;
   search?: string;
 }
@@ -41,7 +41,7 @@ export interface ListServicesParams {
 export interface ServiceAssignmentDto {
   id: string;
   serviceId: string;
-  targetType: 'PARENT' | 'CHILD';
+  targetType: 'PARENT' | 'CHILD' | 'ALL';
   parentId: string | null;
   childId: string | null;
   assignedStaffId: string;
@@ -61,11 +61,11 @@ export interface ServiceAssignmentDto {
 
 export interface CreateAssignmentData {
   serviceId: string;
-  targetType: 'PARENT' | 'CHILD';
+  targetType: 'PARENT' | 'CHILD' | 'ALL';
   parentId?: string;
   childId?: string;
   assignedStaffId?: string;
-  startDate: string;
+  startDate?: string;
   endDate?: string;
   frequency: 'ONE_TIME' | 'WEEKLY' | 'MONTHLY' | 'ONGOING';
   deliveryMethod: 'ON_SITE' | 'HOME_VISIT' | 'REFERRAL';
@@ -75,10 +75,12 @@ export interface CreateAssignmentData {
 
 export interface UpdateAssignmentData {
   status?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-  notes?: string;
+  assignedStaffId?: string;
+  startDate?: string;
   endDate?: string;
   deliveryMethod?: 'ON_SITE' | 'HOME_VISIT' | 'REFERRAL';
   frequency?: 'ONE_TIME' | 'WEEKLY' | 'MONTHLY' | 'ONGOING';
+  notes?: string;
 }
 
 export interface ListAssignmentsParams {
@@ -148,8 +150,34 @@ export async function getAssignmentsByChild(childId: string): Promise<ServiceAss
   return res.data;
 }
 
+export interface CreateBulkAssignmentData {
+  serviceId: string;
+  targetType: 'PARENT' | 'CHILD' | 'ALL';
+  parentIds?: string[];
+  childIds?: string[];
+  assignedStaffId?: string;
+  startDate?: string;
+  endDate?: string;
+  frequency: 'ONE_TIME' | 'WEEKLY' | 'MONTHLY' | 'ONGOING';
+  deliveryMethod: 'ON_SITE' | 'HOME_VISIT' | 'REFERRAL';
+  status?: 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  notes?: string;
+}
+
+export interface BulkAssignmentResult {
+  totalSelected: number;
+  createdCount: number;
+  skippedCount: number;
+  createdAssignments: ServiceAssignmentDto[];
+}
+
 export async function createAssignment(data: CreateAssignmentData): Promise<ServiceAssignmentDto> {
   const res = await api.post('/service-assignments', data);
+  return res.data;
+}
+
+export async function createBulkAssignments(data: CreateBulkAssignmentData): Promise<BulkAssignmentResult> {
+  const res = await api.post('/service-assignments/bulk', data);
   return res.data;
 }
 
@@ -227,6 +255,23 @@ export async function getReferral(id: string): Promise<ReferralDto> {
 
 export async function createReferral(data: CreateReferralData): Promise<ReferralDto> {
   const res = await api.post('/referrals', data);
+  return res.data;
+}
+
+export interface CreateBulkReferralData {
+  parentIds?: string[];
+  childIds?: string[];
+  referredTo: string;
+  referralReason?: string;
+  referralDate: string;
+  status?: ReferralStatus;
+  notes?: string;
+  outcome?: string;
+  followUpDate?: string;
+}
+
+export async function createBulkReferrals(data: CreateBulkReferralData): Promise<{ createdCount: number; createdReferrals: ReferralDto[] }> {
+  const res = await api.post('/referrals/bulk', data);
   return res.data;
 }
 

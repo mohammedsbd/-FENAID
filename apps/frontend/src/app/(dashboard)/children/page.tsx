@@ -15,6 +15,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trash2,
   UserMinus,
   X,
   UserPlus,
@@ -44,6 +45,7 @@ import { t as tI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { ChildDrawer } from '@/components/dashboard/child-drawer';
 import { DeactivateConfirmationModal } from '@/components/dashboard/deactivate-confirmation-modal';
+import { PermanentDeleteModal } from '@/components/dashboard/permanent-delete-modal';
 import { 
   ChildRow, 
   StaffOption, 
@@ -80,7 +82,11 @@ export default function ChildrenPage() {
   const [suggestedServices, setSuggestedServices] = useState<SuggestedService[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [deactivatingChild, setDeactivatingChild] = useState<ChildRow | null>(null);
+  const [deletingChild, setDeletingChild] = useState<ChildRow | null>(null);
+  const [deletingInFlight, setDeletingInFlight] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Erasing a record is restricted to super admins on the server too.
+  const canPermanentlyDelete = getSession()?.role === 'SUPER_ADMIN';
 
 
   useEffect(() => {
@@ -194,6 +200,30 @@ export default function ChildrenPage() {
       });
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('children.errorUpdateStatus', 'Failed to update child status.')));
+    }
+  }
+
+  async function handlePermanentDelete() {
+    if (!deletingChild) return;
+    const name = deletingChild.fullName;
+    setDeletingInFlight(true);
+    try {
+      await api.delete(`/children/${deletingChild.id}/permanent`);
+      setDeletingChild(null);
+      fetchChildren();
+
+      toast({
+        title: t('children.toastDeletedTitle', 'Child Deleted'),
+        description: t('children.toastDeletedDesc', '{name} and their related records have been permanently removed.', { name }),
+      });
+    } catch (err: unknown) {
+      toast({
+        title: t('common.error', 'Error'),
+        description: getErrorMessage(err, t('children.errorDelete', 'Failed to delete child.')),
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingInFlight(false);
     }
   }
 
@@ -449,6 +479,7 @@ export default function ChildrenPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12 text-center font-bold">#</TableHead>
                 <TableHead>{t('children.table.firstName', 'First Name')}</TableHead>
                 <TableHead>{t('children.table.lastName', 'Last Name')}</TableHead>
                 <TableHead className="w-[120px]">{t('children.table.id', 'ID')}</TableHead>
@@ -464,18 +495,21 @@ export default function ChildrenPage() {
               {loading ? (
                 [...Array(6)].map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={9}>
+                    <TableCell colSpan={10}>
                       <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-neutral-800" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : children.length ? (
-                children.map((child) => (
+                children.map((child, idx) => (
                   <TableRow 
                     key={child.id}
                     className="cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
                     onClick={() => router.push(`/dashboard/children/${child.id}`)}
                   >
+                    <TableCell className="w-12 text-center text-xs font-semibold text-muted-foreground">
+                      {(page - 1) * limit + idx + 1}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
@@ -548,13 +582,26 @@ export default function ChildrenPage() {
                         >
                           {child.status === 'INACTIVE' ? <UserPlus className="h-4 w-4" /> : <UserMinus className="h-4 w-4" />}
                         </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeletingChild(child);
+                          }}
+                          aria-label={t('children.table.deleteLabel', 'Delete child permanently')}
+                          title={t('children.table.deleteLabel', 'Delete child permanently')}
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-64 text-center">
+                  <TableCell colSpan={10} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="rounded-full bg-slate-50 dark:bg-neutral-800 p-4">
                         <UserMinus className="h-10 w-10 text-muted-foreground/50" />
@@ -698,6 +745,19 @@ export default function ChildrenPage() {
           confirmLabel={deactivatingChild.status === 'INACTIVE' ? t('children.deactivate.confirmActivate', 'Activate Now') : t('children.deactivate.confirmDeactivate', 'Deactivate Now')}
           onConfirm={handleToggleStatus}
           onCancel={() => setDeactivatingChild(null)}
+        />
+      )}
+
+      {deletingChild && (
+        <PermanentDeleteModal
+          name={deletingChild.fullName}
+          relatedSummary={t(
+            'children.delete.related',
+            'progress notes, milestones, goals, documents, appointments, attendance and service assignments',
+          )}
+          deleting={deletingInFlight}
+          onConfirm={handlePermanentDelete}
+          onCancel={() => setDeletingChild(null)}
         />
       )}
     </div>

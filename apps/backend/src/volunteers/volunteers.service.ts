@@ -25,20 +25,39 @@ export class VolunteersService {
   ) {}
 
   async create(staffId: string, dto: CreateVolunteerDto) {
-    const existing = await this.prisma.volunteer.findUnique({
-      where: { email: dto.email },
-    });
-    if (existing) {
-      throw new BadRequestException('error.volunteer.emailExists');
+    if (dto.isOrganization) {
+      if (!dto.organizationName?.trim()) {
+        throw new BadRequestException('Organization name is required');
+      }
+    } else {
+      if (!dto.firstName?.trim() || !dto.lastName?.trim()) {
+        throw new BadRequestException('First name and last name are required');
+      }
+      if (!dto.phone?.trim()) {
+        throw new BadRequestException('Phone number is required');
+      }
+    }
+
+    if (dto.email?.trim()) {
+      const existing = await this.prisma.volunteer.findUnique({
+        where: { email: dto.email.trim() },
+      });
+      if (existing) {
+        throw new BadRequestException('error.volunteer.emailExists');
+      }
     }
 
     const volunteer = await this.prisma.$transaction(async (tx) => {
       const v = await tx.volunteer.create({
         data: {
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          email: dto.email,
-          phone: dto.phone,
+          isOrganization: dto.isOrganization ?? false,
+          organizationName: dto.isOrganization ? dto.organizationName?.trim() : null,
+          organizationLocation: dto.isOrganization ? dto.organizationLocation?.trim() : null,
+          organizationPhone: dto.isOrganization ? dto.organizationPhone?.trim() : null,
+          firstName: dto.firstName?.trim() || null,
+          lastName: dto.lastName?.trim() || null,
+          email: dto.email?.trim() || null,
+          phone: dto.phone?.trim() || (dto.isOrganization ? dto.organizationPhone?.trim() : null),
           serviceTypes: dto.serviceTypes,
           notes: dto.notes,
           status: 'ACTIVE',
@@ -63,18 +82,29 @@ export class VolunteersService {
 
   async findAll(query: ListVolunteersDto = {}) {
     const page = Math.max(query.page ?? 1, 1);
-    const limit = Math.min(Math.max(query.limit ?? 10, 1), 100);
+    const limit = Math.min(Math.max(query.limit ?? 10, 1), 100000);
     const skip = (page - 1) * limit;
     const search = query.search;
+
+    const typeQuery = query.type || query.isOrganization;
+    const isOrgFilter = typeQuery === 'ORGANIZATION' || typeQuery === 'true'
+      ? true
+      : typeQuery === 'INDIVIDUAL' || typeQuery === 'false'
+        ? false
+        : undefined;
 
     const where: Prisma.VolunteerWhereInput = {
       deletedAt: null,
       ...(query.status ? { status: query.status } : {}),
+      ...(isOrgFilter !== undefined ? { isOrganization: isOrgFilter } : {}),
       ...(search
         ? {
             OR: [
               { firstName: { contains: search, mode: 'insensitive' as const } },
               { lastName: { contains: search, mode: 'insensitive' as const } },
+              { organizationName: { contains: search, mode: 'insensitive' as const } },
+              { organizationLocation: { contains: search, mode: 'insensitive' as const } },
+              { organizationPhone: { contains: search, mode: 'insensitive' as const } },
               { email: { contains: search, mode: 'insensitive' as const } },
               { phone: { contains: search, mode: 'insensitive' as const } },
               { serviceTypes: { contains: search, mode: 'insensitive' as const } },
@@ -98,6 +128,7 @@ export class VolunteersService {
         },
         // id breaks ties so rows can't shift between pages.
         orderBy: [
+          { organizationName: 'asc' },
           { firstName: 'asc' },
           { lastName: 'asc' },
           { id: 'asc' },
@@ -150,10 +181,12 @@ export class VolunteersService {
       }
     }
 
+    const { expectedUpdatedAt, ...dataToUpdate } = dto;
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.volunteer.update({
         where: { id },
-        data: dto,
+        data: dataToUpdate,
       });
 
       await tx.auditLog.create({
@@ -180,7 +213,7 @@ export class VolunteersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const u = await tx.volunteer.update({
         where: { id },
-        data: { deletedAt: new Date(), status: 'INACTIVE' },
+        data: { status: 'INACTIVE' },
       });
 
       await tx.auditLog.create({
@@ -200,6 +233,46 @@ export class VolunteersService {
     });
 
     return { success: true };
+  }
+
+  /**
+   * Permanently removes a volunteer. Their logged services cascade away with
+   * them; the children and parents those services pointed at are untouched.
+   *
+   * There is no undo: unlike remove(), nothing is left to restore from.
+   */
+  async purge(staffId: string, id: string) {
+    const existing = await this.prisma.volunteer.findUnique({
+      where: { id },
+      include: { services: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('error.volunteer.notFound');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.volunteer.delete({ where: { id } });
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'PERMANENT_DELETE',
+          entity: 'Volunteer',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: null,
+            deletedRelatedRecords: { services: existing.services.length },
+          },
+        },
+      });
+    });
+
+    return {
+      success: true,
+      deletedRelatedRecords: { services: existing.services.length },
+    };
   }
 
   async addService(staffId: string, volunteerId: string, dto: CreateVolunteerServiceDto) {

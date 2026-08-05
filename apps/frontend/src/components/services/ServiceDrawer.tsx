@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from '@/components/providers/locale-provider';
 import { createService, updateService, getServices, type ServiceDto as SvcDto } from '@/lib/services-api';
@@ -23,13 +24,13 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
   const { toast } = useToast();
   const isEdit = !!service;
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [targetType, setTargetType] = useState<'PARENT' | 'CHILD'>('PARENT');
+  const [targetType, setTargetType] = useState<'PARENT' | 'CHILD' | 'ALL'>('PARENT');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameError, setNameError] = useState('');
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -38,7 +39,14 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
   useEffect(() => {
     if (service) {
       setName(service.name);
-      setCategory(service.category);
+      const defaultOptions = ['Therapy & Rehabilitation', 'Education & Skill Development', 'Health & Counseling', 'Nutrition & Support', 'Family & Social Support'];
+      if (suggestions.includes(service.category) || defaultOptions.includes(service.category)) {
+        setSelectedCategory(service.category);
+        setCustomCategory('');
+      } else {
+        setSelectedCategory('OTHER');
+        setCustomCategory(service.category);
+      }
       setDescription(service.description ?? '');
       setTargetType(service.targetType);
       setIsActive(service.isActive);
@@ -69,7 +77,8 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
 
   function resetForm() {
     setName('');
-    setCategory('');
+    setSelectedCategory('');
+    setCustomCategory('');
     setDescription('');
     setTargetType('PARENT');
     setIsActive(true);
@@ -108,7 +117,8 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
       setNameError(t('services.catalog.nameRequired', 'Service name is required'));
       return;
     }
-    if (!category.trim()) {
+    const finalCategory = selectedCategory === 'OTHER' ? (customCategory.trim() || 'Other') : selectedCategory.trim();
+    if (!selectedCategory) {
       toast({ title: t('common.error', 'Error'), description: t('services.catalog.categoryRequired', 'Category is required'), variant: 'destructive' });
       return;
     }
@@ -118,7 +128,7 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
       if (isEdit && service) {
         await updateService(service.id, {
           name: name.trim(),
-          category: category.trim(),
+          category: finalCategory,
           description: description.trim() || null,
           targetType,
           isActive,
@@ -126,7 +136,7 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
       } else {
         await createService({
           name: name.trim(),
-          category: category.trim(),
+          category: finalCategory,
           description: description.trim() || null,
           targetType,
           isActive,
@@ -149,8 +159,15 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
 
   if (!mounted) return null;
 
-  const filteredSuggestions = suggestions.filter(
-    (s) => s.toLowerCase().includes(category.toLowerCase()) && s !== category
+  const allCategoryOptions = Array.from(
+    new Set([
+      ...suggestions,
+      'Therapy & Rehabilitation',
+      'Education & Skill Development',
+      'Health & Counseling',
+      'Nutrition & Support',
+      'Family & Social Support',
+    ])
   );
 
   return (
@@ -189,34 +206,30 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
             )}
           </div>
 
-          <div className="space-y-2 relative">
+          <div className="space-y-2">
             <Label htmlFor="service-category">{t('services.catalog.category', 'Category')} *</Label>
-            <Input
+            <select
               id="service-category"
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              placeholder={t('services.catalog.categoryPlaceholder', 'e.g. Therapy, Education, Nutrition')}
-            />
-            {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                {filteredSuggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
-                    onMouseDown={() => {
-                      setCategory(s);
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">{t('services.catalog.selectCategory', '-- Select Category --')}</option>
+              {allCategoryOptions.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+              <option value="OTHER">{t('common.other', 'Other (Specify Custom Category)')}</option>
+            </select>
+
+            {selectedCategory === 'OTHER' && (
+              <div className="space-y-2 mt-3">
+                <Label className="text-xs font-semibold text-muted-foreground">{t('services.catalog.customCategoryLabel', 'Custom Category Name')} {t('common.optional', '(Optional)')}</Label>
+                <Input
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  placeholder={t('services.catalog.customCategoryPlaceholder', 'e.g. Vocational Training, Special Advocacy... (Leave empty for "Other")')}
+                  className="h-10 border-input focus-visible:ring-primary"
+                />
               </div>
             )}
           </div>
@@ -230,9 +243,10 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
                 className={cn(
                   'flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                   targetType === 'PARENT'
-                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300'
+                    ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300 font-semibold'
                     : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
-                )}                >
+                )}
+              >
                 {t('services.catalog.forParents', 'For Parents')}
               </button>
               <button
@@ -241,12 +255,35 @@ export function ServiceDrawer({ open, service, onClose, onSaved }: ServiceDrawer
                 className={cn(
                   'flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                   targetType === 'CHILD'
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300'
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300 font-semibold'
                     : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800'
-                )}                >
+                )}
+              >
                 {t('services.catalog.forChildren', 'For Children')}
               </button>
+              <button
+                type="button"
+                onClick={() => setTargetType('ALL')}
+                className={cn(
+                  'flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-all shadow-sm',
+                  targetType === 'ALL'
+                    ? 'bg-emerald-600 border-emerald-700 text-white dark:bg-emerald-600 dark:border-emerald-500 font-semibold ring-2 ring-emerald-400/50'
+                    : 'bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-neutral-800'
+                )}
+              >
+                {t('services.catalog.forAll', 'For All')}
+              </button>
             </div>
+            {targetType === 'ALL' && (
+              <div className="mt-2 flex items-center gap-2 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
+                <Badge className="bg-emerald-600 text-white font-semibold text-[11px] px-2 py-0.5 rounded">
+                  {t('services.catalog.tagForAll', 'Tag: For All')}
+                </Badge>
+                <span className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+                  {t('services.catalog.tagForAllDesc', 'This service is marked for all beneficiaries (parents, children, and families).')}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

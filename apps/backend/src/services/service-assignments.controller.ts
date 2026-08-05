@@ -13,6 +13,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { ModuleAccess } from '../auth/decorators/module-access.decorator';
 import { AuthenticatedRequest } from '../auth/types/authenticated-request.type';
 import {
+  CreateBulkServiceAssignmentDto,
   CreateServiceAssignmentDto,
   ListServiceAssignmentsDto,
   UpdateServiceAssignmentDto,
@@ -25,6 +26,15 @@ export class ServiceAssignmentsController {
   constructor(
     private readonly serviceAssignmentsService: ServiceAssignmentsService,
   ) {}
+
+  @Post('bulk')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)
+  createBulk(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateBulkServiceAssignmentDto,
+  ) {
+    return this.serviceAssignmentsService.createBulk(req.user.staffId, dto);
+  }
 
   @Post()
   @Roles(StaffRole.SUPER_ADMIN, StaffRole.CASE_WORKER)

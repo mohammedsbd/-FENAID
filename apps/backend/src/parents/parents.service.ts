@@ -421,6 +421,71 @@ export class ParentsService {
     return parent;
   }
 
+  /**
+   * Permanently removes a parent and everything that belongs only to them.
+   *
+   * FundAllocation has a RESTRICT foreign key, so those rows have to go first
+   * or the delete is refused outright. The rest of the dependants would be
+   * left behind with a null parentId — invisible orphans — so records that
+   * exist solely for this parent are removed too. Rows shared with a child
+   * (an appointment for both, a referral naming the child) are kept and the
+   * database nulls their parentId.
+   *
+   * There is no undo: unlike remove(), nothing is left to restore from.
+   */
+  async purge(staffId: string, id: string) {
+    const existing = await this.findParentForAudit(id);
+
+    const removed = await this.prisma.$transaction(async (tx) => {
+      const [
+        fundAllocations,
+        attendanceRecords,
+        documents,
+        serviceAssignments,
+        appointments,
+        referrals,
+      ] = await Promise.all([
+        tx.fundAllocation.deleteMany({ where: { parentId: id } }),
+        tx.attendanceRecord.deleteMany({ where: { parentId: id } }),
+        tx.document.deleteMany({ where: { parentId: id } }),
+        tx.serviceAssignment.deleteMany({ where: { parentId: id } }),
+        tx.appointment.deleteMany({ where: { parentId: id, childId: null } }),
+        tx.referral.deleteMany({ where: { parentId: id, childId: null } }),
+      ]);
+
+      // Cascades ChildParent links; nulls the parentId still held by shared
+      // appointments, referrals and volunteer services.
+      await tx.parent.delete({ where: { id } });
+
+      const counts = {
+        fundAllocations: fundAllocations.count,
+        attendanceRecords: attendanceRecords.count,
+        documents: documents.count,
+        serviceAssignments: serviceAssignments.count,
+        appointments: appointments.count,
+        referrals: referrals.count,
+      };
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'PERMANENT_DELETE',
+          entity: 'Parent',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: null,
+            deletedRelatedRecords: counts,
+          },
+        },
+      });
+
+      return counts;
+    });
+
+    return { success: true, deletedRelatedRecords: removed };
+  }
+
   private parentUpdateMessage(existing: ParentAuditSnapshot, parent: Parent) {
     if (existing.assignedStaffId !== parent.assignedStaffId)
       return { notificationKey: 'notification.parentReassigned', params: { parentName: parent.fullName, idTag: parent.idTag } };

@@ -16,17 +16,19 @@ import { format } from 'date-fns';
 interface AssignmentDetailPanelProps {
   open: boolean;
   assignment: ServiceAssignmentDto | null;
+  readOnly?: boolean;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onMarkPending?: () => void;
-  onMarkComplete: () => void;
-  onMarkCancelled: () => void;
+  onMarkComplete?: () => void;
+  onMarkCancelled?: () => void;
   userRole: string;
 }
 
 export function AssignmentDetailPanel({
   open,
   assignment,
+  readOnly = false,
   onClose,
   onEdit,
   onMarkPending,
@@ -114,12 +116,18 @@ export function AssignmentDetailPanel({
                 <div>
                   <p className="font-medium text-sm">{recipientName}</p>
                   <Badge variant="outline" className={cn(
-                    'text-[10px] mt-0.5',
-                    assignment.targetType === 'PARENT'
-                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                    'text-[10px] mt-0.5 font-semibold',
+                    assignment.targetType === 'ALL'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                      : assignment.targetType === 'PARENT'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                      : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
                   )}>
-                    {assignment.targetType === 'PARENT' ? t('services.assign.parent', 'Parent') : t('services.assign.child', 'Child')}
+                    {assignment.targetType === 'ALL'
+                      ? t('services.assign.forAll', 'For All')
+                      : assignment.targetType === 'PARENT'
+                      ? t('services.assign.parent', 'Parent')
+                      : t('services.assign.child', 'Child')}
                   </Badge>
                 </div>
               </div>
@@ -195,7 +203,7 @@ export function AssignmentDetailPanel({
         </div>
 
         {/* Footer Actions */}
-        {canEdit && (
+        {canEdit && !readOnly && (
           <div className="border-t px-6 py-4 space-y-2">
             <Button variant="outline" className="w-full" onClick={onEdit}>
               {t('services.detail.edit', 'Edit Assignment')}

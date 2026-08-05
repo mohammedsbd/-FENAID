@@ -466,6 +466,77 @@ export class ChildrenService {
     return child;
   }
 
+  /**
+   * Permanently removes a child and everything that belongs only to them.
+   *
+   * ProgressNote, Milestone and Goal have RESTRICT foreign keys, so those rows
+   * have to go first or the delete is refused outright. The remaining
+   * dependants would be left behind with a null childId — invisible orphans —
+   * so records that exist solely for this child are removed too. Rows shared
+   * with a parent (an appointment for both, a referral naming the parent) are
+   * kept and the database nulls their childId.
+   *
+   * There is no undo: unlike remove(), nothing is left to restore from.
+   */
+  async purge(staffId: string, id: string) {
+    const existing = await this.findChildForAudit(id);
+
+    const removed = await this.prisma.$transaction(async (tx) => {
+      const [
+        progressNotes,
+        milestones,
+        goals,
+        attendanceRecords,
+        documents,
+        serviceAssignments,
+        appointments,
+        referrals,
+      ] = await Promise.all([
+        tx.progressNote.deleteMany({ where: { childId: id } }),
+        tx.milestone.deleteMany({ where: { childId: id } }),
+        tx.goal.deleteMany({ where: { childId: id } }),
+        tx.attendanceRecord.deleteMany({ where: { childId: id } }),
+        tx.document.deleteMany({ where: { childId: id } }),
+        tx.serviceAssignment.deleteMany({ where: { childId: id } }),
+        tx.appointment.deleteMany({ where: { childId: id, parentId: null } }),
+        tx.referral.deleteMany({ where: { childId: id, parentId: null } }),
+      ]);
+
+      // Cascades ChildParent links; nulls the childId still held by shared
+      // appointments, referrals, restricted donations and volunteer services.
+      await tx.child.delete({ where: { id } });
+
+      const counts = {
+        progressNotes: progressNotes.count,
+        milestones: milestones.count,
+        goals: goals.count,
+        attendanceRecords: attendanceRecords.count,
+        documents: documents.count,
+        serviceAssignments: serviceAssignments.count,
+        appointments: appointments.count,
+        referrals: referrals.count,
+      };
+
+      await tx.auditLog.create({
+        data: {
+          staffId,
+          action: 'PERMANENT_DELETE',
+          entity: 'Child',
+          entityId: id,
+          changes: {
+            before: JSON.parse(JSON.stringify(existing)),
+            after: null,
+            deletedRelatedRecords: counts,
+          },
+        },
+      });
+
+      return counts;
+    });
+
+    return { success: true, deletedRelatedRecords: removed };
+  }
+
   private childUpdateMessage(existing: ChildAuditSnapshot, child: Child) {
     if (existing.assignedStaffId !== child.assignedStaffId)
       return { notificationKey: 'notification.childReassigned', params: { childName: child.fullName, idTag: child.idTag } };
