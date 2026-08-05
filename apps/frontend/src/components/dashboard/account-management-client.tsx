@@ -50,7 +50,7 @@ import {
   SessionRow,
 } from '@/types/accounts';
 
-type Props = { currentUser: { id: string; fullName: string; email: string; role: string } };
+type Props = { currentUser: { id: string; fullName: string; role: string; email?: string } };
 
 type AccountForm = {
   fullName: string;
